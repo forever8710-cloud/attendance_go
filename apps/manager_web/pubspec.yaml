@@ -1,0 +1,29 @@
+name: manager_web
+description: WorkFlow Manager Web Dashboard
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  supabase_flutter: ^2.9.0
+  intl: ^0.20.2
+  core:
+    path: ../../packages/core
+  supabase_client:
+    path: ../../packages/supabase_client
+  ui_components:
+    path: ../../packages/ui_components
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

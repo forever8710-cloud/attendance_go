@@ -1,0 +1,19 @@
+name: core
+description: Shared models, utilities, and services for WorkFlow
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.7
+
+resolution: workspace
+
+dependencies:
+  freezed_annotation: ^3.0.0
+  json_annotation: ^4.10.0
+  intl: ^0.20.2
+
+dev_dependencies:
+  build_runner: ^2.4.15
+  freezed: ^3.0.6
+  json_serializable: ^6.9.5

@@ -1,0 +1,21 @@
+name: supabase_client
+description: Supabase client wrapper for WorkFlow
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.7
+
+resolution: workspace
+
+dependencies:
+  supabase_flutter: ^2.9.0
+  flutter_riverpod: ^2.6.1
+  flutter:
+    sdk: flutter
+  core:
+    path: ../core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
