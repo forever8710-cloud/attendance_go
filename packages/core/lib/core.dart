@@ -5,3 +5,5 @@ export 'src/models/part.dart';
 export 'src/models/worker.dart';
 export 'src/models/attendance.dart';
 export 'src/models/payroll.dart';
+export 'src/services/location_service.dart';
+export 'src/exceptions/location_exception.dart';
