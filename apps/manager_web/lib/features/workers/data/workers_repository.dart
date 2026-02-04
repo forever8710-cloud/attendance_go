@@ -1,17 +1,127 @@
 class WorkerRow {
-  WorkerRow({required this.id, required this.name, required this.phone, required this.part, required this.site, required this.isActive});
+  WorkerRow({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.part,
+    required this.site,
+    required this.isActive,
+    this.ssn,
+    this.gender,
+    this.address,
+    this.email,
+    this.emergencyContact,
+    this.resumeFile,
+    this.employmentStatus,
+    this.joinDate,
+    this.leaveDate,
+    this.position,
+    this.role,
+    this.job,
+    this.photoUrl,
+  });
+
   final String id, name, phone, part, site;
   bool isActive;
+
+  // HR 카드 추가 필드
+  final String? ssn;           // 주민번호
+  final String? gender;        // 성별
+  final String? address;       // 주소
+  final String? email;         // 이메일
+  final String? emergencyContact; // 비상연락망
+  final String? resumeFile;    // 이력서 첨부
+  final String? employmentStatus; // 재직상태: 정규직, 계약직, 일용직, 파견, 육아휴직
+  final DateTime? joinDate;    // 입사일
+  final DateTime? leaveDate;   // 퇴사일
+  final String? position;      // 직위: 사원, 대리, 과장, 부장, 대표
+  final String? role;          // 직책: 조장, 파트장
+  final String? job;           // 직무: 사무, 지게차, 피커, 검수
+  final String? photoUrl;      // 사진
+
+  WorkerRow copyWith({
+    String? id,
+    String? name,
+    String? phone,
+    String? part,
+    String? site,
+    bool? isActive,
+    String? ssn,
+    String? gender,
+    String? address,
+    String? email,
+    String? emergencyContact,
+    String? resumeFile,
+    String? employmentStatus,
+    DateTime? joinDate,
+    DateTime? leaveDate,
+    String? position,
+    String? role,
+    String? job,
+    String? photoUrl,
+  }) {
+    return WorkerRow(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      part: part ?? this.part,
+      site: site ?? this.site,
+      isActive: isActive ?? this.isActive,
+      ssn: ssn ?? this.ssn,
+      gender: gender ?? this.gender,
+      address: address ?? this.address,
+      email: email ?? this.email,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      resumeFile: resumeFile ?? this.resumeFile,
+      employmentStatus: employmentStatus ?? this.employmentStatus,
+      joinDate: joinDate ?? this.joinDate,
+      leaveDate: leaveDate ?? this.leaveDate,
+      position: position ?? this.position,
+      role: role ?? this.role,
+      job: job ?? this.job,
+      photoUrl: photoUrl ?? this.photoUrl,
+    );
+  }
 }
 
 class WorkersRepository {
   final List<WorkerRow> _workers = [
-    WorkerRow(id: '1', name: '김영수', phone: '010-1234-0001', part: '지게차', site: '서이천', isActive: true),
-    WorkerRow(id: '2', name: '이민호', phone: '010-1234-0002', part: '사무', site: '의왕', isActive: true),
-    WorkerRow(id: '3', name: '최지우', phone: '010-1234-0003', part: '현장', site: '부평', isActive: true),
-    WorkerRow(id: '4', name: '박강성', phone: '010-1234-0004', part: '일용직', site: '남사', isActive: true),
-    WorkerRow(id: '5', name: '정우성', phone: '010-1234-0005', part: '사무', site: '서이천', isActive: true),
-    WorkerRow(id: '6', name: '한지민', phone: '010-1234-0006', part: '현장', site: '의왕', isActive: true),
+    WorkerRow(
+      id: '1', name: '김영수', phone: '010-1234-0001', part: '지게차', site: '서이천', isActive: true,
+      ssn: '850115-1******', gender: '남', address: '경기도 이천시 호법면', email: 'kim@email.com',
+      emergencyContact: '010-9999-0001', employmentStatus: '정규직', joinDate: DateTime(2020, 3, 1),
+      position: '대리', role: '조장', job: '지게차',
+    ),
+    WorkerRow(
+      id: '2', name: '이민호', phone: '010-1234-0002', part: '사무', site: '의왕', isActive: true,
+      ssn: '900520-1******', gender: '남', address: '경기도 의왕시 내손동', email: 'lee@email.com',
+      emergencyContact: '010-9999-0002', employmentStatus: '정규직', joinDate: DateTime(2019, 5, 15),
+      position: '과장', role: '파트장', job: '사무',
+    ),
+    WorkerRow(
+      id: '3', name: '최지우', phone: '010-1234-0003', part: '현장', site: '부평', isActive: true,
+      ssn: '950812-2******', gender: '여', address: '인천시 부평구 부평동', email: 'choi@email.com',
+      emergencyContact: '010-9999-0003', employmentStatus: '계약직', joinDate: DateTime(2023, 1, 10),
+      position: '사원', job: '피커',
+    ),
+    WorkerRow(
+      id: '4', name: '박강성', phone: '010-1234-0004', part: '일용직', site: '남사', isActive: true,
+      ssn: '880303-1******', gender: '남', address: '경기도 용인시 남사면', email: 'park@email.com',
+      emergencyContact: '010-9999-0004', employmentStatus: '일용직', joinDate: DateTime(2024, 6, 1),
+      position: '사원', job: '검수',
+    ),
+    WorkerRow(
+      id: '5', name: '정우성', phone: '010-1234-0005', part: '사무', site: '서이천', isActive: true,
+      ssn: '780725-1******', gender: '남', address: '경기도 이천시 부발읍', email: 'jung@email.com',
+      emergencyContact: '010-9999-0005', employmentStatus: '정규직', joinDate: DateTime(2015, 2, 1),
+      position: '부장', role: '파트장', job: '사무',
+    ),
+    WorkerRow(
+      id: '6', name: '한지민', phone: '010-1234-0006', part: '현장', site: '의왕', isActive: true,
+      ssn: '920410-2******', gender: '여', address: '경기도 의왕시 오전동', email: 'han@email.com',
+      emergencyContact: '010-9999-0006', employmentStatus: '육아휴직', joinDate: DateTime(2021, 8, 1),
+      position: '대리', job: '사무',
+    ),
   ];
 
   Future<List<WorkerRow>> getWorkers() async {
@@ -44,6 +154,16 @@ class WorkersRepository {
         site: old.site,
         isActive: old.isActive,
       );
+    }
+  }
+
+  Future<void> saveWorkerProfile(WorkerRow worker) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final idx = _workers.indexWhere((w) => w.id == worker.id);
+    if (idx != -1) {
+      _workers[idx] = worker;
+    } else {
+      _workers.add(worker);
     }
   }
 

@@ -22,6 +22,33 @@ class WorkerApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        // 웹에서도 모바일 기기처럼 보이게 프레임 추가
+        return Container(
+          color: Colors.grey[300],
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 390, maxHeight: 844),
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(38),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
       home: authState.status == AuthStatus.authenticated
           ? const HomeScreen()
           : const LoginScreen(),

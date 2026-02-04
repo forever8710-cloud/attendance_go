@@ -5,12 +5,10 @@ class SideNavDrawer extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
-    required this.onLogout,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
-  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -28,23 +26,11 @@ class SideNavDrawer extends StatelessWidget {
           ],
         ),
       ),
-      trailing: Expanded(
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: TextButton.icon(
-              onPressed: onLogout,
-              icon: const Icon(Icons.logout, size: 18),
-              label: const Text('로그아웃'),
-            ),
-          ),
-        ),
-      ),
+      trailing: const Expanded(child: SizedBox()),
       unselectedLabelTextStyle: const TextStyle(fontSize: 15, color: Colors.black87),
       selectedLabelTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo),
       destinations: const [
-        NavigationRailDestination(icon: Icon(Icons.dashboard), label: Text('대시보드')),
+        NavigationRailDestination(icon: Icon(Icons.home), label: Text('홈')),
         NavigationRailDestination(icon: Icon(Icons.people), label: Text('근로자 관리')),
         NavigationRailDestination(icon: Icon(Icons.list_alt), label: Text('근태 기록')),
         NavigationRailDestination(icon: Icon(Icons.payments), label: Text('급여 관리')),

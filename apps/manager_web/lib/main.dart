@@ -56,7 +56,6 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
           SideNavDrawer(
             selectedIndex: _selectedIndex,
             onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-            onLogout: () => ref.read(authProvider.notifier).signOut(),
           ),
           const VerticalDivider(width: 1, thickness: 1, color: Colors.black12),
           Expanded(
@@ -75,15 +74,40 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                       const Text('출퇴근GO Admin', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                       const Spacer(),
                       Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Text(authState.worker?.name ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 8),
                       const CircleAvatar(radius: 15, child: Icon(Icons.person, size: 18)),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.logout, size: 20),
+                        tooltip: '로그아웃',
+                        onPressed: () => ref.read(authProvider.notifier).signOut(),
+                      ),
                     ],
                   ),
                 ),
                 // Content
-                Expanded(child: _buildPage()),
+                Expanded(
+                  child: Container(
+                    color: Colors.grey[50],
+                    child: _buildPage(),
+                  ),
+                ),
+                // Footer
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '© since 2026- Taekyungholdings All Rights Reserved.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

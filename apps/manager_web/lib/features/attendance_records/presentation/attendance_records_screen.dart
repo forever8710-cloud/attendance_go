@@ -12,7 +12,7 @@ class AttendanceRecordsScreen extends ConsumerStatefulWidget {
 
 class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScreen> {
   DateTimeRange? _dateRange;
-  String _partFilter = '전체';
+  String _jobFilter = '전체';
   String _statusFilter = '전체';
 
   @override
@@ -58,17 +58,17 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                       if (range != null) setState(() => _dateRange = range);
                     },
                   ),
-                  // Part filter
-                  _buildFilterDropdown('파트', _partFilter, ['전체', '현장', '사무', '지게차', '일용직'],
-                      (v) => setState(() => _partFilter = v!)),
+                  // Job filter
+                  _buildFilterDropdown('직무', _jobFilter, ['전체', '사무', '지게차', '피커', '검수', '지게차 (야간)', '피커 (야간)'],
+                      (v) => setState(() => _jobFilter = v!)),
                   // Status filter
-                  _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '지각', '미출근'],
+                  _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '퇴근', '지각', '조퇴', '미출근'],
                       (v) => setState(() => _statusFilter = v!)),
                   // Reset
                   TextButton(
                     onPressed: () => setState(() {
                       _dateRange = null;
-                      _partFilter = '전체';
+                      _jobFilter = '전체';
                       _statusFilter = '전체';
                     }),
                     child: const Text('초기화'),
@@ -83,7 +83,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
           attendances.when(
             data: (rows) {
               var filtered = rows.where((r) {
-                if (_partFilter != '전체' && r.part != _partFilter) return false;
+                if (_jobFilter != '전체' && r.job != _jobFilter) return false;
                 if (_statusFilter != '전체' && r.status != _statusFilter) return false;
                 return true;
               }).toList();
@@ -120,7 +120,8 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             DataColumn(label: Text('No.')),
                             DataColumn(label: Text('날짜')),
                             DataColumn(label: Text('성명')),
-                            DataColumn(label: Text('파트')),
+                            DataColumn(label: Text('직위')),
+                            DataColumn(label: Text('직무')),
                             DataColumn(label: Text('사업장')),
                             DataColumn(label: Text('출근')),
                             DataColumn(label: Text('퇴근')),
@@ -134,7 +135,8 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                               DataCell(Text('${i + 1}')),
                               DataCell(Text(DateFormat('yyyy-MM-dd').format(DateTime.now()))),
                               DataCell(Text(r.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataCell(Text(r.part)),
+                              DataCell(Text(r.position)),
+                              DataCell(Text(r.job)),
                               DataCell(Text(r.site)),
                               DataCell(Text(r.checkIn)),
                               DataCell(Text(r.checkOut)),
@@ -176,9 +178,11 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
 
   Widget _buildStatusBadge(String status) {
     final color = switch (status) {
-      '지각' => Colors.red,
+      '지각' => Colors.orange,
       '출근' => Colors.green,
-      '미출근' => Colors.grey,
+      '퇴근' => Colors.indigo,
+      '조퇴' => Colors.purple,
+      '미출근' => Colors.red,
       _ => Colors.grey,
     };
     return Container(
