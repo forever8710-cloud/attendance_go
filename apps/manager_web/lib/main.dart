@@ -7,6 +7,8 @@ import 'features/dashboard/presentation/dashboard_screen.dart';
 import 'features/workers/presentation/workers_screen.dart';
 import 'features/attendance_records/presentation/attendance_records_screen.dart';
 import 'features/payroll/presentation/payroll_screen.dart';
+import 'features/settings/presentation/settings_screen.dart';
+import 'features/settings/providers/settings_provider.dart';
 import 'core/widgets/side_nav_drawer.dart';
 
 void main() async {
@@ -21,6 +23,7 @@ class ManagerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final settings = ref.watch(appSettingsProvider);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -29,6 +32,11 @@ class ManagerApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
+      themeMode: settings.themeMode,
       home: authState.status == AuthStatus.authenticated
           ? const ManagerShell()
           : const ManagerLoginScreen(),
@@ -122,6 +130,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       1 => const WorkersScreen(),
       2 => const AttendanceRecordsScreen(),
       3 => const PayrollScreen(),
+      4 => const SettingsScreen(),
       _ => const DashboardScreen(),
     };
   }

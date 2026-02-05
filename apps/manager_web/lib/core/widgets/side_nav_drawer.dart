@@ -34,6 +34,7 @@ class SideNavDrawer extends StatelessWidget {
         NavigationRailDestination(icon: Icon(Icons.people), label: Text('근로자 관리')),
         NavigationRailDestination(icon: Icon(Icons.list_alt), label: Text('근태 기록')),
         NavigationRailDestination(icon: Icon(Icons.payments), label: Text('급여 관리')),
+        NavigationRailDestination(icon: Icon(Icons.settings), label: Text('설정')),
       ],
       selectedIndex: selectedIndex,
       onDestinationSelected: onDestinationSelected,

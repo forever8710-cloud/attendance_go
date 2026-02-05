@@ -443,7 +443,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
 
   Widget _buildDropdown(String label, List<String> items, String? value, ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),

@@ -1,10 +1,27 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(dir:*)"
-    ]
-  },
   "env": {
     "ENABLE_TOOL_SEARCH": "auto:5"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(flutter emulators:*)",
+      "Bash(flutter run:*)",
+      "Bash(taskkill //F //PID 22428)",
+      "Bash(taskkill:*)",
+      "Bash(ping:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nv1.0~1.2: 관리자 웹 UI 대폭 개선\n\n[v1.0] 관리자 웹 UI 수정\n- 좌측 메뉴 \"대시보드\" → \"홈\" 변경\n- 홈 화면에 \"조퇴\" 카드 추가\n- 근로자 관리: HR카드/인사기록카드 입력폼 추가\n  - 상단: 사진, 이름, 주민번호, 성별, 전화번호, 주소, 이메일, 비상연락망\n  - 재직상태, 입사일, 퇴사일, 직위, 직책, 직무, 사업장\n  - 하단: 근로자 리스트 \\(클릭 시 상단 폼에 정보 로드\\)\n\n[v1.1] 홈 화면 필터링\n- 상태 카드 클릭 시 테이블 필터링 \\(출근/퇴근/지각/조퇴/미출근\\)\n- 새로고침/엑셀저장 버튼 제거\n\n[v1.2] 데이터 필드 및 레이아웃\n- 테이블 필드: \"파트\" → \"직무\", \"직위\" 컬럼 추가\n- 직무 옵션: 지게차 \\(야간\\), 피커 \\(야간\\) 추가\n- 로그아웃 버튼: 좌측 사이드바 → 우측 상단 이동\n- 푸터 추가: © since 2026- Taekyungholdings All Rights Reserved.\n\n[기타]\n- worker_app: 웹에서 모바일 기기 프레임 스타일 적용 \\(390x844px\\)\n- workflow_managerUI_CLI: CLI 요청사항 버전별 문서화\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(flutter --version:*)",
+      "Bash(del \"C:\\\\my_project\\\\attendance_go\\\\apps\\\\manager_web\\\\web\\\\flutter_bootstrap.js\")",
+      "Bash(git stash:*)",
+      "Bash(where:*)",
+      "Bash(powershell -Command \"\\(Get-Item ''C:\\\\development\\\\flutter\\\\flutter\\\\bin\\\\cache\\\\artifacts\\\\material_fonts\\\\materialicons-regular.otf''\\).Length\")",
+      "Bash(powershell:*)",
+      "Bash(git commit:*)"
+    ]
   }
 }
