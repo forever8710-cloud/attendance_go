@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/permissions.dart';
 import '../data/auth_repository.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
@@ -9,17 +10,20 @@ class AuthState {
     this.status = AuthStatus.initial,
     this.worker,
     this.errorMessage,
+    this.role = AppRole.worker,
   });
 
   final AuthStatus status;
   final Worker? worker;
   final String? errorMessage;
+  final AppRole role;
 
-  AuthState copyWith({AuthStatus? status, Worker? worker, String? errorMessage}) {
+  AuthState copyWith({AuthStatus? status, Worker? worker, String? errorMessage, AppRole? role}) {
     return AuthState(
       status: status ?? this.status,
       worker: worker ?? this.worker,
       errorMessage: errorMessage,
+      role: role ?? this.role,
     );
   }
 }
@@ -33,14 +37,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
     try {
       final worker = await _repository.signInWithEmail(email, password);
-      if (worker.role != 'manager') {
+      final role = roleFromString(worker.role);
+      if (!canAccessManagerWeb(role)) {
         state = state.copyWith(
           status: AuthStatus.error,
           errorMessage: '관리자 권한이 없습니다',
         );
         return;
       }
-      state = state.copyWith(status: AuthStatus.authenticated, worker: worker);
+      state = state.copyWith(status: AuthStatus.authenticated, worker: worker, role: role);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
@@ -54,15 +59,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  void demoLogin() {
+  void demoLogin(AppRole role) {
+    final roleName = roleDisplayName(role);
     state = AuthState(
       status: AuthStatus.authenticated,
+      role: role,
       worker: Worker(
-        id: 'demo-manager-id',
-        siteId: 'demo-site-id',
-        name: '정우성',
-        phone: '010-1234-0005',
-        role: 'manager',
+        id: 'demo-${roleToString(role)}-id',
+        siteId: role == AppRole.owner ? '' : 'demo-site-id',
+        name: '데모 $roleName',
+        phone: '010-0000-0000',
+        role: roleToString(role),
       ),
     );
   }

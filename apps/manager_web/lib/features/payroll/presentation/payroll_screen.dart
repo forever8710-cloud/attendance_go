@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/permissions.dart';
 import '../data/payroll_repository.dart';
 import '../providers/payroll_provider.dart';
 
 class PayrollScreen extends ConsumerStatefulWidget {
-  const PayrollScreen({super.key});
+  const PayrollScreen({super.key, required this.role});
+
+  final AppRole role;
 
   @override
   ConsumerState<PayrollScreen> createState() => _PayrollScreenState();
@@ -54,7 +57,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                 label: const Text('급여대장 생성'),
               ),
               const Spacer(),
-              if (_payrollData != null) ...[
+              if (_payrollData != null && canEditPayroll(widget.role)) ...[
                 ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(

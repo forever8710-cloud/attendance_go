@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/permissions.dart';
 import '../providers/auth_provider.dart';
 
 class ManagerLoginScreen extends ConsumerStatefulWidget {
@@ -13,6 +14,7 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  AppRole _demoRole = AppRole.systemAdmin;
 
   @override
   void dispose() {
@@ -91,10 +93,38 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                         : const Text('로그인', style: TextStyle(fontSize: 16)),
                   ),
                 ),
+                const SizedBox(height: 20),
+                Divider(color: Colors.grey[300]),
                 const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => ref.read(authProvider.notifier).demoLogin(),
-                  child: const Text('데모 로그인 (테스트용)'),
+                Text('데모 로그인', style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<AppRole>(
+                        initialValue: _demoRole,
+                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                        decoration: const InputDecoration(
+                          labelText: '역할 선택',
+                          labelStyle: TextStyle(fontSize: 12),
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          isDense: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: AppRole.systemAdmin, child: Text('시스템관리자')),
+                          DropdownMenuItem(value: AppRole.owner, child: Text('대표이사')),
+                          DropdownMenuItem(value: AppRole.centerManager, child: Text('센터장')),
+                        ],
+                        onChanged: (v) => setState(() => _demoRole = v ?? AppRole.systemAdmin),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.tonal(
+                      onPressed: () => ref.read(authProvider.notifier).demoLogin(_demoRole),
+                      child: const Text('데모 진입', style: TextStyle(fontSize: 13)),
+                    ),
+                  ],
                 ),
               ],
             ),

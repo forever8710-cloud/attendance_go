@@ -6,6 +6,7 @@ class WorkerRow {
     required this.part,
     required this.site,
     required this.isActive,
+    this.employeeId,
     this.ssn,
     this.gender,
     this.address,
@@ -25,6 +26,7 @@ class WorkerRow {
   bool isActive;
 
   // HR 카드 추가 필드
+  final String? employeeId;    // 사번
   final String? ssn;           // 주민번호
   final String? gender;        // 성별
   final String? address;       // 주소
@@ -46,6 +48,7 @@ class WorkerRow {
     String? part,
     String? site,
     bool? isActive,
+    String? employeeId,
     String? ssn,
     String? gender,
     String? address,
@@ -67,6 +70,7 @@ class WorkerRow {
       part: part ?? this.part,
       site: site ?? this.site,
       isActive: isActive ?? this.isActive,
+      employeeId: employeeId ?? this.employeeId,
       ssn: ssn ?? this.ssn,
       gender: gender ?? this.gender,
       address: address ?? this.address,
@@ -87,37 +91,37 @@ class WorkerRow {
 class WorkersRepository {
   final List<WorkerRow> _workers = [
     WorkerRow(
-      id: '1', name: '김영수', phone: '010-1234-0001', part: '지게차', site: '서이천', isActive: true,
+      id: '1', employeeId: 'EMP-001', name: '김영수', phone: '010-1234-0001', part: '지게차', site: '서이천', isActive: true,
       ssn: '850115-1******', gender: '남', address: '경기도 이천시 호법면', email: 'kim@email.com',
       emergencyContact: '010-9999-0001', employmentStatus: '정규직', joinDate: DateTime(2020, 3, 1),
       position: '대리', role: '조장', job: '지게차',
     ),
     WorkerRow(
-      id: '2', name: '이민호', phone: '010-1234-0002', part: '사무', site: '의왕', isActive: true,
+      id: '2', employeeId: 'EMP-002', name: '이민호', phone: '010-1234-0002', part: '사무', site: '의왕', isActive: true,
       ssn: '900520-1******', gender: '남', address: '경기도 의왕시 내손동', email: 'lee@email.com',
       emergencyContact: '010-9999-0002', employmentStatus: '정규직', joinDate: DateTime(2019, 5, 15),
       position: '과장', role: '파트장', job: '사무',
     ),
     WorkerRow(
-      id: '3', name: '최지우', phone: '010-1234-0003', part: '현장', site: '부평', isActive: true,
+      id: '3', employeeId: 'EMP-003', name: '최지우', phone: '010-1234-0003', part: '현장', site: '부평', isActive: true,
       ssn: '950812-2******', gender: '여', address: '인천시 부평구 부평동', email: 'choi@email.com',
       emergencyContact: '010-9999-0003', employmentStatus: '계약직', joinDate: DateTime(2023, 1, 10),
       position: '사원', job: '피커',
     ),
     WorkerRow(
-      id: '4', name: '박강성', phone: '010-1234-0004', part: '일용직', site: '남사', isActive: true,
+      id: '4', employeeId: 'EMP-004', name: '박강성', phone: '010-1234-0004', part: '일용직', site: '남사', isActive: true,
       ssn: '880303-1******', gender: '남', address: '경기도 용인시 남사면', email: 'park@email.com',
       emergencyContact: '010-9999-0004', employmentStatus: '일용직', joinDate: DateTime(2024, 6, 1),
       position: '사원', job: '검수',
     ),
     WorkerRow(
-      id: '5', name: '정우성', phone: '010-1234-0005', part: '사무', site: '서이천', isActive: true,
+      id: '5', employeeId: 'EMP-005', name: '정우성', phone: '010-1234-0005', part: '사무', site: '서이천', isActive: true,
       ssn: '780725-1******', gender: '남', address: '경기도 이천시 부발읍', email: 'jung@email.com',
       emergencyContact: '010-9999-0005', employmentStatus: '정규직', joinDate: DateTime(2015, 2, 1),
       position: '부장', role: '파트장', job: '사무',
     ),
     WorkerRow(
-      id: '6', name: '한지민', phone: '010-1234-0006', part: '현장', site: '의왕', isActive: true,
+      id: '6', employeeId: 'EMP-006', name: '한지민', phone: '010-1234-0006', part: '현장', site: '의왕', isActive: true,
       ssn: '920410-2******', gender: '여', address: '경기도 의왕시 오전동', email: 'han@email.com',
       emergencyContact: '010-9999-0006', employmentStatus: '육아휴직', joinDate: DateTime(2021, 8, 1),
       position: '대리', job: '사무',

@@ -41,37 +41,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
           const Text('설정', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
 
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                TabBar(
-                  controller: _tabController,
-                  labelColor: Colors.indigo,
-                  unselectedLabelColor: Colors.grey[600],
-                  indicatorColor: Colors.indigo,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.admin_panel_settings, size: 20), text: '관리자 계정'),
-                    Tab(icon: Icon(Icons.display_settings, size: 20), text: '화면 설정'),
-                    Tab(icon: Icon(Icons.notifications, size: 20), text: '알림 설정'),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: Colors.indigo,
+                      unselectedLabelColor: Colors.grey[600],
+                      indicatorColor: Colors.indigo,
+                      tabs: const [
+                        Tab(icon: Icon(Icons.admin_panel_settings, size: 20), text: '관리자 계정'),
+                        Tab(icon: Icon(Icons.display_settings, size: 20), text: '화면 설정'),
+                        Tab(icon: Icon(Icons.notifications, size: 20), text: '알림 설정'),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 520,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildAccountTab(),
+                          _buildDisplayTab(),
+                          _buildNotificationTab(),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(
-                  height: 520,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildAccountTab(),
-                      _buildDisplayTab(),
-                      _buildNotificationTab(),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
