@@ -162,17 +162,20 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
   Widget _buildPage(AppRole role) {
     // 접근 불가 메뉴에 대한 방어
     if (!canAccessMenu(role, _selectedIndex)) {
-      return const DashboardScreen();
+      final userSiteId = ref.read(authProvider).worker?.siteId ?? '';
+      return DashboardScreen(role: role, userSiteId: userSiteId);
     }
 
+    final userSiteId = ref.read(authProvider).worker?.siteId ?? '';
+
     return switch (_selectedIndex) {
-      0 => const DashboardScreen(),
+      0 => DashboardScreen(role: role, userSiteId: userSiteId),
       1 => WorkersScreen(role: role),
       2 => const AttendanceRecordsScreen(),
       3 => PayrollScreen(role: role),
       4 => const SettingsScreen(),
       5 => const AccountsScreen(),
-      _ => const DashboardScreen(),
+      _ => DashboardScreen(role: role, userSiteId: userSiteId),
     };
   }
 }

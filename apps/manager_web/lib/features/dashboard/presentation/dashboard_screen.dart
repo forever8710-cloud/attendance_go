@@ -1,21 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/permissions.dart';
 import '../providers/dashboard_provider.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({
+    super.key,
+    required this.role,
+    required this.userSiteId,
+  });
+
+  final AppRole role;
+  final String userSiteId;
 
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  String _selectedCenter = '전체';
+  String? _selectedCenter;
   String _searchQuery = '';
-  String? _selectedStatus; // 상태 필터 (null = 전체)
+  String? _selectedStatus;
   int? _sortColumnIndex;
   bool _isAscending = true;
+
+  // 센터 목록 (전체, 서이천, 안성, 의왕, 부평)
+  static const _allCenters = ['전체', '서이천', '안성', '의왕', '부평'];
+
+  // siteId → 센터명 매핑 (데모용)
+  String _getSiteName(String siteId) {
+    return switch (siteId) {
+      'site-seoicheon' => '서이천',
+      'site-anseong' => '안성',
+      'site-uiwang' => '의왕',
+      'site-bupyeong' => '부평',
+      'demo-site-id' => '서이천', // 데모 센터장용
+      _ => '서이천',
+    };
+  }
+
+  List<String> get _availableCenters {
+    if (canAccessAllSites(widget.role)) {
+      return _allCenters;
+    } else {
+      // 센터장은 본인 센터만
+      final mySite = _getSiteName(widget.userSiteId);
+      return [mySite];
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 센터장은 자기 센터로 초기화, 그 외는 '전체'
+    if (canAccessAllSites(widget.role)) {
+      _selectedCenter = '전체';
+    } else {
+      _selectedCenter = _getSiteName(widget.userSiteId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +97,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(height: 32),
 
-          // Toolbar (엑셀저장 버튼 제거)
+          // Toolbar
           Row(
             children: [
               _buildCenterDropdown(),
@@ -99,10 +143,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 12),
           attendances.when(
             data: (rows) {
-              var filtered = rows.where((r) =>
-                (r.name.contains(_searchQuery) || r.site.contains(_searchQuery)) &&
-                (_selectedCenter == '전체' || r.site == _selectedCenter),
-              ).toList();
+              var filtered = rows.where((r) {
+                // 센터 필터
+                final centerMatch = _selectedCenter == '전체' || r.site == _selectedCenter;
+                // 검색 필터
+                final searchMatch = r.name.contains(_searchQuery) || r.site.contains(_searchQuery);
+                return centerMatch && searchMatch;
+              }).toList();
 
               // 상태 필터 적용
               if (_selectedStatus != null) {
@@ -129,34 +176,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 filtered.sort((a, b) {
                   int compare;
                   switch (_sortColumnIndex) {
-                    case 0: // No. (인덱스 기준이라 의미 없음)
+                    case 0:
                       compare = 0;
                       break;
-                    case 1: // 사업장
+                    case 1:
                       compare = a.site.compareTo(b.site);
                       break;
-                    case 2: // 성명
+                    case 2:
                       compare = a.name.compareTo(b.name);
                       break;
-                    case 3: // 직위
+                    case 3:
                       compare = a.position.compareTo(b.position);
                       break;
-                    case 4: // 직무
+                    case 4:
                       compare = a.job.compareTo(b.job);
                       break;
-                    case 5: // 출근
+                    case 5:
                       compare = a.checkIn.compareTo(b.checkIn);
                       break;
-                    case 6: // 퇴근
+                    case 6:
                       compare = a.checkOut.compareTo(b.checkOut);
                       break;
-                    case 7: // 근무시간
+                    case 7:
                       compare = a.workHours.compareTo(b.workHours);
                       break;
-                    case 8: // 상태
+                    case 8:
                       compare = a.status.compareTo(b.status);
                       break;
-                    case 9: // 비고
+                    case 9:
                       compare = a.note.compareTo(b.note);
                       break;
                     default:
@@ -243,7 +290,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: () {
         setState(() {
           if (_selectedStatus == filterValue) {
-            _selectedStatus = null; // 같은 카드 다시 클릭하면 필터 해제
+            _selectedStatus = null;
           } else {
             _selectedStatus = filterValue;
           }
@@ -302,6 +349,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildCenterDropdown() {
+    final centers = _availableCenters;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
@@ -312,10 +361,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCenter,
-          items: ['전체', '서이천', '의왕', '부평', '남사']
+          items: centers
               .map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 14))))
               .toList(),
-          onChanged: (v) => setState(() => _selectedCenter = v!),
+          onChanged: centers.length > 1 ? (v) => setState(() => _selectedCenter = v!) : null,
         ),
       ),
     );
