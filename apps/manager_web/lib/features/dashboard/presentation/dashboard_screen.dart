@@ -27,17 +27,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header (새로고침 버튼 제거)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('홈', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(DateTime.now()),
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
+          // Header - 날짜만 크게 표시
+          Text(
+            DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(DateTime.now()),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 24),
 
@@ -131,6 +124,48 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 }).toList();
               }
 
+              // 정렬 적용
+              if (_sortColumnIndex != null) {
+                filtered.sort((a, b) {
+                  int compare;
+                  switch (_sortColumnIndex) {
+                    case 0: // No. (인덱스 기준이라 의미 없음)
+                      compare = 0;
+                      break;
+                    case 1: // 사업장
+                      compare = a.site.compareTo(b.site);
+                      break;
+                    case 2: // 성명
+                      compare = a.name.compareTo(b.name);
+                      break;
+                    case 3: // 직위
+                      compare = a.position.compareTo(b.position);
+                      break;
+                    case 4: // 직무
+                      compare = a.job.compareTo(b.job);
+                      break;
+                    case 5: // 출근
+                      compare = a.checkIn.compareTo(b.checkIn);
+                      break;
+                    case 6: // 퇴근
+                      compare = a.checkOut.compareTo(b.checkOut);
+                      break;
+                    case 7: // 근무시간
+                      compare = a.workHours.compareTo(b.workHours);
+                      break;
+                    case 8: // 상태
+                      compare = a.status.compareTo(b.status);
+                      break;
+                    case 9: // 비고
+                      compare = a.note.compareTo(b.note);
+                      break;
+                    default:
+                      compare = 0;
+                  }
+                  return _isAscending ? compare : -compare;
+                });
+              }
+
               return Align(
                 alignment: Alignment.centerLeft,
                 child: Card(
@@ -147,15 +182,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       columnSpacing: 28,
                       columns: [
                         DataColumn(label: const Text('No.'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
-                        const DataColumn(label: Text('사업장')),
-                        const DataColumn(label: Text('성명')),
-                        const DataColumn(label: Text('직위')),
-                        const DataColumn(label: Text('직무')),
+                        DataColumn(label: const Text('사업장'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
+                        DataColumn(label: const Text('성명'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
+                        DataColumn(label: const Text('직위'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
+                        DataColumn(label: const Text('직무'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
                         DataColumn(label: const Text('출근'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
                         DataColumn(label: const Text('퇴근'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
-                        const DataColumn(label: Text('근무시간')),
-                        const DataColumn(label: Text('상태')),
-                        const DataColumn(label: Text('비고')),
+                        DataColumn(label: const Text('근무시간'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
+                        DataColumn(label: const Text('상태'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
+                        DataColumn(label: const Text('비고'), onSort: (i, asc) => setState(() { _sortColumnIndex = i; _isAscending = asc; })),
                       ],
                       rows: filtered.isEmpty
                           ? [

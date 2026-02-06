@@ -29,7 +29,7 @@ class ManagerApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: '출퇴근GO Admin',
+      title: 'Workflow by TKholdings',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
@@ -90,7 +90,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                   ),
                   child: Row(
                     children: [
-                      const Text('출퇴근GO Admin', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                      const Text('Workflow by TKholdings', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                       const Spacer(),
                       // 역할 배지
                       _buildRoleBadge(role),

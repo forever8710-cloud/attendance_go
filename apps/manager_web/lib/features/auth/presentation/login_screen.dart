@@ -41,12 +41,12 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                 const Icon(Icons.shield, size: 64, color: Colors.indigo),
                 const SizedBox(height: 12),
                 const Text(
-                  '출퇴근GO Admin',
+                  'Workflow',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '관리자 로그인',
+                  'by TKholdings',
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 32),
