@@ -1,9 +1,10 @@
 # TRD (Technical Requirement Document)
 # WorkFlow - 기술 요구사항 명세서
 
-**버전:** 1.0  
-**작성일:** 2026-02-02  
-**작성자:** Engineering Team  
+**버전:** 1.1
+**작성일:** 2026-02-02
+**최종 수정일:** 2026-02-08
+**작성자:** Engineering Team
 **문서 상태:** Draft
 
 ---
@@ -83,16 +84,29 @@
 
 ### 2.2 데이터 플로우
 
-#### 2.2.1 출퇴근 체크인 플로우
+#### 2.2.1 출퇴근 체크인 플로우 (하이브리드 방식)
 ```
+[자동 출근]
+1. 백그라운드 GPS 모니터링 (Geolocator 패키지)
+2. 사업장 GPS 좌표와 거리 계산 (Geofencing)
+3. 거리 검증 (500m 이내 진입?)
+   - 진입 감지: Supabase DB에 출근 기록 저장 (is_auto = true)
+   - 푸시 알림: "출근이 자동 기록되었습니다"
+4. 실시간 업데이트 (Realtime)
+5. 관리자 웹 대시보드 자동 갱신
+
+[수동 출근]
 1. 근로자 앱에서 "출근" 버튼 탭
-2. GPS 위치 수집 (Geolocator 패키지)
-3. 사업장 GPS 좌표와 거리 계산
-4. 거리 검증 (100m 이내?)
-   - 성공: Supabase DB에 출근 기록 저장
+2. GPS 위치 수집 → 사업장 500m 이내 검증
+   - 성공: DB에 출근 기록 저장 (is_auto = false)
    - 실패: 에러 메시지 표시
-5. 실시간 업데이트 (Realtime)
-6. 관리자 웹 대시보드 자동 갱신
+3. 실시간 업데이트 → 관리자 대시보드 갱신
+
+[조퇴]
+1. 근로자 앱에서 "조퇴" 버튼 탭
+2. 조퇴 사유 선택 (병원/개인사유/기타)
+3. DB에 퇴근 기록 업데이트 (check_out_reason = 'early_leave', early_leave_reason)
+4. 실시간 업데이트 → 관리자 대시보드에 조퇴 상태 표시
 ```
 
 #### 2.2.2 급여대장 생성 플로우
@@ -101,7 +115,9 @@
 2. Supabase Edge Function 호출
 3. 해당 월의 출퇴근 기록 조회 (PostgreSQL)
 4. 근로자별 집계:
-   - 총 근무시간 = SUM(퇴근시간 - 출근시간)
+   - 총 근무시간 = SUM(퇴근시간 - 출근시간) - 점심시간 차감
+   - 점심시간 차감 = 사업장별 lunch_duration × 출근일수
+   - 조퇴일은 조퇴 시간 기준으로 계산 (점심 전 조퇴 시 점심 미차감)
    - 파트별 시급 조회
    - 급여 계산 = 시급 × 근무시간
 5. 결과를 JSON으로 반환
@@ -203,8 +219,13 @@
 │ name         │         │ name         │
 │ latitude     │         │ hourly_wage  │
 │ longitude    │         │ daily_wage   │
-│ radius       │         │ created_at   │
-│ created_at   │         └──────────────┘
+│ radius (500) │         │ created_at   │
+│ lunch_start  │         └──────────────┘
+│ lunch_end    │
+│ lunch_duration│
+│ work_start   │
+│ work_end     │
+│ created_at   │
 └──────────────┘                │
        │                        │
        │ 1                   N  │
@@ -231,11 +252,17 @@
 │ check_in_time                    │
 │ check_in_latitude                │
 │ check_in_longitude               │
+│ is_auto_check_in                 │
 │ check_out_time (nullable)        │
 │ check_out_latitude (nullable)    │
 │ check_out_longitude (nullable)   │
+│ is_auto_check_out                │
+│ check_out_reason                 │
+│ early_leave_reason               │
 │ work_hours (calculated)          │
-│ status (present/absent/leave)    │
+│ lunch_deducted                   │
+│ net_work_hours (calculated)      │
+│ status (present/early_leave/...) │
 │ created_at                       │
 └──────────────────────────────────┘
        │
@@ -263,7 +290,17 @@ CREATE TABLE sites (
   name VARCHAR(255) NOT NULL,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
-  radius INTEGER DEFAULT 100, -- 미터 단위
+  radius INTEGER DEFAULT 500, -- 미터 단위 (GPS 자동 감지 반경)
+
+  -- 점심시간 규칙 (방안3: 규칙 기반 자동 차감)
+  lunch_start TIME DEFAULT '12:00:00', -- 점심 시작 시간
+  lunch_end TIME DEFAULT '13:00:00',   -- 점심 종료 시간
+  lunch_duration INTEGER DEFAULT 60,    -- 점심시간 (분), 급여 차감용
+
+  -- 정규근무 시간 (자동 퇴근 감지용)
+  work_start TIME DEFAULT '07:00:00',  -- 정규 출근 시간
+  work_end TIME DEFAULT '17:00:00',    -- 정규 퇴근 시간
+
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -298,6 +335,13 @@ CREATE TABLE workers (
   phone VARCHAR(20) UNIQUE NOT NULL,
   role VARCHAR(20) CHECK (role IN ('worker', 'manager')) DEFAULT 'worker',
   is_active BOOLEAN DEFAULT TRUE,
+
+  -- 법적 동의 상태 (위치정보법 제15조, 개인정보보호법)
+  location_consent BOOLEAN DEFAULT FALSE,         -- 위치정보 수집·이용 동의
+  location_consent_at TIMESTAMP WITH TIME ZONE,   -- 동의 일시
+  privacy_consent BOOLEAN DEFAULT FALSE,           -- 개인정보 수집·이용 동의
+  privacy_consent_at TIMESTAMP WITH TIME ZONE,     -- 동의 일시
+
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -307,31 +351,69 @@ CREATE INDEX idx_workers_site_id ON workers(site_id);
 CREATE INDEX idx_workers_part_id ON workers(part_id);
 CREATE INDEX idx_workers_phone ON workers(phone);
 CREATE INDEX idx_workers_role ON workers(role);
+CREATE INDEX idx_workers_location_consent ON workers(location_consent);
 ```
 
-#### 4.2.4 attendances (출퇴근 기록)
+#### 4.2.4 consent_logs (동의 이력)
+```sql
+-- 법적 동의/철회 이력 추적 (위치정보법 증빙용)
+CREATE TABLE consent_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  worker_id UUID REFERENCES workers(id) ON DELETE CASCADE,
+  consent_type VARCHAR(30) NOT NULL CHECK (consent_type IN (
+    'location',   -- 위치정보 수집·이용 동의
+    'privacy'     -- 개인정보 수집·이용 동의
+  )),
+  action VARCHAR(20) NOT NULL CHECK (action IN ('grant', 'revoke')),
+  ip_address VARCHAR(45),         -- 동의/철회 시 IP
+  device_info TEXT,                -- 동의/철회 시 기기 정보
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 인덱스
+CREATE INDEX idx_consent_logs_worker_id ON consent_logs(worker_id);
+CREATE INDEX idx_consent_logs_type ON consent_logs(consent_type);
+```
+
+#### 4.2.5 attendances (출퇴근 기록)
 ```sql
 CREATE TABLE attendances (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   worker_id UUID REFERENCES workers(id) ON DELETE CASCADE,
-  
+
   -- 출근 정보
   check_in_time TIMESTAMP WITH TIME ZONE NOT NULL,
   check_in_latitude DECIMAL(10, 8) NOT NULL,
   check_in_longitude DECIMAL(11, 8) NOT NULL,
-  
+  is_auto_check_in BOOLEAN DEFAULT FALSE, -- GPS 자동 출근 여부
+
   -- 퇴근 정보 (nullable)
   check_out_time TIMESTAMP WITH TIME ZONE,
   check_out_latitude DECIMAL(10, 8),
   check_out_longitude DECIMAL(11, 8),
-  
+  is_auto_check_out BOOLEAN DEFAULT FALSE, -- GPS 자동 퇴근 여부
+
+  -- 조퇴 정보 (방안3)
+  check_out_reason VARCHAR(30) CHECK (check_out_reason IN (
+    'normal',        -- 정상 퇴근
+    'early_leave'    -- 조퇴
+  )) DEFAULT 'normal',
+  early_leave_reason VARCHAR(50), -- 조퇴 사유 (병원/개인사유/기타)
+
   -- 계산 필드
-  work_hours DECIMAL(5, 2), -- 근무시간 (시간 단위)
-  
+  work_hours DECIMAL(5, 2),       -- 총 근무시간 (시간 단위, 점심 차감 전)
+  lunch_deducted BOOLEAN DEFAULT TRUE, -- 점심시간 차감 여부
+  net_work_hours DECIMAL(5, 2),   -- 순 근무시간 (점심 차감 후, 급여 계산용)
+
   -- 근태 상태
-  status VARCHAR(20) CHECK (status IN ('present', 'absent', 'leave', 'holiday')) 
-    DEFAULT 'present',
-  
+  status VARCHAR(20) CHECK (status IN (
+    'present',       -- 출근 (정상)
+    'early_leave',   -- 조퇴
+    'absent',        -- 결근
+    'leave',         -- 휴가
+    'holiday'        -- 공휴일
+  )) DEFAULT 'present',
+
   -- 메타데이터
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -342,13 +424,14 @@ CREATE TABLE attendances (
 CREATE INDEX idx_attendances_worker_id ON attendances(worker_id);
 CREATE INDEX idx_attendances_check_in_time ON attendances(check_in_time);
 CREATE INDEX idx_attendances_status ON attendances(status);
+CREATE INDEX idx_attendances_check_out_reason ON attendances(check_out_reason);
 
 -- 복합 인덱스 (급여 계산용)
-CREATE INDEX idx_attendances_worker_month 
+CREATE INDEX idx_attendances_worker_month
   ON attendances(worker_id, EXTRACT(YEAR FROM check_in_time), EXTRACT(MONTH FROM check_in_time));
 ```
 
-#### 4.2.5 payrolls (급여대장)
+#### 4.2.6 payrolls (급여대장)
 ```sql
 CREATE TABLE payrolls (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -383,13 +466,40 @@ CREATE INDEX idx_payrolls_is_finalized ON payrolls(is_finalized);
 
 ### 4.3 Database Functions
 
-#### 4.3.1 근무시간 자동 계산 (Trigger)
+#### 4.3.1 근무시간 자동 계산 (Trigger) — 점심시간 차감 포함
 ```sql
 CREATE OR REPLACE FUNCTION calculate_work_hours()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_lunch_duration INTEGER;
+  v_lunch_start TIME;
+  v_lunch_end TIME;
+  v_raw_hours DECIMAL(5, 2);
+  v_checkout_time TIME;
 BEGIN
   IF NEW.check_out_time IS NOT NULL THEN
-    NEW.work_hours := EXTRACT(EPOCH FROM (NEW.check_out_time - NEW.check_in_time)) / 3600.0;
+    -- 총 근무시간 (점심 차감 전)
+    v_raw_hours := EXTRACT(EPOCH FROM (NEW.check_out_time - NEW.check_in_time)) / 3600.0;
+    NEW.work_hours := v_raw_hours;
+
+    -- 사업장의 점심시간 규칙 조회
+    SELECT s.lunch_start, s.lunch_end, s.lunch_duration
+    INTO v_lunch_start, v_lunch_end, v_lunch_duration
+    FROM workers w
+    JOIN sites s ON w.site_id = s.id
+    WHERE w.id = NEW.worker_id;
+
+    -- 점심시간 차감 판정:
+    -- 조퇴 시 점심시간 전에 퇴근했으면 차감하지 않음
+    v_checkout_time := (NEW.check_out_time AT TIME ZONE 'Asia/Seoul')::TIME;
+
+    IF v_checkout_time > v_lunch_end AND v_raw_hours > (v_lunch_duration / 60.0) THEN
+      NEW.lunch_deducted := TRUE;
+      NEW.net_work_hours := v_raw_hours - (v_lunch_duration / 60.0);
+    ELSE
+      NEW.lunch_deducted := FALSE;
+      NEW.net_work_hours := v_raw_hours;
+    END IF;
   END IF;
   RETURN NEW;
 END;
@@ -516,14 +626,48 @@ Request:
 {
   "check_out_time": "2026-02-02T17:00:45+09:00",
   "check_out_latitude": 37.5665,
-  "check_out_longitude": 126.9780
+  "check_out_longitude": 126.9780,
+  "is_auto_check_out": true,
+  "check_out_reason": "normal"
 }
 
 Response:
 {
   "id": "uuid",
   "check_out_time": "2026-02-02T17:00:45+09:00",
-  "work_hours": 10.0
+  "work_hours": 10.0,
+  "lunch_deducted": true,
+  "net_work_hours": 9.0,
+  "check_out_reason": "normal"
+}
+```
+
+#### 5.2.3 조퇴 처리
+```
+PATCH /rest/v1/attendances?id=eq.{attendance_id}
+Headers:
+  Authorization: Bearer {token}
+
+Request:
+{
+  "check_out_time": "2026-02-02T15:00:12+09:00",
+  "check_out_latitude": 37.5665,
+  "check_out_longitude": 126.9780,
+  "check_out_reason": "early_leave",
+  "early_leave_reason": "병원",
+  "status": "early_leave"
+}
+
+Response:
+{
+  "id": "uuid",
+  "check_out_time": "2026-02-02T15:00:12+09:00",
+  "work_hours": 8.0,
+  "lunch_deducted": true,
+  "net_work_hours": 7.0,
+  "check_out_reason": "early_leave",
+  "early_leave_reason": "병원",
+  "status": "early_leave"
 }
 ```
 
@@ -586,12 +730,21 @@ Response:
       "worker_name": "김하역",
       "part_name": "일용직",
       "total_work_hours": 220.5,
+      "total_lunch_deducted_hours": 22.0,
+      "net_work_hours": 198.5,
       "total_work_days": 22,
-      "base_salary": 3042900,
-      "total_salary": 3042900
+      "early_leave_days": 1,
+      "hourly_wage": 13800,
+      "base_salary": 2739300,
+      "total_salary": 2739300
     },
     ...
-  ]
+  ],
+  "site_lunch_rule": {
+    "lunch_start": "12:00",
+    "lunch_end": "13:00",
+    "lunch_duration_minutes": 60
+  }
 }
 ```
 
@@ -688,17 +841,47 @@ USING (
 | 관리자 | 같은 사업장의 모든 데이터 조회/수정, 급여대장 생성 |
 | 시스템 관리자 | 모든 데이터 접근 (Supabase 대시보드) |
 
-### 6.2 데이터 보호
+### 6.2 법적 준수 (위치정보법 + 개인정보보호법)
 
-#### 6.2.1 개인정보 보호
-- 최소한의 개인정보 수집 (이름, 전화번호만)
-- 퇴사 시 개인정보 보관 기간: 3년 (근로기준법)
-- 개인정보 처리방침 준수
+#### 6.2.1 위치정보 수집 동의 체계
+- **위치정보법 제15조** 준수: 개인위치정보 수집 전 개별 동의 필수
+- 동의서 필수 항목: 수집 목적, 수집 항목, 보유 기간, 거부 권리
+- 동의/철회 이력 `consent_logs` 테이블에 기록 (법적 증빙)
+- 동의 거부 시 GPS 자동 감지 비활성화 → 수동 출퇴근 모드로 전환
+- 동의 철회 시 기존 GPS 데이터는 보유 기간까지 유지 후 삭제
 
-#### 6.2.2 GPS 데이터 보호
+#### 6.2.2 개인정보 보호
+- **수집 최소화 원칙**: 출퇴근 시점의 GPS 좌표만 수집 (실시간 추적 없음)
+- 수집 항목: 이름, 전화번호, 주민번호(급여·원천세용), 주소, GPS 좌표
+- 보관 기간: 근로관계 종료 후 3년 (근로기준법)
+- 개인정보 처리방침: 앱 설정 화면 + 웹사이트에서 열람 가능
+- 제3자 제공 금지 (동의 범위 내 사용만 허용)
+
+#### 6.2.3 GPS 데이터 보호
 - GPS 좌표는 출퇴근 검증 목적으로만 사용
 - 실시간 위치 추적 불가 (출퇴근 시점만 기록)
 - 좌표 데이터는 관리자만 조회 가능
+- `is_auto_check_in/out` 필드로 자동/수동 구분 기록
+
+#### 6.2.4 동의 관리 API
+```
+-- 동의 상태 업데이트
+PATCH /rest/v1/workers?id=eq.{worker_id}
+{
+  "location_consent": true,
+  "location_consent_at": "2026-02-08T09:00:00+09:00"
+}
+
+-- 동의 이력 저장
+POST /rest/v1/consent_logs
+{
+  "worker_id": "uuid",
+  "consent_type": "location",
+  "action": "grant",
+  "ip_address": "...",
+  "device_info": "..."
+}
+```
 
 ### 6.3 취약점 대응
 
@@ -833,7 +1016,7 @@ jobs:
 
 | 제약 사항 | 영향 | 완화 방안 |
 |---------|-----|---------|
-| GPS 실내 정확도 | 건물 내 오차 발생 | 지오펜싱 반경 100m로 여유 |
+| GPS 실내 정확도 | 건물 내 오차 발생 | 지오펜싱 반경 500m로 여유 |
 | 네트워크 불안정 | 출퇴근 기록 실패 | 로컬 저장 후 동기화 |
 | Flutter Web 성능 | 초기 로딩 느림 | 코드 스플리팅, 지연 로딩 |
 | iOS 위치 권한 | 항상 허용 필요 | 명확한 권한 요청 UI |
@@ -952,3 +1135,5 @@ GOOGLE_MAPS_API_KEY=AIzaSyC...
 | 버전 | 날짜 | 작성자 | 변경 내용 |
 |-----|-----|-------|---------|
 | 1.0 | 2026-02-02 | Engineering Team | 초안 작성 |
+| 1.1 | 2026-02-08 | Engineering Team | 방안3 적용: GPS 500m, sites 점심시간/근무시간 필드, attendances 조퇴/자동감지 필드, 트리거 점심차감, 조퇴 API |
+| 1.2 | 2026-02-08 | Engineering Team | 법적 준수: workers 동의 필드, consent_logs 테이블, 보안 섹션 법적 요건 보강, 동의 관리 API |

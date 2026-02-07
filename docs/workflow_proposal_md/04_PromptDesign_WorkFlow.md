@@ -1,9 +1,10 @@
 # Prompt Design
 # WorkFlow - AI 기반 개발을 위한 단계별 프롬프트 설계
 
-**버전:** 1.0  
-**작성일:** 2026-02-02  
-**작성자:** Development Team  
+**버전:** 1.1
+**작성일:** 2026-02-02
+**최종 수정일:** 2026-02-08
+**작성자:** Development Team
 **문서 상태:** Draft
 
 ---
@@ -168,7 +169,12 @@ Supabase PostgreSQL 데이터베이스에 WorkFlow의 테이블 스키마를 생
    - name (VARCHAR, NOT NULL)
    - latitude (DECIMAL)
    - longitude (DECIMAL)
-   - radius (INTEGER, default 100)
+   - radius (INTEGER, default 500) -- GPS 자동 감지 반경
+   - lunch_start (TIME, default '12:00') -- 점심 시작
+   - lunch_end (TIME, default '13:00') -- 점심 종료
+   - lunch_duration (INTEGER, default 60) -- 점심시간(분)
+   - work_start (TIME, default '07:00') -- 정규 출근
+   - work_end (TIME, default '17:00') -- 정규 퇴근
    - created_at, updated_at (TIMESTAMP)
 
 2. parts (파트/직급)
@@ -194,10 +200,16 @@ Supabase PostgreSQL 데이터베이스에 WorkFlow의 테이블 스키마를 생
    - worker_id (UUID, FK → workers)
    - check_in_time (TIMESTAMP, NOT NULL)
    - check_in_latitude, check_in_longitude (DECIMAL)
+   - is_auto_check_in (BOOLEAN, default FALSE) -- GPS 자동 출근
    - check_out_time (TIMESTAMP, nullable)
    - check_out_latitude, check_out_longitude (DECIMAL, nullable)
-   - work_hours (DECIMAL, 자동 계산)
-   - status (VARCHAR, CHECK)
+   - is_auto_check_out (BOOLEAN, default FALSE) -- GPS 자동 퇴근
+   - check_out_reason (VARCHAR: 'normal', 'early_leave')
+   - early_leave_reason (VARCHAR, nullable) -- 조퇴 사유
+   - work_hours (DECIMAL, 자동 계산 - 점심 차감 전)
+   - lunch_deducted (BOOLEAN, default TRUE) -- 점심 차감 여부
+   - net_work_hours (DECIMAL, 자동 계산 - 점심 차감 후)
+   - status (VARCHAR, CHECK: 'present', 'early_leave', 'absent', 'leave', 'holiday')
    - notes (TEXT)
    - created_at, updated_at (TIMESTAMP)
 
@@ -217,10 +229,28 @@ Supabase PostgreSQL 데이터베이스에 WorkFlow의 테이블 스키마를 생
 추가 요구사항:
 - 모든 테이블에 적절한 인덱스 생성
 - updated_at 자동 갱신 트리거
-- work_hours 자동 계산 트리거 (attendances)
+- work_hours + net_work_hours 자동 계산 트리거 (attendances)
+  * 점심시간 차감: 사업장의 lunch_duration 조회하여 자동 차감
+  * 조퇴 시 점심시간 전 퇴근이면 점심 미차감
 - Row Level Security (RLS) 정책 설정:
   * workers: 근로자는 자신만, 관리자는 같은 사업장 조회
   * attendances: 근로자는 자신만, 관리자는 같은 사업장 조회
+  * consent_logs: 근로자는 자신만
+
+6. consent_logs (동의 이력) — 위치정보법 증빙용
+   - id (UUID, PK)
+   - worker_id (UUID, FK → workers)
+   - consent_type (VARCHAR: 'location', 'privacy')
+   - action (VARCHAR: 'grant', 'revoke')
+   - ip_address (VARCHAR)
+   - device_info (TEXT)
+   - created_at (TIMESTAMP)
+
+추가: workers 테이블에 동의 필드:
+   - location_consent (BOOLEAN, default FALSE) -- 위치정보 동의
+   - location_consent_at (TIMESTAMP)
+   - privacy_consent (BOOLEAN, default FALSE) -- 개인정보 동의
+   - privacy_consent_at (TIMESTAMP)
 
 SQL 마이그레이션 파일을 순서대로 작성해주세요.
 ```
@@ -258,14 +288,23 @@ packages/core/lib/src/models/ 경로에 다음 모델들을 생성:
 4. attendance_model.dart
    - Attendance 클래스
    - 필드: id, workerId, checkInTime, checkInLatitude, checkInLongitude,
-           checkOutTime?, checkOutLatitude?, checkOutLongitude?,
-           workHours?, status, notes?, createdAt, updatedAt
-   - AttendanceStatus enum (present, absent, leave, holiday)
+           isAutoCheckIn, checkOutTime?, checkOutLatitude?, checkOutLongitude?,
+           isAutoCheckOut, checkOutReason, earlyLeaveReason?,
+           workHours?, lunchDeducted, netWorkHours?,
+           status, notes?, createdAt, updatedAt
+   - AttendanceStatus enum (present, earlyLeave, absent, leave, holiday)
+   - CheckOutReason enum (normal, earlyLeave)
 
 5. payroll_model.dart
    - Payroll 클래스
    - 필드: id, workerId, yearMonth, totalWorkHours, totalWorkDays,
            baseSalary, totalSalary, isFinalized, finalizedAt?, createdAt, updatedAt
+
+6. consent_log_model.dart
+   - ConsentLog 클래스
+   - 필드: id, workerId, consentType, action, ipAddress?, deviceInfo?, createdAt
+   - ConsentType enum (location, privacy)
+   - ConsentAction enum (grant, revoke)
 
 모든 모델에 Freezed 어노테이션 적용:
 - @freezed
@@ -283,6 +322,75 @@ packages/core/lib/core.dart에서 모든 모델 export 하도록 설정해주세
 ---
 
 ## 4. Phase 2: 인증 시스템 구현
+
+### 4.0 Milestone 4.5: 법적 동의 수집 시스템
+
+**프롬프트:**
+```
+근로자 앱의 법적 동의 수집 시스템을 구현해주세요.
+(위치정보법 제15조, 개인정보보호법 준수)
+
+구현 위치: apps/worker_app/lib/features/consent/
+
+요구사항:
+1. 동의 Repository
+   - data/consent_repository.dart
+   - getConsentStatus(String workerId) → Future<ConsentStatus>
+   - grantConsent(String workerId, ConsentType type) → Future<void>
+   - revokeConsent(String workerId, ConsentType type) → Future<void>
+   - 동의/철회 이력 consent_logs에 기록
+
+2. 동의 상태 관리
+   - providers/consent_provider.dart
+   - ConsentStatus (locationConsent, privacyConsent)
+   - 동의 상태에 따라 GPS 자동/수동 모드 결정
+
+3. 동의 화면 UI
+   - presentation/consent_screen.dart
+   - 최초 로그인 후 1회 표시
+   - ① 위치정보 수집·이용 동의 (별도 체크박스)
+     * 수집 목적: 출퇴근 시간 기록, 근태 관리, 급여 계산
+     * 수집 항목: GPS 좌표(위도/경도), 수집 시각
+     * 보유 기간: 근로관계 종료 후 3년
+     * 동의 거부 권리 + 수동 모드 대체 안내
+   - ② 개인정보 수집·이용 동의 (별도 체크박스)
+     * 수집 항목: 이름, 전화번호, 주민번호, 주소
+     * 수집 목적: 급여 지급, 원천세 신고
+   - 동의서 전문 열람 버튼 (전체 약관 텍스트)
+   - "동의하고 시작" 버튼
+   - 위치정보 거부 시: 수동 출퇴근 모드 안내 다이얼로그
+
+4. 동의 철회 (설정 화면)
+   - presentation/consent_settings_widget.dart
+   - 앱 설정에서 동의 현황 확인
+   - 위치정보 동의 철회 버튼
+   - 철회 시 확인 다이얼로그 → GPS 자동 비활성화 안내
+   - 철회 이력 consent_logs에 기록
+
+5. 개인정보 처리방침
+   - presentation/privacy_policy_screen.dart
+   - 전문 텍스트 표시 (스크롤 가능)
+   - 앱 설정에서 접근 가능
+
+UI/UX:
+- 동의 항목별 별도 체크박스 (묶어서 일괄 동의 불가)
+- 동의서 전문은 큰 글씨, 쉬운 표현 (IT 숙련도 낮은 사용자 고려)
+- Material Design 3 카드 스타일
+
+법적 요건:
+- 위치정보법 제15조: 개별적·구체적 동의
+- 개인정보보호법: 수집 최소화, 동의서 고지 의무
+- 동의 이력 보관: consent_logs 테이블
+```
+
+**기대 산출물:**
+- `apps/worker_app/lib/features/consent/data/consent_repository.dart`
+- `apps/worker_app/lib/features/consent/providers/consent_provider.dart`
+- `apps/worker_app/lib/features/consent/presentation/consent_screen.dart`
+- `apps/worker_app/lib/features/consent/presentation/consent_settings_widget.dart`
+- `apps/worker_app/lib/features/consent/presentation/privacy_policy_screen.dart`
+
+---
 
 ### 4.1 Milestone 5: 근로자 SMS 인증
 
@@ -412,6 +520,7 @@ GPS 기반 위치 수집 및 검증 서비스를 구현해주세요.
    - isWithinRadius(LatLng userLocation, LatLng siteLocation, double radius) → bool
    - GPS 정확도 검증 (<50m)
    - 타임아웃 처리 (10초)
+   - 기본 반경: 500m (사업장별 설정 가능)
 
 2. 위치 모델
    - models/lat_lng.dart
@@ -453,14 +562,14 @@ Geolocator 패키지 사용:
 
 **프롬프트:**
 ```
-근로자 앱의 출근 체크인 기능을 구현해주세요.
+근로자 앱의 출근 체크인 기능을 구현해주세요. (하이브리드 방식: GPS 자동 + 수동 버튼)
 
 구현 위치: apps/worker_app/lib/features/attendance/
 
 요구사항:
 1. 출퇴근 Repository
    - data/attendance_repository.dart
-   - checkIn(String workerId, LatLng location) → Future<Attendance>
+   - checkIn(String workerId, LatLng location, {bool isAuto = false}) → Future<Attendance>
    - getTodayAttendance(String workerId) → Future<Attendance?>
    - 중복 체크인 방지
 
@@ -469,20 +578,28 @@ Geolocator 패키지 사용:
    - AttendanceState (idle/checking-in/checked-in/error)
    - 오늘 출근 기록 캐싱
 
-3. 메인 화면 UI
+3. GPS 자동 출근 감지
+   - services/geofencing_service.dart
+   - 백그라운드 GPS 모니터링 (사업장 500m Geofencing)
+   - 사업장 500m 진입 감지 → 자동 출근 기록 (is_auto_check_in = true)
+   - 푸시 알림: "출근이 자동 기록되었습니다"
+   - 이미 출근 기록 있으면 무시
+
+4. 메인 화면 UI
    - presentation/home_screen.dart
    - 상단: 사용자 이름, 사업장명
    - 중앙: 큰 "출근" 버튼 (초록색, 최소 120dp)
+   - 출근 후: "퇴근" 버튼 (파란색) + "조퇴" 버튼 (주황색)
    - 하단: 오늘 출근 정보 (출근 시간 or 미출근)
-   - 로딩 인디케이터
-   - 에러 스낵바
+   - 자동 출근 시 "자동 출근됨" 배지 표시
+   - 로딩 인디케이터 / 에러 스낵바
 
-4. 출근 플로우
+5. 수동 출근 플로우
    - 출근 버튼 탭
    - 위치 권한 확인 → 권한 요청 다이얼로그
    - GPS 위치 수집 → 로딩 표시
-   - 사업장 거리 검증 → 오류 시 다이얼로그
-   - DB 저장 → 성공 피드백 (진동 + 메시지)
+   - 사업장 500m 거리 검증 → 오류 시 다이얼로그
+   - DB 저장 (is_auto_check_in = false) → 성공 피드백 (진동 + 메시지)
    - 출근 완료 상태로 전환
 
 UI/UX:
@@ -494,7 +611,7 @@ UI/UX:
 에러 처리:
 - 위치 권한 거부
 - GPS 오류
-- 사업장 반경 밖
+- 사업장 반경(500m) 밖
 - 중복 체크인
 - 네트워크 오류
 ```
@@ -503,51 +620,70 @@ UI/UX:
 - `apps/worker_app/lib/features/attendance/data/attendance_repository.dart`
 - `apps/worker_app/lib/features/attendance/providers/attendance_provider.dart`
 - `apps/worker_app/lib/features/attendance/presentation/home_screen.dart`
+- `apps/worker_app/lib/features/attendance/services/geofencing_service.dart`
 
 ---
 
-### 5.3 Milestone 9: 퇴근 체크아웃 기능
+### 5.3 Milestone 9: 퇴근 체크아웃 및 조퇴 기능
 
 **프롬프트:**
 ```
-근로자 앱의 퇴근 체크아웃 기능을 구현해주세요.
+근로자 앱의 퇴근 체크아웃 및 조퇴 기능을 구현해주세요. (하이브리드 방식)
 
 구현 위치: apps/worker_app/lib/features/attendance/
 
 요구사항:
 1. Repository 확장
    - data/attendance_repository.dart
-   - checkOut(String attendanceId, LatLng location) → Future<Attendance>
+   - checkOut(String attendanceId, LatLng location, {bool isAuto = false}) → Future<Attendance>
+   - earlyLeave(String attendanceId, LatLng location, String reason) → Future<Attendance>
    - 출근 기록 존재 확인
-   - work_hours 자동 계산 (DB 트리거)
+   - work_hours, net_work_hours 자동 계산 (DB 트리거, 점심 차감)
 
 2. 상태 관리 확장
    - providers/attendance_provider.dart
-   - 퇴근 상태 추가
-   - 근무 시간 실시간 계산
+   - 퇴근/조퇴 상태 추가
+   - 근무 시간 실시간 계산 (점심 차감 반영)
 
-3. UI 업데이트
+3. GPS 자동 퇴근 감지
+   - geofencing_service.dart 확장
+   - 정규 퇴근 시간 이후 + 사업장 500m 이탈 → 자동 퇴근 기록
+   - 점심시간(lunch_start~lunch_end) 이탈은 무시
+   - 푸시 알림: "퇴근이 자동 기록되었습니다"
+
+4. UI 업데이트
    - presentation/home_screen.dart
-   - 출근 완료 후 "퇴근" 버튼 표시 (파란색)
-   - 현재 근무 시간 실시간 표시 (타이머)
+   - 출근 완료 후 "퇴근" 버튼 (파란색) + "조퇴" 버튼 (주황색)
+   - 현재 근무 시간 실시간 표시 (타이머, 점심 차감 반영)
    - 퇴근 완료 다이얼로그
-     * 출근 시간
-     * 퇴근 시간
-     * 총 근무 시간
+     * 출근 시간, 퇴근 시간
+     * 총 근무 시간 (점심 차감 표시)
      * 확인 버튼
 
-4. 퇴근 플로우
+5. 수동 퇴근 플로우
    - 퇴근 버튼 탭
    - 출근 기록 확인 → 없으면 오류
-   - GPS 위치 수집
-   - 사업장 거리 검증 (경고만, 강제 가능)
-   - DB 업데이트
-   - 근무 요약 다이얼로그
-   - 메인 화면 복귀
+   - GPS 위치 수집 → 사업장 500m 검증 (경고만, 강제 가능)
+   - DB 업데이트 (check_out_reason = 'normal')
+   - 근무 요약 다이얼로그 → 메인 화면 복귀
+
+6. 조퇴 플로우
+   - 조퇴 버튼 탭
+   - 조퇴 사유 선택 다이얼로그 (병원/개인사유/기타)
+   - 확인 → GPS 위치 수집
+   - DB 업데이트 (check_out_reason = 'early_leave', status = 'early_leave')
+   - 점심시간 전 조퇴 시 lunch_deducted = false
+   - 근무 요약 다이얼로그 → 메인 화면 복귀
+
+7. 조퇴 사유 선택 위젯
+   - presentation/widgets/early_leave_dialog.dart
+   - 사유 목록: 병원, 개인사유, 기타
+   - 기타 선택 시 자유 입력
+   - 확인/취소 버튼
 
 특별 처리:
 - 위치 오류 시 "강제 퇴근" 옵션 (관리자 승인 필요 플래그)
-- 근무 시간 포맷: "N시간 M분"
+- 근무 시간 포맷: "N시간 M분 (점심 1시간 차감)"
 - 자정 넘어가는 근무 처리
 
 에러 처리:
@@ -557,10 +693,11 @@ UI/UX:
 ```
 
 **기대 산출물:**
-- `apps/worker_app/lib/features/attendance/data/attendance_repository.dart` (확장)
-- `apps/worker_app/lib/features/attendance/providers/attendance_provider.dart` (확장)
-- `apps/worker_app/lib/features/attendance/presentation/home_screen.dart` (수정)
+- `apps/worker_app/lib/features/attendance/data/attendance_repository.dart` (확장: earlyLeave 메서드)
+- `apps/worker_app/lib/features/attendance/providers/attendance_provider.dart` (확장: 조퇴 상태)
+- `apps/worker_app/lib/features/attendance/presentation/home_screen.dart` (수정: 조퇴 버튼)
 - `apps/worker_app/lib/features/attendance/presentation/widgets/checkout_summary_dialog.dart`
+- `apps/worker_app/lib/features/attendance/presentation/widgets/early_leave_dialog.dart` (신규: 조퇴 사유)
 
 ---
 
@@ -844,10 +981,12 @@ UI 컴포넌트:
 2. 계산 로직
    - 해당 월의 모든 출퇴근 기록 조회
    - 근로자별 집계:
-     * 총 근무시간 = SUM(work_hours)
+     * 순 근무시간 = SUM(net_work_hours) -- 점심 차감 후
      * 출근일수 = COUNT(DISTINCT DATE(check_in_time))
+     * 조퇴일수 = COUNT(status = 'early_leave')
+     * 점심 차감 총시간 = COUNT(lunch_deducted = true) × lunch_duration
    - 근로자의 파트 조회 → 시급
-   - 기본급 계산 = 시급 × 총 근무시간 (반올림)
+   - 기본급 계산 = 시급 × 순 근무시간 (반올림)
    - (MVP: 연장/심야/공휴 수당은 0)
 
 3. SQL 쿼리 최적화
@@ -866,11 +1005,14 @@ interface PayrollData {
   workerId: string;
   workerName: string;
   partName: string;
-  totalWorkHours: number;
+  totalWorkHours: number;       // 점심 차감 전
+  totalLunchDeductedHours: number; // 점심 차감 시간
+  netWorkHours: number;         // 점심 차감 후 (급여 계산용)
   totalWorkDays: number;
+  earlyLeaveDays: number;       // 조퇴 일수
   hourlyWage: number;
-  baseSalary: number;
-  totalSalary: number; // MVP에서는 baseSalary와 동일
+  baseSalary: number;           // 시급 × netWorkHours
+  totalSalary: number;          // MVP에서는 baseSalary와 동일
 }
 ```
 
@@ -1200,3 +1342,5 @@ excel 패키지 사용:
 | 버전 | 날짜 | 작성자 | 변경 내용 |
 |-----|-----|-------|---------|
 | 1.0 | 2026-02-02 | Development Team | 초안 작성 |
+| 1.1 | 2026-02-08 | Development Team | 방안3 적용: GPS 500m Geofencing, 조퇴 기능, 점심시간 자동차감, DB스키마/모델/API 마일스톤 업데이트 |
+| 1.2 | 2026-02-08 | Development Team | 법적 준수: Milestone 4.5 동의 수집 시스템, consent_logs 모델, workers 동의 필드, DB 스키마 보강 |
