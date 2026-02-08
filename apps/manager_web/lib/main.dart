@@ -10,7 +10,6 @@ import 'features/attendance_records/presentation/attendance_records_screen.dart'
 import 'features/payroll/presentation/payroll_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
-import 'features/accounts/presentation/accounts_screen.dart';
 import 'core/widgets/side_nav_drawer.dart';
 
 void main() async {
@@ -174,7 +173,6 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       2 => const AttendanceRecordsScreen(),
       3 => PayrollScreen(role: role),
       4 => const SettingsScreen(),
-      5 => const AccountsScreen(),
       _ => DashboardScreen(role: role, userSiteId: userSiteId),
     };
   }

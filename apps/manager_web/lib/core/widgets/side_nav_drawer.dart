@@ -14,13 +14,12 @@ class _MenuDestination {
   final bool isSubMenu;
 }
 
-// 메뉴 순서: 홈, 근로자관리, (하위)근태기록, (하위)급여관리, 계정관리, 설정
+// 메뉴 순서: 홈, 근로자관리, (하위)근태기록, (하위)급여관리, 설정
 const _allDestinations = [
   _MenuDestination(index: 0, icon: Icons.access_time, label: '출퇴근 현황'),
   _MenuDestination(index: 1, icon: Icons.people, label: '근로자 관리'),
   _MenuDestination(index: 2, icon: Icons.list_alt, label: '근태 기록', isSubMenu: true),
   _MenuDestination(index: 3, icon: Icons.payments, label: '급여 관리', isSubMenu: true),
-  _MenuDestination(index: 5, icon: Icons.manage_accounts, label: '계정 관리', isSubMenu: true),
   _MenuDestination(index: 4, icon: Icons.settings, label: '설정'),
 ];
 

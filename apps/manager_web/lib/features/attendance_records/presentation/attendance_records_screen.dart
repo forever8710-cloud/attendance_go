@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/widgets/sticky_data_table.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 
 class AttendanceRecordsScreen extends ConsumerStatefulWidget {
@@ -14,148 +15,164 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
   DateTimeRange? _dateRange;
   String _jobFilter = '전체';
   String _statusFilter = '전체';
+  String _nameQuery = '';
 
   @override
   Widget build(BuildContext context) {
     final attendances = ref.watch(todayAttendancesProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('근태 기록', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 상단 고정 영역 ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('근태 기록', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
 
-          // Filters
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(color: Colors.grey[200]!),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Wrap(
-                spacing: 16,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  // Date range
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.calendar_today, size: 16),
-                    label: Text(
-                      _dateRange != null
-                          ? '${DateFormat('MM/dd').format(_dateRange!.start)} ~ ${DateFormat('MM/dd').format(_dateRange!.end)}'
-                          : '날짜 선택',
-                    ),
-                    onPressed: () async {
-                      final range = await showDateRangePicker(
-                        context: context,
-                        firstDate: DateTime(2024),
-                        lastDate: DateTime.now(),
-                      );
-                      if (range != null) setState(() => _dateRange = range);
-                    },
-                  ),
-                  // Job filter
-                  _buildFilterDropdown('직무', _jobFilter, ['전체', '사무', '지게차', '피커', '검수', '지게차 (야간)', '피커 (야간)'],
-                      (v) => setState(() => _jobFilter = v!)),
-                  // Status filter
-                  _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '퇴근', '지각', '조퇴', '미출근'],
-                      (v) => setState(() => _statusFilter = v!)),
-                  // Reset
-                  TextButton(
-                    onPressed: () => setState(() {
-                      _dateRange = null;
-                      _jobFilter = '전체';
-                      _statusFilter = '전체';
-                    }),
-                    child: const Text('초기화'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Table
-          attendances.when(
-            data: (rows) {
-              var filtered = rows.where((r) {
-                if (_jobFilter != '전체' && r.job != _jobFilter) return false;
-                if (_statusFilter != '전체' && r.status != _statusFilter) return false;
-                return true;
-              }).toList();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              // Filters
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.grey[200]!),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text('총 ${filtered.length}건', style: TextStyle(color: Colors.grey[600])),
-                      const Spacer(),
-                      ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.download, size: 16),
-                        label: const Text('엑셀 내보내기'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.calendar_today, size: 16),
+                        label: Text(
+                          _dateRange != null
+                              ? '${DateFormat('MM/dd').format(_dateRange!.start)} ~ ${DateFormat('MM/dd').format(_dateRange!.end)}'
+                              : '날짜 선택',
+                        ),
+                        onPressed: () async {
+                          final range = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2024),
+                            lastDate: DateTime.now(),
+                          );
+                          if (range != null) setState(() => _dateRange = range);
+                        },
+                      ),
+                      _buildFilterDropdown('직무', _jobFilter, ['전체', '사무', '지게차', '피커', '검수', '지게차(야간)', '피커(야간)'],
+                          (v) => setState(() => _jobFilter = v!)),
+                      _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '퇴근', '지각', '조퇴', '미출근'],
+                          (v) => setState(() => _statusFilter = v!)),
+                      SizedBox(
+                        width: 180,
+                        height: 38,
+                        child: TextField(
+                          onChanged: (v) => setState(() => _nameQuery = v),
+                          decoration: InputDecoration(
+                            hintText: '이름 검색...',
+                            prefixIcon: const Icon(Icons.search, size: 18),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _dateRange = null;
+                          _jobFilter = '전체';
+                          _statusFilter = '전체';
+                          _nameQuery = '';
+                        }),
+                        child: const Text('초기화'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.grey[200]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 28,
-                          columns: const [
-                            DataColumn(label: Text('No.')),
-                            DataColumn(label: Text('날짜')),
-                            DataColumn(label: Text('성명')),
-                            DataColumn(label: Text('직위')),
-                            DataColumn(label: Text('직무')),
-                            DataColumn(label: Text('사업장')),
-                            DataColumn(label: Text('출근')),
-                            DataColumn(label: Text('퇴근')),
-                            DataColumn(label: Text('근무시간')),
-                            DataColumn(label: Text('상태')),
-                          ],
-                          rows: filtered.asMap().entries.map((entry) {
-                            final i = entry.key;
-                            final r = entry.value;
-                            return DataRow(cells: [
-                              DataCell(Text('${i + 1}')),
-                              DataCell(Text(DateFormat('yyyy-MM-dd').format(DateTime.now()))),
-                              DataCell(Text(r.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                              DataCell(Text(r.position)),
-                              DataCell(Text(r.job)),
-                              DataCell(Text(r.site)),
-                              DataCell(Text(r.checkIn)),
-                              DataCell(Text(r.checkOut)),
-                              DataCell(Text(r.workHours)),
-                              DataCell(_buildStatusBadge(r.status)),
-                            ]);
-                          }).toList(),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+
+        // ── 하단: 테이블 (헤더 고정) ──
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
+            child: attendances.when(
+              data: (rows) {
+                var filtered = rows.where((r) {
+                  if (_jobFilter != '전체' && r.job != _jobFilter) return false;
+                  if (_statusFilter != '전체' && r.status != _statusFilter) return false;
+                  if (_nameQuery.isNotEmpty && !r.name.contains(_nameQuery)) return false;
+                  return true;
+                }).toList();
+
+                final columns = [
+                  const TableColumnDef(label: 'No.', width: 55),
+                  const TableColumnDef(label: '날짜', width: 105),
+                  const TableColumnDef(label: '성명', width: 85),
+                  const TableColumnDef(label: '직위', width: 75),
+                  const TableColumnDef(label: '직무', width: 110),
+                  const TableColumnDef(label: '사업장', width: 85),
+                  const TableColumnDef(label: '출근', width: 75),
+                  const TableColumnDef(label: '퇴근', width: 75),
+                  const TableColumnDef(label: '근무시간', width: 90),
+                  const TableColumnDef(label: '상태', width: 80),
+                ];
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text('총 ${filtered.length}건', style: TextStyle(color: Colors.grey[600])),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.download, size: 16),
+                          label: const Text('엑셀 내보내기'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: StickyHeaderTable.wrapWithCard(
+                        columns: columns,
+                        rowCount: filtered.length,
+                        cellBuilder: (colIndex, rowIndex) {
+                          final r = filtered[rowIndex];
+                          return switch (colIndex) {
+                            0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
+                            1 => Text(DateFormat('yyyy-MM-dd').format(DateTime.now()), style: const TextStyle(fontSize: 13)),
+                            2 => Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            3 => Text(r.position, style: const TextStyle(fontSize: 13)),
+                            4 => Text(r.job, style: const TextStyle(fontSize: 13)),
+                            5 => Text(r.site, style: const TextStyle(fontSize: 13)),
+                            6 => Text(r.checkIn, style: const TextStyle(fontSize: 13)),
+                            7 => Text(r.checkOut, style: const TextStyle(fontSize: 13)),
+                            8 => Text(r.workHours, style: const TextStyle(fontSize: 13)),
+                            9 => _buildStatusBadge(r.status),
+                            _ => const SizedBox(),
+                          };
+                        },
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('오류: $e'),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('오류: $e'),
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -185,10 +202,13 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
       '미출근' => Colors.red,
       _ => Colors.grey,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(15)),
-      child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(15)),
+        child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 }

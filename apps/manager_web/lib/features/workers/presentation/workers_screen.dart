@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/utils/company_constants.dart';
+import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/workers_provider.dart';
 import '../data/workers_repository.dart';
 
@@ -26,6 +27,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   final _ssnController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _detailAddressController = TextEditingController();
   final _emailController = TextEditingController();
   final _emergencyController = TextEditingController();
 
@@ -46,6 +48,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     _ssnController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _detailAddressController.dispose();
     _emailController.dispose();
     _emergencyController.dispose();
     super.dispose();
@@ -61,6 +64,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       _ssnController.text = worker.ssn ?? '';
       _phoneController.text = worker.phone;
       _addressController.text = worker.address ?? '';
+      _detailAddressController.text = worker.detailAddress ?? '';
       _emailController.text = worker.email ?? '';
       _emergencyController.text = worker.emergencyContact ?? '';
       _gender = worker.gender;
@@ -84,6 +88,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       _ssnController.clear();
       _phoneController.clear();
       _addressController.clear();
+      _detailAddressController.clear();
       _emailController.clear();
       _emergencyController.clear();
       _gender = null;
@@ -98,12 +103,11 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   }
 
   void _updateAutoEmployeeId() {
-    if (!_isNewWorker) return;
     if (_company != null && _site != null) {
       final repo = ref.read(workersRepositoryProvider);
       final generatedId = repo.generateNextEmployeeId(_company!, _site!);
       _employeeIdController.text = generatedId;
-    } else {
+    } else if (_isNewWorker) {
       _employeeIdController.clear();
     }
   }
@@ -128,6 +132,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       ssn: _ssnController.text.isEmpty ? null : _ssnController.text,
       gender: _gender,
       address: _addressController.text.isEmpty ? null : _addressController.text,
+      detailAddress: _detailAddressController.text.isEmpty ? null : _detailAddressController.text,
       email: _emailController.text.isEmpty ? null : _emailController.text,
       emergencyContact: _emergencyController.text.isEmpty ? null : _emergencyController.text,
       employmentStatus: _employmentStatus,
@@ -154,17 +159,22 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   Widget build(BuildContext context) {
     final workers = ref.watch(workersProvider);
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── 상단: 인사기록카드 ──
-          Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── 상단: 인사기록카드 (최대 45% 높이, 스크롤 가능) ──
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.45,
+            ),
+            child: SingleChildScrollView(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
               side: BorderSide(color: Colors.grey[300]!),
@@ -244,13 +254,10 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         Expanded(
                           child: Column(
                             children: [
-                              // 1행: ID, 소속회사, 사번, 이름, 주민번호, 성별
+                              // 1행: 소속회사, 사번, 이름, 성별
                               Row(
                                 children: [
-                                  SizedBox(width: 70, child: _buildReadonlyField('ID', _selectedWorker?.id ?? '(자동)')),
-                                  const SizedBox(width: 12),
-                                  SizedBox(
-                                    width: 130,
+                                  Expanded(
                                     child: _buildDropdown(
                                       '소속회사',
                                       CompanyConstants.companies.map((c) => c.displayName).toList(),
@@ -268,23 +275,37 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  SizedBox(
-                                    width: 110,
-                                    child: _buildReadonlyField('사번', _employeeIdController.text.isEmpty ? '(자동)' : _employeeIdController.text),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _employeeIdController,
+                                      readOnly: true,
+                                      style: const TextStyle(fontSize: 13),
+                                      decoration: InputDecoration(
+                                        labelText: '사번',
+                                        labelStyle: const TextStyle(fontSize: 12),
+                                        hintText: '(자동)',
+                                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                                        border: const OutlineInputBorder(),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                        isDense: true,
+                                        filled: true,
+                                        fillColor: Colors.grey[100],
+                                      ),
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildTextField('이름 *', _nameController)),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: _buildTextField('주민번호', _ssnController)),
                                   const SizedBox(width: 12),
                                   SizedBox(width: 100, child: _buildDropdown('성별', ['남', '여'], _gender, (v) => setState(() => _gender = v))),
                                 ],
                               ),
                               const SizedBox(height: 12),
 
-                              // 2행: 전화번호, 비상연락망, E-mail
+                              // 2행: 주민번호, 전화번호, 비상연락망, E-mail
                               Row(
                                 children: [
+                                  Expanded(child: _buildTextField('주민번호', _ssnController)),
+                                  const SizedBox(width: 12),
                                   Expanded(child: _buildTextField('전화번호 *', _phoneController)),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildTextField('비상연락망', _emergencyController)),
@@ -294,8 +315,53 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                               ),
                               const SizedBox(height: 12),
 
-                              // 3행: 주소
-                              _buildTextField('주소', _addressController),
+                              // 3행: 주소(자동검색) + 주소찾기 | 나머지주소(수동입력)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _addressController,
+                                            readOnly: true,
+                                            style: const TextStyle(fontSize: 13),
+                                            decoration: InputDecoration(
+                                              labelText: '주소',
+                                              labelStyle: const TextStyle(fontSize: 12),
+                                              hintText: '주소찾기 버튼을 클릭하세요',
+                                              hintStyle: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                                              border: const OutlineInputBorder(),
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                              isDense: true,
+                                              filled: true,
+                                              fillColor: Colors.grey[50],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          height: 40,
+                                          child: OutlinedButton.icon(
+                                            onPressed: () => _showAddressSearchDialog(context),
+                                            icon: const Icon(Icons.search, size: 16),
+                                            label: const Text('주소찾기', style: TextStyle(fontSize: 12)),
+                                            style: OutlinedButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    flex: 2,
+                                    child: _buildTextField('나머지 주소 (동/호수)', _detailAddressController),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 12),
 
                               // 4행: 재직상태, 입사일, 퇴사일
@@ -400,9 +466,14 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
             ),
           ),
 
+                ),
+              ),
+            ),
+          ),
+
           // ── 중간: 구분선 ──
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
                 const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
@@ -430,79 +501,60 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
             ),
           ),
 
-          // ── 하단: 근로자 리스트 ──
-          workers.when(
-            data: (list) {
-              // center_manager: 본인 센터(서이천) 근로자만 표시
-              var baseList = list;
-              if (widget.role == AppRole.centerManager) {
-                baseList = list.where((w) => w.site == '서이천').toList();
-              }
-              final filtered = baseList.where((w) =>
-                w.name.contains(_searchQuery) || w.phone.contains(_searchQuery),
-              ).toList();
+          // ── 하단: 근로자 리스트 (헤더 고정) ──
+          Expanded(
+            child: workers.when(
+              data: (list) {
+                var baseList = list;
+                if (widget.role == AppRole.centerManager) {
+                  baseList = list.where((w) => w.site == '서이천').toList();
+                }
+                final filtered = baseList.where((w) =>
+                  w.name.contains(_searchQuery) || w.phone.contains(_searchQuery),
+                ).toList();
 
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.grey[200]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 28,
-                    showCheckboxColumn: false,
-                    columns: const [
-                      DataColumn(label: Text('No.')),
-                      DataColumn(label: Text('성명')),
-                      DataColumn(label: Text('소속회사')),
-                      DataColumn(label: Text('사번')),
-                      DataColumn(label: Text('전화번호')),
-                      DataColumn(label: Text('직무')),
-                      DataColumn(label: Text('직위')),
-                      DataColumn(label: Text('사업장')),
-                      DataColumn(label: Text('재직상태')),
-                      DataColumn(label: Text('입사일')),
-                    ],
-                    rows: filtered.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final w = entry.value;
-                      final isSelected = _selectedWorker?.id == w.id;
+                final columns = [
+                  const TableColumnDef(label: 'No.', width: 55),
+                  const TableColumnDef(label: '성명', width: 85),
+                  const TableColumnDef(label: '소속회사', width: 100),
+                  const TableColumnDef(label: '사번', width: 95),
+                  const TableColumnDef(label: '전화번호', width: 125),
+                  const TableColumnDef(label: '직무', width: 105),
+                  const TableColumnDef(label: '직위', width: 75),
+                  const TableColumnDef(label: '사업장', width: 85),
+                  const TableColumnDef(label: '재직상태', width: 90),
+                  const TableColumnDef(label: '입사일', width: 105),
+                ];
 
-                      return DataRow(
-                        selected: isSelected,
-                        color: WidgetStateProperty.resolveWith((states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return Colors.indigo.withValues(alpha: 0.1);
-                          }
-                          return null;
-                        }),
-                        onSelectChanged: (_) => _loadWorkerData(w),
-                        cells: [
-                          DataCell(Text('${i + 1}')),
-                          DataCell(Text(w.name, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null))),
-                          DataCell(Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-')),
-                          DataCell(Text(w.employeeId ?? '-')),
-                          DataCell(Text(w.phone)),
-                          DataCell(Text(w.job ?? w.part)),
-                          DataCell(Text(w.position ?? '-')),
-                          DataCell(Text(w.site)),
-                          DataCell(_buildStatusChip(w.employmentStatus ?? (w.isActive ? '재직' : '퇴사'))),
-                          DataCell(Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-')),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('오류: $e'),
+                return StickyHeaderTable.wrapWithCard(
+                  columns: columns,
+                  rowCount: filtered.length,
+                  isRowSelected: (i) => _selectedWorker?.id == filtered[i].id,
+                  onRowTap: (i) => _loadWorkerData(filtered[i]),
+                  cellBuilder: (colIndex, rowIndex) {
+                    final w = filtered[rowIndex];
+                    final isSelected = _selectedWorker?.id == w.id;
+                    return switch (colIndex) {
+                      0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
+                      1 => Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),
+                      2 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
+                      3 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
+                      4 => Text(w.phone, style: const TextStyle(fontSize: 13)),
+                      5 => Text(w.job ?? w.part, style: const TextStyle(fontSize: 13)),
+                      6 => Text(w.position ?? '-', style: const TextStyle(fontSize: 13)),
+                      7 => Text(w.site, style: const TextStyle(fontSize: 13)),
+                      8 => _buildStatusChip(w.employmentStatus ?? (w.isActive ? '재직' : '퇴사')),
+                      9 => Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-', style: const TextStyle(fontSize: 13)),
+                      _ => const SizedBox(),
+                    };
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('오류: $e'),
+            ),
           ),
         ],
-          ),
-        ),
       ),
     );
   }
@@ -595,13 +647,96 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       _ => Colors.grey,
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(15),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
       ),
-      child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  void _showAddressSearchDialog(BuildContext context) {
+    // 데모용 mock 주소 (향후 카카오/네이버 주소 API 연동)
+    const mockAddresses = [
+      '경기도 이천시 호법면 매곡리 123',
+      '경기도 이천시 부발읍 무촌리 456',
+      '경기도 안성시 공도읍 만정리 789',
+      '경기도 의왕시 내손동 234-5',
+      '경기도 의왕시 오전동 567-8',
+      '인천시 부평구 부평동 890-1',
+      '인천시 부평구 산곡동 345-6',
+      '서울시 강남구 역삼동 123-4',
+      '서울시 송파구 잠실동 567-8',
+      '경기도 용인시 수지구 죽전동 901-2',
+    ];
+    String query = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final results = query.isEmpty
+                ? mockAddresses
+                : mockAddresses.where((a) => a.contains(query)).toList();
+
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.location_on, color: Colors.indigo),
+                  SizedBox(width: 8),
+                  Text('주소 검색'),
+                ],
+              ),
+              content: SizedBox(
+                width: 480,
+                height: 400,
+                child: Column(
+                  children: [
+                    TextField(
+                      autofocus: true,
+                      onChanged: (v) => setDialogState(() => query = v),
+                      decoration: InputDecoration(
+                        hintText: '도로명, 지번, 건물명 검색',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: results.isEmpty
+                          ? Center(child: Text('검색 결과가 없습니다.', style: TextStyle(color: Colors.grey[500])))
+                          : ListView.separated(
+                              itemCount: results.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (context, i) {
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.location_on_outlined, size: 20, color: Colors.indigo),
+                                  title: Text(results[i], style: const TextStyle(fontSize: 13)),
+                                  onTap: () {
+                                    _addressController.text = results[i];
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('닫기')),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

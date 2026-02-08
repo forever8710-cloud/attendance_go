@@ -14,6 +14,7 @@ class WorkerRow {
     this.ssn,
     this.gender,
     this.address,
+    this.detailAddress,
     this.email,
     this.emergencyContact,
     this.resumeFile,
@@ -36,7 +37,8 @@ class WorkerRow {
   final String? employeeId;    // 사번
   final String? ssn;           // 주민번호
   final String? gender;        // 성별
-  final String? address;       // 주소
+  final String? address;       // 주소 (자동검색)
+  final String? detailAddress; // 나머지 주소 (동/호수 등)
   final String? email;         // 이메일
   final String? emergencyContact; // 비상연락망
   final String? resumeFile;    // 이력서 첨부
@@ -60,6 +62,7 @@ class WorkerRow {
     String? ssn,
     String? gender,
     String? address,
+    String? detailAddress,
     String? email,
     String? emergencyContact,
     String? resumeFile,
@@ -83,6 +86,7 @@ class WorkerRow {
       ssn: ssn ?? this.ssn,
       gender: gender ?? this.gender,
       address: address ?? this.address,
+      detailAddress: detailAddress ?? this.detailAddress,
       email: email ?? this.email,
       emergencyContact: emergencyContact ?? this.emergencyContact,
       resumeFile: resumeFile ?? this.resumeFile,
