@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
+import '../../../core/utils/company_constants.dart';
 import '../providers/workers_provider.dart';
 import '../data/workers_repository.dart';
 
@@ -28,6 +29,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   final _emailController = TextEditingController();
   final _emergencyController = TextEditingController();
 
+  String? _company;
   String? _gender;
   String? _employmentStatus;
   String? _position;
@@ -53,6 +55,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     setState(() {
       _selectedWorker = worker;
       _isNewWorker = false;
+      _company = worker.company;
       _employeeIdController.text = worker.employeeId ?? '';
       _nameController.text = worker.name;
       _ssnController.text = worker.ssn ?? '';
@@ -75,6 +78,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     setState(() {
       _selectedWorker = null;
       _isNewWorker = true;
+      _company = null;
       _employeeIdController.clear();
       _nameController.clear();
       _ssnController.clear();
@@ -93,6 +97,17 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     });
   }
 
+  void _updateAutoEmployeeId() {
+    if (!_isNewWorker) return;
+    if (_company != null && _site != null) {
+      final repo = ref.read(workersRepositoryProvider);
+      final generatedId = repo.generateNextEmployeeId(_company!, _site!);
+      _employeeIdController.text = generatedId;
+    } else {
+      _employeeIdController.clear();
+    }
+  }
+
   Future<void> _saveWorker() async {
     if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +118,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
 
     final worker = WorkerRow(
       id: _selectedWorker?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      company: _company,
       employeeId: _employeeIdController.text.isEmpty ? null : _employeeIdController.text,
       name: _nameController.text,
       phone: _phoneController.text,
@@ -228,18 +244,40 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         Expanded(
                           child: Column(
                             children: [
-                              // 1행: ID, 사번, 이름, 주민번호, 성별
+                              // 1행: ID, 소속회사, 사번, 이름, 주민번호, 성별
                               Row(
                                 children: [
-                                  SizedBox(width: 80, child: _buildReadonlyField('ID', _selectedWorker?.id ?? '(자동)')),
+                                  SizedBox(width: 70, child: _buildReadonlyField('ID', _selectedWorker?.id ?? '(자동)')),
                                   const SizedBox(width: 12),
-                                  Expanded(child: _buildTextField('사번', _employeeIdController)),
+                                  SizedBox(
+                                    width: 130,
+                                    child: _buildDropdown(
+                                      '소속회사',
+                                      CompanyConstants.companies.map((c) => c.displayName).toList(),
+                                      _company != null ? CompanyConstants.companies.firstWhere((c) => c.code == _company).displayName : null,
+                                      (v) {
+                                        setState(() {
+                                          if (v != null) {
+                                            _company = CompanyConstants.companies.firstWhere((c) => c.displayName == v).code;
+                                          } else {
+                                            _company = null;
+                                          }
+                                          _updateAutoEmployeeId();
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 110,
+                                    child: _buildReadonlyField('사번', _employeeIdController.text.isEmpty ? '(자동)' : _employeeIdController.text),
+                                  ),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildTextField('이름 *', _nameController)),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildTextField('주민번호', _ssnController)),
                                   const SizedBox(width: 12),
-                                  SizedBox(width: 80, child: _buildDropdown('성별', ['남', '여'], _gender, (v) => setState(() => _gender = v))),
+                                  SizedBox(width: 100, child: _buildDropdown('성별', ['남', '여'], _gender, (v) => setState(() => _gender = v))),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -279,9 +317,19 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildDropdown('직책', ['', '조장', '파트장'], _role, (v) => setState(() => _role = v))),
                                   const SizedBox(width: 12),
-                                  Expanded(child: _buildDropdown('직무', ['사무', '지게차', '피커', '검수'], _job, (v) => setState(() => _job = v))),
+                                  Expanded(child: _buildDropdown('직무', CompanyConstants.parts, _job, (v) => setState(() => _job = v))),
                                   const SizedBox(width: 12),
-                                  Expanded(child: _buildDropdown('사업장', ['서이천', '의왕', '부평', '남사'], _site, (v) => setState(() => _site = v))),
+                                  Expanded(child: _buildDropdown(
+                                    '사업장',
+                                    CompanyConstants.centerNames,
+                                    _site,
+                                    (v) {
+                                      setState(() {
+                                        _site = v;
+                                        _updateAutoEmployeeId();
+                                      });
+                                    },
+                                  )),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -408,6 +456,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                     columns: const [
                       DataColumn(label: Text('No.')),
                       DataColumn(label: Text('성명')),
+                      DataColumn(label: Text('소속회사')),
                       DataColumn(label: Text('사번')),
                       DataColumn(label: Text('전화번호')),
                       DataColumn(label: Text('직무')),
@@ -433,6 +482,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         cells: [
                           DataCell(Text('${i + 1}')),
                           DataCell(Text(w.name, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null))),
+                          DataCell(Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-')),
                           DataCell(Text(w.employeeId ?? '-')),
                           DataCell(Text(w.phone)),
                           DataCell(Text(w.job ?? w.part)),

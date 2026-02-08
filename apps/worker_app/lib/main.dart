@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
+import 'features/auth/presentation/phone_verification_screen.dart';
+import 'features/auth/presentation/profile_completion_screen.dart';
 import 'features/attendance/presentation/home_screen.dart';
 
 void main() {
@@ -49,9 +51,20 @@ class WorkerApp extends ConsumerWidget {
           ),
         );
       },
-      home: authState.status == AuthStatus.authenticated
-          ? const HomeScreen()
-          : const LoginScreen(),
+      home: _buildHome(authState),
     );
+  }
+
+  Widget _buildHome(AuthState authState) {
+    switch (authState.status) {
+      case AuthStatus.authenticated:
+        return const HomeScreen();
+      case AuthStatus.needsPhoneVerification:
+        return const PhoneVerificationScreen();
+      case AuthStatus.needsProfileCompletion:
+        return const ProfileCompletionScreen();
+      default:
+        return const LoginScreen();
+    }
   }
 }

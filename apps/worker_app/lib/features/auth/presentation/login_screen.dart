@@ -11,20 +11,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phoneController = TextEditingController();
-  final _otpController = TextEditingController();
-  bool _otpSent = false;
-
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    _otpController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
       body: Center(
@@ -45,34 +35,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 48),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: '전화번호',
-                  hintText: '01012345678',
-                  prefixText: '+82 ',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
-                ),
-              ),
-              if (_otpSent) ...[
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: '인증번호 (6자리)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+
+              // 카카오 로그인 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: isLoading ? null : () => ref.read(authProvider.notifier).loginWithKakao(),
+                  icon: const Icon(Icons.chat_bubble, size: 20),
+                  label: const Text('카카오로 시작하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFEE500),
+                    foregroundColor: const Color(0xFF191919),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ],
+              ),
+              const SizedBox(height: 12),
+
+              // 구글 로그인 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: isLoading ? null : () => ref.read(authProvider.notifier).loginWithGoogle(),
+                  icon: const Icon(Icons.g_mobiledata, size: 28),
+                  label: const Text('Google로 시작하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    side: const BorderSide(color: Colors.grey),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // SMS 인증 링크
+              TextButton(
+                onPressed: isLoading ? null : () => _showSmsBottomSheet(context),
+                child: Text(
+                  'SMS 인증으로 로그인',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600], decoration: TextDecoration.underline),
+                ),
+              ),
+
               if (authState.errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -80,42 +87,117 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ],
+
+              if (isLoading) ...[
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+              ],
+
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton(
-                  onPressed: authState.status == AuthStatus.loading
-                      ? null
-                      : () {
-                          if (!_otpSent) {
-                            ref.read(authProvider.notifier).sendOtp(_phoneController.text);
-                            setState(() => _otpSent = true);
-                          } else {
-                            ref.read(authProvider.notifier).verifyOtp(
-                                  _phoneController.text,
-                                  _otpController.text,
-                                );
-                          }
-                        },
-                  child: authState.status == AuthStatus.loading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(_otpSent ? '인증 확인' : 'SMS 인증번호 받기', style: const TextStyle(fontSize: 16)),
-                ),
-              ),
-              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
               TextButton(
-                onPressed: () => ref.read(authProvider.notifier).demoLogin(),
+                onPressed: isLoading ? null : () => ref.read(authProvider.notifier).demoLogin(),
                 child: const Text('데모 로그인 (테스트용)'),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showSmsBottomSheet(BuildContext context) {
+    final phoneController = TextEditingController();
+    final otpController = TextEditingController();
+    bool otpSent = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('SMS 인증', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('등록된 전화번호로 인증번호를 받으세요.', style: TextStyle(color: Colors.grey[600])),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: '전화번호',
+                      hintText: '01012345678',
+                      prefixText: '+82 ',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                    ),
+                  ),
+                  if (otpSent) ...[
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: otpController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(6),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: '인증번호 (6자리)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: () {
+                        if (!otpSent) {
+                          ref.read(authProvider.notifier).sendOtp(phoneController.text);
+                          setSheetState(() => otpSent = true);
+                        } else {
+                          ref.read(authProvider.notifier).verifyOtp(
+                            phoneController.text,
+                            otpController.text,
+                          );
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: Text(otpSent ? '인증 확인' : 'SMS 인증번호 받기', style: const TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
