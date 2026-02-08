@@ -1,7 +1,7 @@
 # Prompt Design
 # WorkFlow - AI 기반 개발을 위한 단계별 프롬프트 설계
 
-**버전:** 1.1
+**버전:** 1.4
 **작성일:** 2026-02-02
 **최종 수정일:** 2026-02-08
 **작성자:** Development Team
@@ -146,6 +146,12 @@ Supabase를 WorkFlow 프로젝트에 연동하는 초기 설정을 구현해주�
 4. packages/supabase_client/lib/supabase_client.dart
    - export 파일
 
+5. supabase/functions/address-search/index.ts (Edge Function)
+   - 행정안전부 도로명주소 API Proxy (juso.go.kr)
+   - 입력: keyword (검색어)
+   - 출력: 도로명주소 검색 결과 리스트
+   - API 키를 서버 측에서 관리 (클라이언트 노출 방지)
+
 Riverpod Provider로 SupabaseService를 제공하도록 구현해주세요.
 ```
 
@@ -164,11 +170,11 @@ Riverpod Provider로 SupabaseService를 제공하도록 구현해주세요.
 Supabase PostgreSQL 데이터베이스에 WorkFlow의 테이블 스키마를 생성하는 SQL 마이그레이션 파일을 작성해주세요.
 
 필요한 테이블:
-1. sites (사업장)
+1. sites (사업장/센터)
    - id (UUID, PK)
-   - name (VARCHAR, NOT NULL)
-   - latitude (DECIMAL)
-   - longitude (DECIMAL)
+   - name (VARCHAR, NOT NULL) -- 서이천, 안성, 의왕, 부평
+   - site_code (VARCHAR(2), UNIQUE) -- IC, AS, UW, BP
+   - latitude, longitude (DECIMAL)
    - radius (INTEGER, default 500) -- GPS 자동 감지 반경
    - lunch_start (TIME, default '12:00') -- 점심 시작
    - lunch_end (TIME, default '13:00') -- 점심 종료
@@ -176,26 +182,54 @@ Supabase PostgreSQL 데이터베이스에 WorkFlow의 테이블 스키마를 생
    - work_start (TIME, default '07:00') -- 정규 출근
    - work_end (TIME, default '17:00') -- 정규 퇴근
    - created_at, updated_at (TIMESTAMP)
+   - 초기 데이터: 서이천(IC), 안성(AS), 의왕(UW), 부평(BP)
 
-2. parts (파트/직급)
+2. companies (소속 회사)
+   - id (UUID, PK)
+   - name (VARCHAR, NOT NULL) -- 보트랜스, 태경홀딩스
+   - company_code (VARCHAR(2), UNIQUE) -- BT, TK
+   - company_type (VARCHAR: 'prime', 'sub') -- 원청/하청
+   - created_at, updated_at (TIMESTAMP)
+   - 초기 데이터: 보트랜스(BT, prime), 태경홀딩스(TK, sub)
+
+3. parts (파트)
    - id (UUID, PK)
    - name (VARCHAR, UNIQUE, NOT NULL)
    - hourly_wage (INTEGER, NOT NULL)
    - daily_wage (INTEGER, nullable)
+   - is_night_shift (BOOLEAN, default FALSE) -- 야간 근무 여부
    - description (TEXT)
    - created_at, updated_at (TIMESTAMP)
+   - 초기 데이터: 지게차, 지게차(야간), 피커, 피커(야간), 검수, 사무
 
-3. workers (근로자)
+4. workers (근로자)
    - id (UUID, PK)
+   - employee_id (VARCHAR(10), UNIQUE) -- 사번 자동생성 (BT-IC001)
    - site_id (UUID, FK → sites)
+   - company_id (UUID, FK → companies) -- 소속 회사
    - part_id (UUID, FK → parts)
    - name (VARCHAR, NOT NULL)
    - phone (VARCHAR, UNIQUE, NOT NULL)
    - role (VARCHAR, CHECK: 'worker' or 'manager')
    - is_active (BOOLEAN, default TRUE)
+   - auth_provider (VARCHAR: 'kakao', 'google', 'sms') -- SNS 인증 방식
+   - auth_provider_id (VARCHAR) -- SNS 고유 ID
+   - email (VARCHAR) -- SNS 이메일
+   - profile_image_url (TEXT) -- SNS 프로필 이미지
+   - resident_number (VARCHAR) -- 주민등록번호/외국인등록번호 (암호화)
+   - address (TEXT) -- 도로명주소 (API 자동검색)
+   - address_detail (VARCHAR) -- 상세주소
+   - bank_name (VARCHAR) -- 은행명
+   - bank_account (VARCHAR) -- 계좌번호
+   - is_profile_complete (BOOLEAN, default FALSE) -- 추가정보 완료
    - created_at, updated_at (TIMESTAMP)
 
-4. attendances (출퇴근 기록)
+   추가: 사번 자동생성 트리거
+   - [회사코드]-[센터코드][순번3자리] 규칙
+   - INSERT 시 company_code + site_code + 순번 조합으로 자동 생성
+   - 예: BT-IC001, TK-AS002, BT-BP003
+
+5. attendances (출퇴근 기록)
    - id (UUID, PK)
    - worker_id (UUID, FK → workers)
    - check_in_time (TIMESTAMP, NOT NULL)
@@ -273,8 +307,13 @@ packages/core/lib/src/models/ 경로에 다음 모델들을 생성:
 
 1. site_model.dart
    - Site 클래스
-   - 필드: id, name, latitude, longitude, radius, createdAt, updatedAt
+   - 필드: id, name, siteCode, latitude, longitude, radius, createdAt, updatedAt
    - fromJson, toJson 메서드
+
+1.5. company_model.dart
+   - Company 클래스
+   - 필드: id, name, companyCode, companyType, createdAt, updatedAt
+   - CompanyType enum (prime, sub)
 
 2. part_model.dart
    - Part 클래스
@@ -282,8 +321,14 @@ packages/core/lib/src/models/ 경로에 다음 모델들을 생성:
 
 3. worker_model.dart
    - Worker 클래스
-   - 필드: id, siteId, partId, name, phone, role, isActive, createdAt, updatedAt
+   - 필드: id, employeeId, siteId, companyId, partId, name, phone,
+           role, isActive,
+           authProvider, authProviderId, email, profileImageUrl,
+           residentNumber, address, addressDetail,
+           bankName, bankAccount, isProfileComplete,
+           createdAt, updatedAt
    - WorkerRole enum (worker, manager)
+   - AuthProvider enum (kakao, google, sms)
 
 4. attendance_model.dart
    - Attendance 클래스
@@ -392,56 +437,94 @@ UI/UX:
 
 ---
 
-### 4.1 Milestone 5: 근로자 SMS 인증
+### 4.1 Milestone 5: 근로자 SNS 인증 (카카오/구글/SMS)
 
 **프롬프트:**
 ```
-근로자용 전화번호 기반 SMS 인증 시스템을 구현해주세요.
+근로자용 SNS 기반 인증 시스템을 구현해주세요.
+카카오 로그인(Primary), 구글 로그인(외국인), SMS OTP(Fallback) 3가지 방식을 지원합니다.
 
 구현 위치: apps/worker_app/
 
 요구사항:
 1. 인증 Repository 구현
    - lib/features/auth/data/auth_repository.dart
+   - signInWithKakao() → Future<AuthResult>
+     * kakao_flutter_sdk 사용
+     * 카카오 비즈앱: 전화번호 자동 수집 (동의 시)
+     * 수집 정보: kakaoId, nickname, profileImage, email, phone
+   - signInWithGoogle() → Future<AuthResult>
+     * google_sign_in 패키지 사용
+     * 수집 정보: googleId, name, email, profileImage
+     * 전화번호 미제공 → 추가 SMS 인증 필요
    - sendOtp(String phone) → Future<void>
-   - verifyOtp(String phone, String token) → Future<Worker>
+   - verifyOtp(String phone, String token) → Future<bool>
+   - matchWorkerByPhone(String phone) → Future<Worker?>
+     * workers 테이블에서 전화번호 매칭
    - signOut() → Future<void>
    - currentUser → Stream<Worker?>
 
 2. 인증 상태 관리
    - lib/features/auth/providers/auth_provider.dart
    - Riverpod StateNotifier 사용
-   - AuthState (초기/로딩/인증됨/오류)
+   - AuthState (초기/로딩/SNS인증완료/전화번호인증필요/매칭완료/오류)
 
-3. 로그인 화면 UI
+3. 로그인 방식 선택 화면
    - lib/features/auth/presentation/login_screen.dart
-   - 전화번호 입력 (한국 국가코드 +82 고정)
-   - SMS 인증번호 입력
-   - 유효성 검증 (전화번호 형식)
-   - 로딩 인디케이터
-   - 에러 메시지 표시
+   - 카카오 로그인 버튼 (노란색, 최상단 — Primary)
+   - 구글 로그인 버튼 (흰색 테두리)
+   - SMS 인증 텍스트 링크 (하단, Fallback)
+   - 앱 로고 및 서비스 소개
 
-4. 메인 앱 진입점 수정
+4. 전화번호 인증 화면 (구글 로그인 후)
+   - lib/features/auth/presentation/phone_verify_screen.dart
+   - 전화번호 입력 (한국 국가코드 +82 고정)
+   - SMS 인증번호 발송/입력
+   - 인증 완료 후 workers 매칭
+
+5. 추가정보 입력 화면 (최초 로그인 시)
+   - lib/features/auth/presentation/profile_form_screen.dart
+   - 주민등록번호 or 외국인등록번호 입력 (마스킹)
+   - 주소 검색 — 행정안전부 도로명주소 API 연동 (juso.go.kr)
+     * 텍스트 입력 시 실시간 자동완성
+     * 선택 후 자동 채움
+   - 상세주소 수동 입력
+   - 계좌정보 (은행 선택 드롭다운 + 계좌번호)
+   - "저장" 버튼 → is_profile_complete = true
+
+6. 주소 검색 위젯
+   - lib/features/auth/presentation/widgets/address_search_widget.dart
+   - 행정안전부 도로명주소 API 호출 (Proxy Edge Function)
+   - 검색어 입력 → debounce 300ms → API 호출
+   - 결과 리스트 표시 → 선택 시 자동 채움
+   - 도로명주소 + 지번주소 + 우편번호 표시
+
+7. 메인 앱 진입점 수정
    - lib/main.dart
-   - 인증 상태에 따라 로그인 or 메인 화면 표시
+   - 인증 상태에 따라: 로그인 → 추가정보 → 동의 → 메인 화면
    - ProviderScope 설정
 
 Material Design 3 스타일 적용:
 - 큰 버튼 (최소 48dp 높이)
-- 명확한 색상 (Primary, Error)
+- 카카오 브랜드 색상 (#FEE500)
+- 구글 브랜드 가이드라인 준수
 - TextField 아웃라인 스타일
 
 에러 처리:
+- SNS 로그인 실패/취소
+- 전화번호 매칭 실패 (미등록 근로자)
+- SMS OTP 오류
+- 주소 API 호출 실패
 - 네트워크 오류
-- 잘못된 인증번호
-- 타임아웃
-- 미등록 사용자
 ```
 
 **기대 산출물:**
 - `apps/worker_app/lib/features/auth/data/auth_repository.dart`
 - `apps/worker_app/lib/features/auth/providers/auth_provider.dart`
 - `apps/worker_app/lib/features/auth/presentation/login_screen.dart`
+- `apps/worker_app/lib/features/auth/presentation/phone_verify_screen.dart`
+- `apps/worker_app/lib/features/auth/presentation/profile_form_screen.dart`
+- `apps/worker_app/lib/features/auth/presentation/widgets/address_search_widget.dart`
 - `apps/worker_app/lib/main.dart` (수정)
 
 ---
@@ -845,8 +928,10 @@ UI 컴포넌트:
 
 2. DTO 모델
    - packages/core/lib/src/models/worker_dto.dart
-   - WorkerCreateDto (name, phone, partId, siteId)
-   - WorkerUpdateDto (name?, partId?)
+   - WorkerCreateDto (name, phone, companyId, siteId, partId)
+     * employee_id는 서버에서 자동생성 (트리거)
+   - WorkerUpdateDto (name?, companyId?, siteId?, partId?)
+     * 소속/센터 변경 시 사번은 유지 (변경 안 함)
 
 3. 상태 관리
    - providers/workers_provider.dart
@@ -855,18 +940,21 @@ UI 컴포넌트:
 
 4. 근로자 관리 화면
    - presentation/workers_screen.dart
-   - 상단: 검색바, "근로자 등록" 버튼
+   - 상단: 검색바, 필터 드롭다운, "근로자 등록" 버튼
    - 중앙: 근로자 목록 테이블
-     * 이름, 전화번호, 파트, 상태 (재직/퇴사)
+     * 사번, 이름, 전화번호, 소속회사, 센터, 파트, 상태 (재직/퇴사)
      * 액션: 수정, 삭제 버튼
-   - 검색: 이름, 전화번호
-   - 필터: 파트별, 재직/퇴사
+   - 검색: 사번, 이름, 전화번호
+   - 필터: 소속회사별(BT/TK), 센터별(IC/AS/UW/BP), 파트별, 재직/퇴사
 
 5. 근로자 등록/수정 다이얼로그
    - presentation/widgets/worker_form_dialog.dart
-   - 이름 입력 (한글, 2-10자)
+   - 이름 입력 (한글/영문, 2-20자)
    - 전화번호 입력 (010-XXXX-XXXX, 중복 체크)
-   - 파트 선택 (드롭다운)
+   - 소속 회사 선택 (드롭다운: 보트랜스BT / 태경홀딩스TK)
+   - 소속 센터 선택 (드롭다운: 서이천IC / 안성AS / 의왕UW / 부평BP)
+   - 파트 선택 (드롭다운: 지게차/지게차(야간)/피커/피커(야간)/검수/사무)
+   - 사번: 자동생성 미리보기 (읽기 전용, 등록 시)
    - 유효성 검증
    - 저장/취소 버튼
 
@@ -1344,3 +1432,5 @@ excel 패키지 사용:
 | 1.0 | 2026-02-02 | Development Team | 초안 작성 |
 | 1.1 | 2026-02-08 | Development Team | 방안3 적용: GPS 500m Geofencing, 조퇴 기능, 점심시간 자동차감, DB스키마/모델/API 마일스톤 업데이트 |
 | 1.2 | 2026-02-08 | Development Team | 법적 준수: Milestone 4.5 동의 수집 시스템, consent_logs 모델, workers 동의 필드, DB 스키마 보강 |
+| 1.3 | 2026-02-08 | Development Team | 인증 전략: Milestone 5 카카오/구글/SMS 인증, 추가정보 입력폼, 주소검색 위젯, 주소 API Proxy, workers 모델 확장 |
+| 1.4 | 2026-02-08 | Development Team | companies 테이블/모델, sites에 siteCode, 사번 자동생성 트리거, parts 6개, Worker 모델 확장, CRUD 폼 업데이트 |

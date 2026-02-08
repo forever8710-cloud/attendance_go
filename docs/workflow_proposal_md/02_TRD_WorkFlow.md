@@ -1,7 +1,7 @@
 # TRD (Technical Requirement Document)
 # WorkFlow - 기술 요구사항 명세서
 
-**버전:** 1.1
+**버전:** 1.4
 **작성일:** 2026-02-02
 **최종 수정일:** 2026-02-08
 **작성자:** Engineering Team
@@ -160,6 +160,8 @@
 | 패키지 | 버전 | 용도 |
 |-------|-----|-----|
 | supabase_flutter | 2.5+ | Supabase 클라이언트 |
+| **kakao_flutter_sdk** | 1.9+ | 카카오 로그인 (근로자 Primary) |
+| **google_sign_in** | 6.2+ | 구글 로그인 (외국인 근로자) |
 | geolocator | 11.0+ | GPS 위치 수집 |
 | permission_handler | 11.3+ | 권한 관리 |
 | excel | 4.0+ | 엑셀 파일 생성 |
@@ -190,6 +192,11 @@
 
 | API | 용도 | 비용 |
 |-----|-----|-----|
+| **카카오 로그인 API** | 근로자 SNS 로그인 (Primary) | 무료 |
+| **카카오 비즈앱 API** | 전화번호 자동 수집 (카카오 로그인 시) | 무료 (비즈앱 등록 필요) |
+| **Google Sign-In API** | 외국인 근로자 SNS 로그인 (Secondary) | 무료 |
+| **행정안전부 도로명주소 API** | 주소 자동검색 (juso.go.kr) | 무료 (일 10만건) |
+| 카카오 로컬 API | GPS 좌표 ↔ 주소 변환 (Reverse Geocoding) | 무료 (일 30만건) |
 | Google Maps Geolocation API | GPS 좌표 검증 | 무료 (월 40,000건) |
 | 한국천문연구원 공휴일 API | 공휴일 조회 | 무료 |
 | Firebase Cloud Messaging | 푸시 알림 (Post-MVP) | 무료 |
@@ -212,35 +219,33 @@
 ### 4.1 ERD (Entity Relationship Diagram)
 
 ```
-┌──────────────┐         ┌──────────────┐
-│   sites      │         │    parts     │
-├──────────────┤         ├──────────────┤
-│ id (PK)      │         │ id (PK)      │
-│ name         │         │ name         │
-│ latitude     │         │ hourly_wage  │
-│ longitude    │         │ daily_wage   │
-│ radius (500) │         │ created_at   │
-│ lunch_start  │         └──────────────┘
-│ lunch_end    │
-│ lunch_duration│
-│ work_start   │
-│ work_end     │
-│ created_at   │
-└──────────────┘                │
-       │                        │
-       │ 1                   N  │
-       ▼                        ▼
-┌──────────────────────────────────┐
-│          workers                 │
-├──────────────────────────────────┤
-│ id (PK)                          │
-│ site_id (FK) → sites             │
-│ part_id (FK) → parts             │
-│ name                             │
-│ phone                            │
-│ role (worker/manager)            │
-│ created_at                       │
-└──────────────────────────────────┘
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   sites      │  │  companies   │  │    parts     │
+├──────────────┤  ├──────────────┤  ├──────────────┤
+│ id (PK)      │  │ id (PK)      │  │ id (PK)      │
+│ name         │  │ name         │  │ name         │
+│ site_code    │  │ company_code │  │ hourly_wage  │
+│ latitude     │  │ company_type │  │ daily_wage   │
+│ longitude    │  │ created_at   │  │ is_night_shift│
+│ radius (500) │  └──────────────┘  │ created_at   │
+│ lunch_start  │         │          └──────────────┘
+│ lunch_end    │         │                  │
+│ lunch_duration│        │                  │
+│ work_start   │         │ 1            N   │
+│ work_end     │         ▼                  ▼
+│ created_at   │  ┌──────────────────────────────────┐
+└──────────────┘  │          workers                 │
+       │          ├──────────────────────────────────┤
+       │ 1        │ id (PK)                          │
+       ▼ N        │ employee_id (BT-IC001)           │
+                   │ site_id (FK) → sites             │
+                   │ company_id (FK) → companies      │
+                   │ part_id (FK) → parts             │
+                   │ name, phone                      │
+                   │ role (worker/manager)            │
+                   │ auth_provider (kakao/google/sms) │
+                   │ created_at                       │
+                   └──────────────────────────────────┘
        │
        │ 1
        ▼ N
@@ -287,7 +292,8 @@
 ```sql
 CREATE TABLE sites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,             -- 센터명 (서이천, 안성, 의왕, 부평)
+  site_code VARCHAR(2) NOT NULL UNIQUE,   -- 센터코드 (IC, AS, UW, BP)
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
   radius INTEGER DEFAULT 500, -- 미터 단위 (GPS 자동 감지 반경)
@@ -307,15 +313,41 @@ CREATE TABLE sites (
 
 -- 인덱스
 CREATE INDEX idx_sites_name ON sites(name);
+CREATE INDEX idx_sites_site_code ON sites(site_code);
+
+-- 초기 데이터: 4개 센터
+INSERT INTO sites (name, site_code, latitude, longitude) VALUES
+  ('서이천', 'IC', 37.2636, 127.4345),
+  ('안성',   'AS', 37.0079, 127.2797),
+  ('의왕',   'UW', 37.3449, 126.9685),
+  ('부평',   'BP', 37.5075, 126.7218);
 ```
 
-#### 4.2.2 parts (파트/직급)
+#### 4.2.2 companies (소속 회사)
+```sql
+CREATE TABLE companies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(100) NOT NULL,              -- 회사명
+  company_code VARCHAR(2) NOT NULL UNIQUE, -- 회사코드 (BT, TK)
+  company_type VARCHAR(20) CHECK (company_type IN ('prime', 'sub')) NOT NULL, -- 원청/하청
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 초기 데이터: 원청/하청
+INSERT INTO companies (name, company_code, company_type) VALUES
+  ('보트랜스',   'BT', 'prime'),  -- 원청
+  ('태경홀딩스', 'TK', 'sub');    -- 하청
+```
+
+#### 4.2.3 parts (파트)
 ```sql
 CREATE TABLE parts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL UNIQUE,
   hourly_wage INTEGER NOT NULL, -- 시급 (원)
   daily_wage INTEGER, -- 일급 (원, nullable)
+  is_night_shift BOOLEAN DEFAULT FALSE, -- 야간 근무 여부
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -323,18 +355,43 @@ CREATE TABLE parts (
 
 -- 인덱스
 CREATE INDEX idx_parts_name ON parts(name);
+
+-- 초기 데이터: 6개 파트
+INSERT INTO parts (name, hourly_wage, is_night_shift) VALUES
+  ('지게차',       13800, FALSE),
+  ('지게차(야간)', 16560, TRUE),   -- 야간 1.2배 가정
+  ('피커',         12000, FALSE),
+  ('피커(야간)',   14400, TRUE),
+  ('검수',         12000, FALSE),
+  ('사무',         13000, FALSE);
 ```
 
-#### 4.2.3 workers (근로자)
+#### 4.2.4 workers (근로자)
 ```sql
 CREATE TABLE workers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   site_id UUID REFERENCES sites(id) ON DELETE CASCADE,
+  company_id UUID REFERENCES companies(id) ON DELETE SET NULL, -- 소속 회사 (원청/하청)
   part_id UUID REFERENCES parts(id) ON DELETE SET NULL,
+  employee_id VARCHAR(10) UNIQUE NOT NULL, -- 사번 (자동생성: BT-IC001)
   name VARCHAR(100) NOT NULL,
   phone VARCHAR(20) UNIQUE NOT NULL,
   role VARCHAR(20) CHECK (role IN ('worker', 'manager')) DEFAULT 'worker',
   is_active BOOLEAN DEFAULT TRUE,
+
+  -- SNS 인증 연동
+  auth_provider VARCHAR(20) CHECK (auth_provider IN ('kakao', 'google', 'sms')), -- 로그인 방식
+  auth_provider_id VARCHAR(255),         -- SNS 고유 ID (카카오 회원번호, 구글 sub)
+  email VARCHAR(255),                     -- SNS에서 수집한 이메일
+  profile_image_url TEXT,                 -- SNS 프로필 이미지
+
+  -- 추가정보 (근로자 앱에서 직접 입력)
+  resident_number VARCHAR(20),            -- 주민등록번호 또는 외국인등록번호 (암호화 저장)
+  address TEXT,                           -- 도로명주소 (행정안전부 API)
+  address_detail VARCHAR(255),            -- 상세주소 (수동 입력)
+  bank_name VARCHAR(50),                  -- 은행명
+  bank_account VARCHAR(50),               -- 계좌번호
+  is_profile_complete BOOLEAN DEFAULT FALSE, -- 추가정보 입력 완료 여부
 
   -- 법적 동의 상태 (위치정보법 제15조, 개인정보보호법)
   location_consent BOOLEAN DEFAULT FALSE,         -- 위치정보 수집·이용 동의
@@ -348,7 +405,9 @@ CREATE TABLE workers (
 
 -- 인덱스
 CREATE INDEX idx_workers_site_id ON workers(site_id);
+CREATE INDEX idx_workers_company_id ON workers(company_id);
 CREATE INDEX idx_workers_part_id ON workers(part_id);
+CREATE INDEX idx_workers_employee_id ON workers(employee_id);
 CREATE INDEX idx_workers_phone ON workers(phone);
 CREATE INDEX idx_workers_role ON workers(role);
 CREATE INDEX idx_workers_location_consent ON workers(location_consent);
@@ -466,7 +525,48 @@ CREATE INDEX idx_payrolls_is_finalized ON payrolls(is_finalized);
 
 ### 4.3 Database Functions
 
-#### 4.3.1 근무시간 자동 계산 (Trigger) — 점심시간 차감 포함
+#### 4.3.1 사번 자동생성 (Trigger)
+```sql
+-- 사번 규칙: [회사코드]-[센터코드][순번3자리] (예: BT-IC001, TK-AS002)
+CREATE OR REPLACE FUNCTION generate_employee_id()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_company_code VARCHAR(2);
+  v_site_code VARCHAR(2);
+  v_next_seq INTEGER;
+  v_employee_id VARCHAR(10);
+BEGIN
+  -- 회사코드 조회
+  SELECT company_code INTO v_company_code
+  FROM companies WHERE id = NEW.company_id;
+
+  -- 센터코드 조회
+  SELECT site_code INTO v_site_code
+  FROM sites WHERE id = NEW.site_id;
+
+  -- 해당 회사+센터 조합의 다음 순번 계산
+  SELECT COALESCE(MAX(
+    CAST(SUBSTRING(employee_id FROM 6 FOR 3) AS INTEGER)
+  ), 0) + 1 INTO v_next_seq
+  FROM workers
+  WHERE employee_id LIKE v_company_code || '-' || v_site_code || '%';
+
+  -- 사번 생성
+  v_employee_id := v_company_code || '-' || v_site_code || LPAD(v_next_seq::TEXT, 3, '0');
+  NEW.employee_id := v_employee_id;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER auto_generate_employee_id
+BEFORE INSERT ON workers
+FOR EACH ROW
+WHEN (NEW.employee_id IS NULL OR NEW.employee_id = '')
+EXECUTE FUNCTION generate_employee_id();
+```
+
+#### 4.3.2 근무시간 자동 계산 (Trigger) — 점심시간 차감 포함
 ```sql
 CREATE OR REPLACE FUNCTION calculate_work_hours()
 RETURNS TRIGGER AS $$
@@ -511,7 +611,7 @@ FOR EACH ROW
 EXECUTE FUNCTION calculate_work_hours();
 ```
 
-#### 4.3.2 updated_at 자동 갱신 (Trigger)
+#### 4.3.3 updated_at 자동 갱신 (Trigger)
 ```sql
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -544,7 +644,88 @@ CREATE TRIGGER update_payrolls_updated_at BEFORE UPDATE ON payrolls
 
 ### 5.1 인증 API
 
-#### 5.1.1 근로자 로그인 (SMS 인증)
+#### 5.1.1 근로자 로그인 — 카카오 (Primary)
+```
+POST /auth/v1/token?grant_type=id_token
+Request:
+{
+  "provider": "kakao",
+  "id_token": "kakao_id_token_from_sdk"
+}
+
+Response:
+{
+  "access_token": "eyJhbGc...",
+  "refresh_token": "...",
+  "user": {
+    "id": "uuid",
+    "phone": "+821012345678",  // 카카오 비즈앱에서 수집
+    "user_metadata": {
+      "provider": "kakao",
+      "kakao_id": "1234567890",
+      "nickname": "김하역",
+      "profile_image": "https://..."
+    }
+  }
+}
+```
+
+#### 5.1.2 근로자 로그인 — 구글 (외국인 근로자)
+```
+POST /auth/v1/token?grant_type=id_token
+Request:
+{
+  "provider": "google",
+  "id_token": "google_id_token_from_sdk"
+}
+
+Response:
+{
+  "access_token": "eyJhbGc...",
+  "refresh_token": "...",
+  "user": {
+    "id": "uuid",
+    "email": "worker@gmail.com",
+    "user_metadata": {
+      "provider": "google",
+      "name": "John",
+      "profile_image": "https://..."
+    }
+  }
+}
+// 전화번호 미제공 → 추가 SMS OTP 인증 필요
+```
+
+#### 5.1.3 근로자 전화번호 인증 (구글 로그인 후 추가 인증)
+```
+POST /auth/v1/otp
+Request:
+{
+  "phone": "+821012345678"
+}
+
+Response:
+{
+  "message": "OTP sent"
+}
+
+---
+
+POST /auth/v1/verify
+Request:
+{
+  "phone": "+821012345678",
+  "token": "123456"
+}
+
+Response:
+{
+  "verified": true
+}
+// 인증 완료 후 workers 테이블 전화번호 매칭
+```
+
+#### 5.1.4 근로자 로그인 — SMS OTP (Fallback)
 ```
 POST /auth/v1/otp
 Request:
@@ -558,24 +739,46 @@ Response:
 }
 ```
 
-#### 5.1.2 OTP 검증
+#### 5.1.5 추가정보 입력 (최초 로그인 시)
 ```
-POST /auth/v1/verify
+PATCH /rest/v1/workers?id=eq.{worker_id}
+Headers:
+  Authorization: Bearer {token}
+
 Request:
 {
-  "phone": "+821012345678",
-  "token": "123456"
+  "resident_number": "encrypted_value",
+  "address": "서울특별시 강남구 역삼로 123",
+  "address_detail": "○○아파트 101동 202호",
+  "bank_name": "국민은행",
+  "bank_account": "123-456-789012",
+  "is_profile_complete": true
 }
+
+Response: 200 OK
+```
+
+#### 5.1.6 도로명주소 검색 (Proxy API)
+```
+GET /functions/v1/address-search?keyword={검색어}
+Headers:
+  Authorization: Bearer {token}
 
 Response:
 {
-  "access_token": "eyJhbGc...",
-  "refresh_token": "...",
-  "user": { ... }
+  "results": [
+    {
+      "roadAddr": "서울특별시 강남구 역삼로 123",
+      "jibunAddr": "서울특별시 강남구 역삼동 123-45",
+      "zipNo": "06241"
+    },
+    ...
+  ]
 }
+// 행정안전부 도로명주소 API (juso.go.kr) Proxy
 ```
 
-#### 5.1.3 관리자 로그인
+#### 5.1.7 관리자 로그인
 ```
 POST /auth/v1/token?grant_type=password
 Request:
@@ -1137,3 +1340,5 @@ GOOGLE_MAPS_API_KEY=AIzaSyC...
 | 1.0 | 2026-02-02 | Engineering Team | 초안 작성 |
 | 1.1 | 2026-02-08 | Engineering Team | 방안3 적용: GPS 500m, sites 점심시간/근무시간 필드, attendances 조퇴/자동감지 필드, 트리거 점심차감, 조퇴 API |
 | 1.2 | 2026-02-08 | Engineering Team | 법적 준수: workers 동의 필드, consent_logs 테이블, 보안 섹션 법적 요건 보강, 동의 관리 API |
+| 1.3 | 2026-02-08 | Engineering Team | 인증 전략: 카카오/구글/SMS OTP, workers SNS·주소·계좌 필드, 도로명주소 API Proxy, 인증 API 확장 |
+| 1.4 | 2026-02-08 | Engineering Team | companies 테이블(원청BT/하청TK), sites에 site_code, 사번 자동생성 트리거, parts 6개 초기데이터, ERD 업데이트 |
