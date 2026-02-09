@@ -61,7 +61,9 @@ class StickyHeaderTable extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
+        return Align(
+          alignment: Alignment.topLeft,
+          child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
             width: tableWidth,
@@ -85,6 +87,7 @@ class StickyHeaderTable extends StatelessWidget {
               ),
             ),
           ),
+        ),
         );
       },
     );

@@ -93,6 +93,16 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                         }),
                         child: const Text('초기화'),
                       ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('엑셀 파일이 다운로드되었습니다. (TODO: 실제 엑셀 생성)')),
+                          );
+                        },
+                        icon: const Icon(Icons.download, size: 16),
+                        label: const Text('엑셀 내보내기'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
+                      ),
                     ],
                   ),
                 ),
@@ -131,18 +141,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text('총 ${filtered.length}건', style: TextStyle(color: Colors.grey[600])),
-                        const Spacer(),
-                        ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.download, size: 16),
-                          label: const Text('엑셀 내보내기'),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
-                        ),
-                      ],
-                    ),
+                    Text('총 ${filtered.length}건', style: TextStyle(color: Colors.grey[600])),
                     const SizedBox(height: 12),
                     Expanded(
                       child: StickyHeaderTable.wrapWithCard(

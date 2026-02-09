@@ -1,10 +1,11 @@
 class DashboardRepository {
   Future<DashboardSummary> getTodaySummary(String siteId) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    // Demo data — 50명 기준 요약
+    // Demo data — 50명 기준 요약 (야간: 지게차(야간)/피커(야간) 8명 출근)
     return DashboardSummary(
       totalWorkers: 50,
-      checkedIn: 45,
+      dayCheckedIn: 37,
+      nightCheckedIn: 8,
       checkedOut: 28,
       late: 4,
       earlyLeave: 3,
@@ -79,14 +80,16 @@ class DashboardRepository {
 class DashboardSummary {
   const DashboardSummary({
     required this.totalWorkers,
-    required this.checkedIn,
+    required this.dayCheckedIn,
+    required this.nightCheckedIn,
     required this.checkedOut,
     required this.late,
     this.earlyLeave,
     required this.absent,
   });
   final int totalWorkers;
-  final int checkedIn;
+  final int dayCheckedIn;
+  final int nightCheckedIn;
   final int checkedOut;
   final int late;
   final int? earlyLeave;

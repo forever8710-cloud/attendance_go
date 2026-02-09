@@ -62,8 +62,8 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                         : const Icon(Icons.calculate, size: 18),
                     label: const Text('급여대장 생성'),
                   ),
-                  const Spacer(),
                   if (_payrollData != null && canEditPayroll(widget.role)) ...[
+                    const SizedBox(width: 16),
                     ElevatedButton.icon(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(

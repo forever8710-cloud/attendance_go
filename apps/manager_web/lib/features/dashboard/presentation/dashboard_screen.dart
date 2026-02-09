@@ -106,7 +106,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   runSpacing: 16,
                   children: [
                     _buildSummaryCard('전체 직원', '${s.totalWorkers}명', Icons.people, Colors.blue, null),
-                    _buildSummaryCard('오늘 출근', '${s.checkedIn}명', Icons.login, Colors.green, '출근'),
+                    _buildSummaryCard('주간출근', '${s.dayCheckedIn}명', Icons.wb_sunny, Colors.green, '주간출근'),
+                    _buildSummaryCard('야간출근', '${s.nightCheckedIn}명', Icons.nightlight_round, Colors.deepPurple, '야간출근'),
                     _buildSummaryCard('퇴근 완료', '${s.checkedOut}명', Icons.logout, Colors.indigo, '퇴근'),
                     _buildSummaryCard('지각', '${s.late}명', Icons.warning, Colors.orange, '지각'),
                     _buildSummaryCard('조퇴', '${s.earlyLeave ?? 0}명', Icons.exit_to_app, Colors.purple, '조퇴'),
@@ -171,9 +172,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                 if (_selectedStatus != null) {
                   filtered = filtered.where((r) {
+                    final isNightJob = r.job.contains('야간');
                     switch (_selectedStatus) {
-                      case '출근':
-                        return r.status == '출근' && r.checkOut == '-';
+                      case '주간출근':
+                        return (r.status == '출근') && !isNightJob && r.checkOut == '-';
+                      case '야간출근':
+                        return (r.status == '출근') && isNightJob;
                       case '퇴근':
                         return r.checkOut != '-';
                       case '지각':
