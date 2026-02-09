@@ -11,6 +11,7 @@ import 'features/payroll/presentation/payroll_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
 import 'core/widgets/side_nav_drawer.dart';
+import 'features/worker_detail/presentation/worker_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,15 @@ class ManagerShell extends ConsumerStatefulWidget {
 
 class _ManagerShellState extends ConsumerState<ManagerShell> {
   int _selectedIndex = 0;
+  String? _detailWorkerName;
+
+  void _openWorkerDetail(String name) {
+    setState(() => _detailWorkerName = name);
+  }
+
+  void _closeWorkerDetail() {
+    setState(() => _detailWorkerName = null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +81,11 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       body: Row(
         children: [
           SideNavDrawer(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+            selectedIndex: _detailWorkerName != null ? -1 : _selectedIndex,
+            onDestinationSelected: (i) => setState(() {
+              _selectedIndex = i;
+              _detailWorkerName = null;
+            }),
             role: role,
           ),
           const VerticalDivider(width: 1, thickness: 1, color: Colors.black12),
@@ -159,21 +172,29 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
   }
 
   Widget _buildPage(AppRole role) {
+    // 상세 페이지 표시
+    if (_detailWorkerName != null) {
+      return WorkerDetailScreen(
+        workerName: _detailWorkerName!,
+        onBack: _closeWorkerDetail,
+      );
+    }
+
     // 접근 불가 메뉴에 대한 방어
     if (!canAccessMenu(role, _selectedIndex)) {
       final userSiteId = ref.read(authProvider).worker?.siteId ?? '';
-      return DashboardScreen(role: role, userSiteId: userSiteId);
+      return DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail);
     }
 
     final userSiteId = ref.read(authProvider).worker?.siteId ?? '';
 
     return switch (_selectedIndex) {
-      0 => DashboardScreen(role: role, userSiteId: userSiteId),
-      1 => WorkersScreen(role: role),
-      2 => const AttendanceRecordsScreen(),
-      3 => PayrollScreen(role: role),
+      0 => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
+      1 => WorkersScreen(role: role, onWorkerTap: _openWorkerDetail),
+      2 => AttendanceRecordsScreen(onWorkerTap: _openWorkerDetail),
+      3 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
       4 => const SettingsScreen(),
-      _ => DashboardScreen(role: role, userSiteId: userSiteId),
+      _ => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
     };
   }
 }

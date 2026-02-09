@@ -8,9 +8,10 @@ import '../providers/workers_provider.dart';
 import '../data/workers_repository.dart';
 
 class WorkersScreen extends ConsumerStatefulWidget {
-  const WorkersScreen({super.key, required this.role});
+  const WorkersScreen({super.key, required this.role, this.onWorkerTap});
 
   final AppRole role;
+  final void Function(String name)? onWorkerTap;
 
   @override
   ConsumerState<WorkersScreen> createState() => _WorkersScreenState();
@@ -18,6 +19,9 @@ class WorkersScreen extends ConsumerStatefulWidget {
 
 class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   String _searchQuery = '';
+  String _siteFilter = '전체';
+  String _jobFilter = '전체';
+  String _statusFilter = '전체';
   WorkerRow? _selectedWorker;
   bool _isNewWorker = false;
 
@@ -471,29 +475,64 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
             ),
           ),
 
-          // ── 중간: 구분선 ──
+          // ── 중간: 필터 바 ──
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
-                const SizedBox(width: 8),
-                const Text('근로자 목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                const SizedBox(width: 16),
-                Expanded(child: Divider(color: Colors.grey[300])),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 220,
-                  height: 36,
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    decoration: InputDecoration(
-                      hintText: '이름, 전화번호 검색...',
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                      contentPadding: EdgeInsets.zero,
+                Row(
+                  children: [
+                    const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
+                    const SizedBox(width: 8),
+                    const Text('근로자 목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(color: Colors.grey[200]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Wrap(
+                      spacing: 16,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _buildWorkerFilterDropdown('사업장', _siteFilter, ['전체', '서이천', '안성', '의왕', '부평'],
+                            (v) => setState(() => _siteFilter = v!)),
+                        _buildWorkerFilterDropdown('직무', _jobFilter, ['전체', '지게차', '지게차(야간)', '피커', '피커(야간)', '검수', '사무'],
+                            (v) => setState(() => _jobFilter = v!)),
+                        _buildWorkerFilterDropdown('재직상태', _statusFilter, ['전체', '정규직', '계약직', '일용직', '파견', '육아휴직'],
+                            (v) => setState(() => _statusFilter = v!)),
+                        SizedBox(
+                          width: 180,
+                          height: 38,
+                          child: TextField(
+                            onChanged: (v) => setState(() => _searchQuery = v),
+                            decoration: InputDecoration(
+                              hintText: '이름 검색...',
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(() {
+                            _siteFilter = '전체';
+                            _jobFilter = '전체';
+                            _statusFilter = '전체';
+                            _searchQuery = '';
+                          }),
+                          child: const Text('초기화'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -509,9 +548,16 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                 if (widget.role == AppRole.centerManager) {
                   baseList = list.where((w) => w.site == '서이천').toList();
                 }
-                final filtered = baseList.where((w) =>
-                  w.name.contains(_searchQuery) || w.phone.contains(_searchQuery),
-                ).toList();
+                final filtered = baseList.where((w) {
+                  if (_siteFilter != '전체' && w.site != _siteFilter) return false;
+                  if (_jobFilter != '전체' && (w.job ?? w.part) != _jobFilter) return false;
+                  if (_statusFilter != '전체') {
+                    final status = w.employmentStatus ?? (w.isActive ? '재직' : '퇴사');
+                    if (status != _statusFilter) return false;
+                  }
+                  if (_searchQuery.isNotEmpty && !w.name.contains(_searchQuery) && !w.phone.contains(_searchQuery)) return false;
+                  return true;
+                }).toList();
 
                 final columns = [
                   const TableColumnDef(label: 'No.', width: 55),
@@ -536,7 +582,12 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                     final isSelected = _selectedWorker?.id == w.id;
                     return switch (colIndex) {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-                      1 => Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),
+                      1 => widget.onWorkerTap != null
+                          ? GestureDetector(
+                              onTap: () => widget.onWorkerTap!(w.name),
+                              child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                            )
+                          : Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),
                       2 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
                       3 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
                       4 => Text(w.phone, style: const TextStyle(fontSize: 13)),
@@ -656,6 +707,23 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
           borderRadius: BorderRadius.circular(15),
         ),
         child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildWorkerFilterDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          items: items.map((v) => DropdownMenuItem(value: v, child: Text('$label: $v', style: const TextStyle(fontSize: 14)))).toList(),
+          onChanged: onChanged,
+        ),
       ),
     );
   }

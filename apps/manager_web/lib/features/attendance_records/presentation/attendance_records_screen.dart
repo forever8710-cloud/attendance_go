@@ -5,7 +5,9 @@ import '../../../core/widgets/sticky_data_table.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 
 class AttendanceRecordsScreen extends ConsumerStatefulWidget {
-  const AttendanceRecordsScreen({super.key});
+  const AttendanceRecordsScreen({super.key, this.onWorkerTap});
+
+  final void Function(String name)? onWorkerTap;
 
   @override
   ConsumerState<AttendanceRecordsScreen> createState() => _AttendanceRecordsScreenState();
@@ -151,7 +153,12 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                           return switch (colIndex) {
                             0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
                             1 => Text(DateFormat('yyyy-MM-dd').format(DateTime.now()), style: const TextStyle(fontSize: 13)),
-                            2 => Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            2 => widget.onWorkerTap != null
+                                ? GestureDetector(
+                                    onTap: () => widget.onWorkerTap!(r.name),
+                                    child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                                  )
+                                : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             3 => Text(r.position, style: const TextStyle(fontSize: 13)),
                             4 => Text(r.job, style: const TextStyle(fontSize: 13)),
                             5 => Text(r.site, style: const TextStyle(fontSize: 13)),

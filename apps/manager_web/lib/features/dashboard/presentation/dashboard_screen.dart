@@ -10,10 +10,12 @@ class DashboardScreen extends ConsumerStatefulWidget {
     super.key,
     required this.role,
     required this.userSiteId,
+    this.onWorkerTap,
   });
 
   final AppRole role;
   final String userSiteId;
+  final void Function(String name)? onWorkerTap;
 
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
@@ -239,7 +241,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     return switch (colIndex) {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
                       1 => Text(e.site, style: const TextStyle(fontSize: 13)),
-                      2 => Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      2 => widget.onWorkerTap != null
+                          ? GestureDetector(
+                              onTap: () => widget.onWorkerTap!(e.name),
+                              child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                            )
+                          : Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       3 => Text(e.position, style: const TextStyle(fontSize: 13)),
                       4 => Text(e.job, style: const TextStyle(fontSize: 13)),
                       5 => Text(e.checkIn, style: const TextStyle(fontSize: 13)),
