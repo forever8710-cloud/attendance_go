@@ -1,3 +1,15 @@
+# Environment variables (contains secrets)
+.env
+.env.local
+.env*.local
+
+# MCP configuration (contains tokens)
+.mcp.json
+.claude/
+
+# Firebase
+.firebase/
+
 # Miscellaneous
 *.class
 *.log

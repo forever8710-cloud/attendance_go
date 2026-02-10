@@ -7,7 +7,7 @@ part 'worker.g.dart';
 abstract class Worker with _$Worker {
   const factory Worker({
     required String id,
-    required String siteId,
+    String? siteId,
     String? partId,
     required String name,
     required String phone,

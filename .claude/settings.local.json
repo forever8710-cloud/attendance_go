@@ -21,7 +21,30 @@
       "Bash(where:*)",
       "Bash(powershell -Command \"\\(Get-Item ''C:\\\\development\\\\flutter\\\\flutter\\\\bin\\\\cache\\\\artifacts\\\\material_fonts\\\\materialicons-regular.otf''\\).Length\")",
       "Bash(powershell:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git -C /c/my_project/attendance_go status)",
+      "Bash(flutter analyze:*)",
+      "WebSearch",
+      "Bash(claude mcp add:*)",
+      "Bash(flutter build:*)",
+      "Bash(firebase:*)",
+      "Bash(npm:*)",
+      "Bash(npx firebase-tools login:*)",
+      "Bash(npx firebase-tools deploy --only hosting)",
+      "Bash(cmd /c \"cd /d C:\\\\my_project\\\\attendance_go\\\\apps\\\\manager_web\")",
+      "Bash(claude mcp list:*)",
+      "Bash(npx:*)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__get_project_url",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__get_publishable_keys",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__get_advisors",
+      "Bash(dart run build_runner build:*)",
+      "Bash(flutter pub get:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true
 }

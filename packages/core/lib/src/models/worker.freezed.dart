@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Worker {
 
- String get id; String get siteId; String? get partId; String get name; String get phone; String get role; bool get isActive; DateTime? get createdAt; DateTime? get updatedAt;
+ String get id; String? get siteId; String? get partId; String get name; String get phone; String get role; bool get isActive; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of Worker
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $WorkerCopyWith<$Res>  {
   factory $WorkerCopyWith(Worker value, $Res Function(Worker) _then) = _$WorkerCopyWithImpl;
 @useResult
 $Res call({
- String id, String siteId, String? partId, String name, String phone, String role, bool isActive, DateTime? createdAt, DateTime? updatedAt
+ String id, String? siteId, String? partId, String name, String phone, String role, bool isActive, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -65,11 +65,11 @@ class _$WorkerCopyWithImpl<$Res>
 
 /// Create a copy of Worker
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? siteId = null,Object? partId = freezed,Object? name = null,Object? phone = null,Object? role = null,Object? isActive = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? siteId = freezed,Object? partId = freezed,Object? name = null,Object? phone = null,Object? role = null,Object? isActive = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,siteId: null == siteId ? _self.siteId : siteId // ignore: cast_nullable_to_non_nullable
-as String,partId: freezed == partId ? _self.partId : partId // ignore: cast_nullable_to_non_nullable
+as String,siteId: freezed == siteId ? _self.siteId : siteId // ignore: cast_nullable_to_non_nullable
+as String?,partId: freezed == partId ? _self.partId : partId // ignore: cast_nullable_to_non_nullable
 as String?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
@@ -161,7 +161,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String siteId,  String? partId,  String name,  String phone,  String role,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? siteId,  String? partId,  String name,  String phone,  String role,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Worker() when $default != null:
 return $default(_that.id,_that.siteId,_that.partId,_that.name,_that.phone,_that.role,_that.isActive,_that.createdAt,_that.updatedAt);case _:
@@ -182,7 +182,7 @@ return $default(_that.id,_that.siteId,_that.partId,_that.name,_that.phone,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String siteId,  String? partId,  String name,  String phone,  String role,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? siteId,  String? partId,  String name,  String phone,  String role,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Worker():
 return $default(_that.id,_that.siteId,_that.partId,_that.name,_that.phone,_that.role,_that.isActive,_that.createdAt,_that.updatedAt);case _:
@@ -202,7 +202,7 @@ return $default(_that.id,_that.siteId,_that.partId,_that.name,_that.phone,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String siteId,  String? partId,  String name,  String phone,  String role,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? siteId,  String? partId,  String name,  String phone,  String role,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Worker() when $default != null:
 return $default(_that.id,_that.siteId,_that.partId,_that.name,_that.phone,_that.role,_that.isActive,_that.createdAt,_that.updatedAt);case _:
@@ -217,11 +217,11 @@ return $default(_that.id,_that.siteId,_that.partId,_that.name,_that.phone,_that.
 @JsonSerializable()
 
 class _Worker implements Worker {
-  const _Worker({required this.id, required this.siteId, this.partId, required this.name, required this.phone, this.role = 'worker', this.isActive = true, this.createdAt, this.updatedAt});
+  const _Worker({required this.id, this.siteId, this.partId, required this.name, required this.phone, this.role = 'worker', this.isActive = true, this.createdAt, this.updatedAt});
   factory _Worker.fromJson(Map<String, dynamic> json) => _$WorkerFromJson(json);
 
 @override final  String id;
-@override final  String siteId;
+@override final  String? siteId;
 @override final  String? partId;
 @override final  String name;
 @override final  String phone;
@@ -263,7 +263,7 @@ abstract mixin class _$WorkerCopyWith<$Res> implements $WorkerCopyWith<$Res> {
   factory _$WorkerCopyWith(_Worker value, $Res Function(_Worker) _then) = __$WorkerCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String siteId, String? partId, String name, String phone, String role, bool isActive, DateTime? createdAt, DateTime? updatedAt
+ String id, String? siteId, String? partId, String name, String phone, String role, bool isActive, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -280,11 +280,11 @@ class __$WorkerCopyWithImpl<$Res>
 
 /// Create a copy of Worker
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? siteId = null,Object? partId = freezed,Object? name = null,Object? phone = null,Object? role = null,Object? isActive = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? siteId = freezed,Object? partId = freezed,Object? name = null,Object? phone = null,Object? role = null,Object? isActive = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_Worker(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,siteId: null == siteId ? _self.siteId : siteId // ignore: cast_nullable_to_non_nullable
-as String,partId: freezed == partId ? _self.partId : partId // ignore: cast_nullable_to_non_nullable
+as String,siteId: freezed == siteId ? _self.siteId : siteId // ignore: cast_nullable_to_non_nullable
+as String?,partId: freezed == partId ? _self.partId : partId // ignore: cast_nullable_to_non_nullable
 as String?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable

@@ -12,12 +12,12 @@ _Site _$SiteFromJson(Map<String, dynamic> json) => _Site(
   latitude: (json['latitude'] as num).toDouble(),
   longitude: (json['longitude'] as num).toDouble(),
   radius: (json['radius'] as num?)?.toInt() ?? 100,
-  createdAt: json['createdAt'] == null
+  createdAt: json['created_at'] == null
       ? null
-      : DateTime.parse(json['createdAt'] as String),
-  updatedAt: json['updatedAt'] == null
+      : DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
       ? null
-      : DateTime.parse(json['updatedAt'] as String),
+      : DateTime.parse(json['updated_at'] as String),
 );
 
 Map<String, dynamic> _$SiteToJson(_Site instance) => <String, dynamic>{
@@ -26,6 +26,6 @@ Map<String, dynamic> _$SiteToJson(_Site instance) => <String, dynamic>{
   'latitude': instance.latitude,
   'longitude': instance.longitude,
   'radius': instance.radius,
-  'createdAt': instance.createdAt?.toIso8601String(),
-  'updatedAt': instance.updatedAt?.toIso8601String(),
+  'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
 };

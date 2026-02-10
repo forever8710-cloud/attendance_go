@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_client/supabase_client.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/phone_verification_screen.dart';
 import 'features/auth/presentation/profile_completion_screen.dart';
 import 'features/attendance/presentation/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+  await SupabaseService.instance.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
   runApp(const ProviderScope(child: WorkerApp()));
 }
 

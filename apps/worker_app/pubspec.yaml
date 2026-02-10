@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^2.6.1
   supabase_flutter: ^2.9.0
+  flutter_dotenv: ^5.2.1
   geolocator: ^13.0.2
   permission_handler: ^11.4.0
   intl: ^0.20.2
@@ -29,3 +30,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env

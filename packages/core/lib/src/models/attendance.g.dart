@@ -8,39 +8,39 @@ part of 'attendance.dart';
 
 _Attendance _$AttendanceFromJson(Map<String, dynamic> json) => _Attendance(
   id: json['id'] as String,
-  workerId: json['workerId'] as String,
-  checkInTime: DateTime.parse(json['checkInTime'] as String),
-  checkInLatitude: (json['checkInLatitude'] as num).toDouble(),
-  checkInLongitude: (json['checkInLongitude'] as num).toDouble(),
-  checkOutTime: json['checkOutTime'] == null
+  workerId: json['worker_id'] as String,
+  checkInTime: DateTime.parse(json['check_in_time'] as String),
+  checkInLatitude: (json['check_in_latitude'] as num).toDouble(),
+  checkInLongitude: (json['check_in_longitude'] as num).toDouble(),
+  checkOutTime: json['check_out_time'] == null
       ? null
-      : DateTime.parse(json['checkOutTime'] as String),
-  checkOutLatitude: (json['checkOutLatitude'] as num?)?.toDouble(),
-  checkOutLongitude: (json['checkOutLongitude'] as num?)?.toDouble(),
-  workHours: (json['workHours'] as num?)?.toDouble(),
+      : DateTime.parse(json['check_out_time'] as String),
+  checkOutLatitude: (json['check_out_latitude'] as num?)?.toDouble(),
+  checkOutLongitude: (json['check_out_longitude'] as num?)?.toDouble(),
+  workHours: (json['work_hours'] as num?)?.toDouble(),
   status: json['status'] as String? ?? 'present',
   notes: json['notes'] as String?,
-  createdAt: json['createdAt'] == null
+  createdAt: json['created_at'] == null
       ? null
-      : DateTime.parse(json['createdAt'] as String),
-  updatedAt: json['updatedAt'] == null
+      : DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
       ? null
-      : DateTime.parse(json['updatedAt'] as String),
+      : DateTime.parse(json['updated_at'] as String),
 );
 
 Map<String, dynamic> _$AttendanceToJson(_Attendance instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'workerId': instance.workerId,
-      'checkInTime': instance.checkInTime.toIso8601String(),
-      'checkInLatitude': instance.checkInLatitude,
-      'checkInLongitude': instance.checkInLongitude,
-      'checkOutTime': instance.checkOutTime?.toIso8601String(),
-      'checkOutLatitude': instance.checkOutLatitude,
-      'checkOutLongitude': instance.checkOutLongitude,
-      'workHours': instance.workHours,
+      'worker_id': instance.workerId,
+      'check_in_time': instance.checkInTime.toIso8601String(),
+      'check_in_latitude': instance.checkInLatitude,
+      'check_in_longitude': instance.checkInLongitude,
+      'check_out_time': instance.checkOutTime?.toIso8601String(),
+      'check_out_latitude': instance.checkOutLatitude,
+      'check_out_longitude': instance.checkOutLongitude,
+      'work_hours': instance.workHours,
       'status': instance.status,
       'notes': instance.notes,
-      'createdAt': instance.createdAt?.toIso8601String(),
-      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'created_at': instance.createdAt?.toIso8601String(),
+      'updated_at': instance.updatedAt?.toIso8601String(),
     };
