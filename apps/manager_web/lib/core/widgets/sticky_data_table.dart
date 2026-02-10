@@ -61,13 +61,16 @@ class StickyHeaderTable extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // 헤더(46) + 행당(43) + 테두리(2) → 데이터에 맞는 높이, 최대 constraints
+        final contentHeight = 46.0 + rowCount * 43.0 + 2.0;
+        final effectiveHeight = min(contentHeight, constraints.maxHeight);
         return Align(
           alignment: Alignment.topLeft,
           child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
             width: tableWidth,
-            height: constraints.maxHeight,
+            height: effectiveHeight,
             child: Card(
               elevation: 0,
               margin: EdgeInsets.zero,
