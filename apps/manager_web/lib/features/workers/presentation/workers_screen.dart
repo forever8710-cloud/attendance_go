@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/utils/company_constants.dart';
+import '../../../core/providers/reference_data_provider.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/workers_provider.dart';
 import '../data/workers_repository.dart';
@@ -106,11 +107,11 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     });
   }
 
-  void _updateAutoEmployeeId() {
+  Future<void> _updateAutoEmployeeId() async {
     if (_company != null && _site != null) {
       final repo = ref.read(workersRepositoryProvider);
-      final generatedId = repo.generateNextEmployeeId(_company!, _site!);
-      _employeeIdController.text = generatedId;
+      final generatedId = await repo.generateNextEmployeeId(_company!, _site!);
+      if (mounted) _employeeIdController.text = generatedId;
     } else if (_isNewWorker) {
       _employeeIdController.clear();
     }
@@ -273,8 +274,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                           } else {
                                             _company = null;
                                           }
-                                          _updateAutoEmployeeId();
                                         });
+                                        _updateAutoEmployeeId();
                                       },
                                     ),
                                   ),
@@ -387,17 +388,15 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildDropdown('직책', ['', '조장', '파트장'], _role, (v) => setState(() => _role = v))),
                                   const SizedBox(width: 12),
-                                  Expanded(child: _buildDropdown('직무', CompanyConstants.parts, _job, (v) => setState(() => _job = v))),
+                                  Expanded(child: _buildDropdown('직무', ref.watch(partNamesProvider), _job, (v) => setState(() => _job = v))),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildDropdown(
                                     '사업장',
-                                    CompanyConstants.centerNames,
+                                    ref.watch(siteNamesProvider),
                                     _site,
                                     (v) {
-                                      setState(() {
-                                        _site = v;
-                                        _updateAutoEmployeeId();
-                                      });
+                                      setState(() => _site = v);
+                                      _updateAutoEmployeeId();
                                     },
                                   )),
                                 ],
@@ -502,9 +501,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                       runSpacing: 12,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _buildWorkerFilterDropdown('사업장', _siteFilter, ['전체', '서이천', '안성', '의왕', '부평'],
+                        _buildWorkerFilterDropdown('사업장', _siteFilter, ['전체', ...ref.watch(siteNamesProvider)],
                             (v) => setState(() => _siteFilter = v!)),
-                        _buildWorkerFilterDropdown('직무', _jobFilter, ['전체', '지게차', '지게차(야간)', '피커', '피커(야간)', '검수', '사무'],
+                        _buildWorkerFilterDropdown('직무', _jobFilter, ['전체', ...ref.watch(partNamesProvider)],
                             (v) => setState(() => _jobFilter = v!)),
                         _buildWorkerFilterDropdown('재직상태', _statusFilter, ['전체', '정규직', '계약직', '일용직', '파견', '육아휴직'],
                             (v) => setState(() => _statusFilter = v!)),

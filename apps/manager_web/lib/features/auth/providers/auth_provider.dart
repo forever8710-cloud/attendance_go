@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import '../../../core/utils/permissions.dart';
 import '../data/auth_repository.dart';
 
@@ -46,10 +47,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return;
       }
       state = state.copyWith(status: AuthStatus.authenticated, worker: worker, role: role);
+    } on AuthException catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.message == 'Invalid login credentials'
+            ? '이메일 또는 비밀번호가 올바르지 않습니다'
+            : e.message,
+      );
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: '이메일 또는 비밀번호가 올바르지 않습니다',
+        errorMessage: '로그인 중 오류가 발생했습니다: $e',
       );
     }
   }

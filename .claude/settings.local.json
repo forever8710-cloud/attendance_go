@@ -43,7 +43,8 @@
       "mcp__supabase__apply_migration",
       "mcp__supabase__get_advisors",
       "Bash(dart run build_runner build:*)",
-      "Bash(flutter pub get:*)"
+      "Bash(flutter pub get:*)",
+      "mcp__supabase__search_docs"
     ]
   },
   "enableAllProjectMcpServers": true

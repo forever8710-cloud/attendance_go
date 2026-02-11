@@ -1,3 +1,4 @@
+import 'package:supabase_client/supabase_client.dart';
 import '../../../core/utils/company_constants.dart';
 import '../../../core/utils/employee_id_generator.dart';
 
@@ -102,102 +103,169 @@ class WorkerRow {
 }
 
 class WorkersRepository {
-  final List<WorkerRow> _workers = [
-    WorkerRow(
-      id: '1', company: 'BT', employeeId: 'BT-IC001', name: '김영수', phone: '010-1234-0001', part: '지게차', site: '서이천', isActive: true,
-      ssn: '850115-1******', gender: '남', address: '경기도 이천시 호법면', email: 'kim@email.com',
-      emergencyContact: '010-9999-0001', employmentStatus: '정규직', joinDate: DateTime(2020, 3, 1),
-      position: '대리', role: '조장', job: '지게차',
-    ),
-    WorkerRow(
-      id: '2', company: 'BT', employeeId: 'BT-UW001', name: '이민호', phone: '010-1234-0002', part: '사무', site: '의왕', isActive: true,
-      ssn: '900520-1******', gender: '남', address: '경기도 의왕시 내손동', email: 'lee@email.com',
-      emergencyContact: '010-9999-0002', employmentStatus: '정규직', joinDate: DateTime(2019, 5, 15),
-      position: '과장', role: '파트장', job: '사무',
-    ),
-    WorkerRow(
-      id: '3', company: 'TK', employeeId: 'TK-BP001', name: '최지우', phone: '010-1234-0003', part: '피커', site: '부평', isActive: true,
-      ssn: '950812-2******', gender: '여', address: '인천시 부평구 부평동', email: 'choi@email.com',
-      emergencyContact: '010-9999-0003', employmentStatus: '계약직', joinDate: DateTime(2023, 1, 10),
-      position: '사원', job: '피커',
-    ),
-    WorkerRow(
-      id: '4', company: 'TK', employeeId: 'TK-AS001', name: '박강성', phone: '010-1234-0004', part: '검수', site: '안성', isActive: true,
-      ssn: '880303-1******', gender: '남', address: '경기도 안성시 공도읍', email: 'park@email.com',
-      emergencyContact: '010-9999-0004', employmentStatus: '일용직', joinDate: DateTime(2024, 6, 1),
-      position: '사원', job: '검수',
-    ),
-    WorkerRow(
-      id: '5', company: 'BT', employeeId: 'BT-IC002', name: '정우성', phone: '010-1234-0005', part: '사무', site: '서이천', isActive: true,
-      ssn: '780725-1******', gender: '남', address: '경기도 이천시 부발읍', email: 'jung@email.com',
-      emergencyContact: '010-9999-0005', employmentStatus: '정규직', joinDate: DateTime(2015, 2, 1),
-      position: '부장', role: '파트장', job: '사무',
-    ),
-    WorkerRow(
-      id: '6', company: 'BT', employeeId: 'BT-UW002', name: '한지민', phone: '010-1234-0006', part: '피커(야간)', site: '의왕', isActive: true,
-      ssn: '920410-2******', gender: '여', address: '경기도 의왕시 오전동', email: 'han@email.com',
-      emergencyContact: '010-9999-0006', employmentStatus: '육아휴직', joinDate: DateTime(2021, 8, 1),
-      position: '대리', job: '피커(야간)',
-    ),
-  ];
+  final SupabaseService _supabase = SupabaseService.instance;
 
+  /// site_id → site_name, part_id → part_name 매핑 캐시
+  Map<String, String> _siteNames = {};
+  Map<String, String> _partNames = {};
+
+  Future<void> _loadMappings() async {
+    if (_siteNames.isNotEmpty) return;
+    final sites = await _supabase.from('sites').select('id, name');
+    _siteNames = {for (final s in sites) s['id'] as String: s['name'] as String};
+    final parts = await _supabase.from('parts').select('id, name');
+    _partNames = {for (final p in parts) p['id'] as String: p['name'] as String};
+  }
+
+  /// Supabase에서 workers + worker_profiles 조회
   Future<List<WorkerRow>> getWorkers() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return List.from(_workers);
+    try {
+      await _loadMappings();
+
+      // workers LEFT JOIN worker_profiles
+      final response = await _supabase
+          .from('workers')
+          .select('*, worker_profiles(*)');
+
+      return (response as List).map((row) {
+        final profile = (row['worker_profiles'] is List && (row['worker_profiles'] as List).isNotEmpty)
+            ? (row['worker_profiles'] as List).first
+            : null;
+
+        final siteId = row['site_id'] as String?;
+        final partId = row['part_id'] as String?;
+
+        return WorkerRow(
+          id: row['id'] as String,
+          name: row['name'] as String,
+          phone: row['phone'] as String,
+          part: partId != null ? (_partNames[partId] ?? '') : '',
+          site: siteId != null ? (_siteNames[siteId] ?? '') : '',
+          isActive: row['is_active'] as bool? ?? true,
+          company: profile?['company'] as String?,
+          employeeId: profile?['employee_id'] as String?,
+          ssn: profile?['ssn'] as String?,
+          gender: profile?['gender'] as String?,
+          address: profile?['address'] as String?,
+          detailAddress: profile?['detail_address'] as String?,
+          email: profile?['email'] as String?,
+          emergencyContact: profile?['emergency_contact'] as String?,
+          resumeFile: profile?['resume_file'] as String?,
+          employmentStatus: profile?['employment_status'] as String?,
+          joinDate: profile?['join_date'] != null ? DateTime.tryParse(profile!['join_date']) : null,
+          leaveDate: profile?['leave_date'] != null ? DateTime.tryParse(profile!['leave_date']) : null,
+          position: profile?['position'] as String?,
+          role: profile?['title'] as String?,
+          job: profile?['job'] as String?,
+          photoUrl: profile?['photo_url'] as String?,
+        );
+      }).toList();
+    } catch (e) {
+      // Supabase 연결 실패 시 빈 목록 반환 (데모 로그인 시)
+      return [];
+    }
   }
 
   Future<void> addWorker(String name, String phone, String part, String site) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _workers.add(WorkerRow(
-      id: '${_workers.length + 1}',
-      name: name,
-      phone: phone,
-      part: part,
-      site: site,
-      isActive: true,
-    ));
+    // site_name → site_id, part_name → part_id 변환
+    await _loadMappings();
+    final siteId = _siteNames.entries
+        .where((e) => e.value == site)
+        .map((e) => e.key)
+        .firstOrNull;
+    final partId = _partNames.entries
+        .where((e) => e.value == part)
+        .map((e) => e.key)
+        .firstOrNull;
+
+    await _supabase.from('workers').insert({
+      'name': name,
+      'phone': phone,
+      'site_id': siteId,
+      'part_id': partId,
+      'role': 'worker',
+      'is_active': true,
+    });
   }
 
   Future<void> updateWorker(String id, {String? name, String? phone, String? part}) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _workers.indexWhere((w) => w.id == id);
-    if (idx != -1) {
-      final old = _workers[idx];
-      _workers[idx] = WorkerRow(
-        id: old.id,
-        name: name ?? old.name,
-        phone: phone ?? old.phone,
-        part: part ?? old.part,
-        site: old.site,
-        isActive: old.isActive,
-      );
+    final updates = <String, dynamic>{};
+    if (name != null) updates['name'] = name;
+    if (phone != null) updates['phone'] = phone;
+    if (part != null) {
+      await _loadMappings();
+      final partId = _partNames.entries
+          .where((e) => e.value == part)
+          .map((e) => e.key)
+          .firstOrNull;
+      updates['part_id'] = partId;
+    }
+    if (updates.isNotEmpty) {
+      await _supabase.from('workers').update(updates).eq('id', id);
     }
   }
 
   Future<void> saveWorkerProfile(WorkerRow worker) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _workers.indexWhere((w) => w.id == worker.id);
-    if (idx != -1) {
-      _workers[idx] = worker;
-    } else {
-      _workers.add(worker);
-    }
+    // workers 테이블 업데이트
+    await _loadMappings();
+    final siteId = _siteNames.entries
+        .where((e) => e.value == worker.site)
+        .map((e) => e.key)
+        .firstOrNull;
+    final partId = _partNames.entries
+        .where((e) => e.value == worker.part)
+        .map((e) => e.key)
+        .firstOrNull;
+
+    await _supabase.from('workers').update({
+      'name': worker.name,
+      'phone': worker.phone,
+      'site_id': siteId,
+      'part_id': partId,
+      'is_active': worker.isActive,
+    }).eq('id', worker.id);
+
+    // worker_profiles upsert
+    await _supabase.from('worker_profiles').upsert({
+      'worker_id': worker.id,
+      'company': worker.company,
+      'employee_id': worker.employeeId,
+      'ssn': worker.ssn,
+      'gender': worker.gender,
+      'address': worker.address,
+      'detail_address': worker.detailAddress,
+      'email': worker.email,
+      'emergency_contact': worker.emergencyContact,
+      'resume_file': worker.resumeFile,
+      'employment_status': worker.employmentStatus,
+      'join_date': worker.joinDate?.toIso8601String().split('T').first,
+      'leave_date': worker.leaveDate?.toIso8601String().split('T').first,
+      'position': worker.position,
+      'title': worker.role,
+      'job': worker.job,
+      'photo_url': worker.photoUrl,
+    }, onConflict: 'worker_id');
   }
 
   Future<void> deactivateWorker(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _workers.indexWhere((w) => w.id == id);
-    if (idx != -1) _workers[idx].isActive = false;
+    await _supabase.from('workers').update({'is_active': false}).eq('id', id);
   }
 
   /// 특정 회사+센터 조합의 다음 순번을 반환
-  int getNextSequenceNumber(String companyCode, String centerName) {
+  Future<int> getNextSequenceNumber(String companyCode, String centerName) async {
     final centerCode = CompanyConstants.centerCode(centerName);
     final prefix = '$companyCode-$centerCode';
+
+    final response = await _supabase
+        .from('worker_profiles')
+        .select('employee_id')
+        .like('employee_id', '$prefix%');
+
     int maxSeq = 0;
-    for (final w in _workers) {
-      if (w.employeeId != null && w.employeeId!.startsWith(prefix)) {
-        final seqStr = w.employeeId!.substring(prefix.length);
+    for (final row in response) {
+      final eid = row['employee_id'] as String?;
+      if (eid != null && eid.startsWith(prefix)) {
+        final seqStr = eid.substring(prefix.length);
         final seq = int.tryParse(seqStr) ?? 0;
         if (seq > maxSeq) maxSeq = seq;
       }
@@ -206,8 +274,8 @@ class WorkersRepository {
   }
 
   /// 사번 자동생성
-  String generateNextEmployeeId(String companyCode, String centerName) {
-    final nextSeq = getNextSequenceNumber(companyCode, centerName);
+  Future<String> generateNextEmployeeId(String companyCode, String centerName) async {
+    final nextSeq = await getNextSequenceNumber(companyCode, centerName);
     return EmployeeIdGenerator.generate(
       companyCode: companyCode,
       centerName: centerName,
