@@ -1,11 +1,11 @@
 {
-    "name": "worker_app",
-    "short_name": "worker_app",
+    "name": "WorkFlow by tkholdings",
+    "short_name": "WorkFlow",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "WorkFlow by tkholdings - 근로자 출퇴근 관리",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

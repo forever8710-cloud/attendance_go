@@ -59,6 +59,7 @@ class WorkerAuthRepository {
   /// 추가정보(프로필) 저장
   Future<void> saveProfile({
     required String workerId,
+    required String site,
     required String ssn,
     required String address,
     required String bank,

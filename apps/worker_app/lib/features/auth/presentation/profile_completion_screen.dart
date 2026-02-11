@@ -17,7 +17,10 @@ class _ProfileCompletionScreenState extends ConsumerState<ProfileCompletionScree
   final _detailAddressController = TextEditingController();
   final _accountController = TextEditingController();
 
+  String? _selectedSite;
   String? _selectedBank;
+
+  static const _sites = ['서이천', '안성', '의왕', '부평'];
 
   static const _banks = [
     '국민은행', '신한은행', '우리은행', '하나은행',
@@ -75,6 +78,21 @@ class _ProfileCompletionScreenState extends ConsumerState<ProfileCompletionScree
               style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
             ),
             const SizedBox(height: 28),
+
+            // ── 소속 센터 ──
+            const Text('소속 센터', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSite,
+              decoration: const InputDecoration(
+                hintText: '센터 선택',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              ),
+              items: _sites.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              onChanged: (v) => setState(() => _selectedSite = v),
+            ),
+            const SizedBox(height: 24),
 
             // ── 주민등록번호 ──
             const Text('주민등록번호', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
@@ -200,6 +218,12 @@ class _ProfileCompletionScreenState extends ConsumerState<ProfileCompletionScree
   }
 
   void _onSave() {
+    if (_selectedSite == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('소속 센터를 선택해주세요.')),
+      );
+      return;
+    }
     if (_ssnFrontController.text.length != 6 || _ssnBackController.text.length != 7) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('주민등록번호를 정확히 입력해주세요.')),
@@ -221,6 +245,7 @@ class _ProfileCompletionScreenState extends ConsumerState<ProfileCompletionScree
 
     final ssn = '${_ssnFrontController.text}-${_ssnBackController.text}';
     ref.read(authProvider.notifier).saveProfile(
+      site: _selectedSite!,
       ssn: ssn,
       address: _addressController.text,
       detailAddress: _detailAddressController.text,

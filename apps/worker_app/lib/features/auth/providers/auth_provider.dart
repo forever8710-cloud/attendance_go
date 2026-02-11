@@ -8,6 +8,7 @@ enum AuthStatus {
   authenticated,
   unauthenticated,
   needsPhoneVerification,
+  needsConsent,
   needsProfileCompletion,
   error,
 }
@@ -78,7 +79,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final worker = await _repository.loginWithKakao();
       final profileComplete = await _repository.isProfileComplete(worker.id);
       state = state.copyWith(
-        status: profileComplete ? AuthStatus.authenticated : AuthStatus.needsProfileCompletion,
+        status: profileComplete ? AuthStatus.authenticated : AuthStatus.needsConsent,
         worker: worker,
       );
     } catch (e) {
@@ -104,7 +105,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final worker = await _repository.verifyPhoneAndMatch(phone, otp);
       final profileComplete = await _repository.isProfileComplete(worker.id);
       state = state.copyWith(
-        status: profileComplete ? AuthStatus.authenticated : AuthStatus.needsProfileCompletion,
+        status: profileComplete ? AuthStatus.authenticated : AuthStatus.needsConsent,
         worker: worker,
       );
     } catch (e) {
@@ -114,6 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// 추가정보 저장
   Future<void> saveProfile({
+    required String site,
     required String ssn,
     required String address,
     required String detailAddress,
@@ -124,6 +126,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repository.saveProfile(
         workerId: state.worker!.id,
+        site: site,
         ssn: ssn,
         address: '$address $detailAddress',
         bank: bank,
@@ -133,6 +136,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(status: AuthStatus.error, errorMessage: '프로필 저장에 실패했습니다');
     }
+  }
+
+  /// 개인정보 동의 완료
+  void acceptConsent({required bool locationConsent}) {
+    state = state.copyWith(status: AuthStatus.needsProfileCompletion);
   }
 
   Future<void> signOut() async {

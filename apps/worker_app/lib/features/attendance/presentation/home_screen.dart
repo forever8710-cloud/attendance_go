@@ -33,7 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('출퇴근GO'),
+        title: const Text('WorkFlow'),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),
@@ -119,6 +119,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
+              // 조퇴 버튼 (출근 후에만 활성화)
+              if (attState.status == AttendanceStatus.checkedIn) ...[
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleEarlyLeave(),
+                    icon: const Icon(Icons.directions_run, size: 20),
+                    label: const Text('조퇴', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange[700],
+                      side: BorderSide(color: Colors.orange[300]!),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
+
               if (attState.errorMessage != null) ...[
                 const SizedBox(height: 16),
                 Text(attState.errorMessage!, style: const TextStyle(color: Colors.red)),
@@ -143,6 +162,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
           Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  void _handleEarlyLeave() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('조퇴 확인'),
+        content: const Text('조퇴 처리하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(attendanceProvider.notifier).checkOut();
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange[700]),
+            child: const Text('조퇴'),
+          ),
         ],
       ),
     );

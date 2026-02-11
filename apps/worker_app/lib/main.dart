@@ -5,6 +5,7 @@ import 'package:supabase_client/supabase_client.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/phone_verification_screen.dart';
+import 'features/auth/presentation/consent_screen.dart';
 import 'features/auth/presentation/profile_completion_screen.dart';
 import 'features/attendance/presentation/home_screen.dart';
 
@@ -27,7 +28,7 @@ class WorkerApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: '출퇴근GO',
+      title: 'WorkFlow',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
@@ -69,6 +70,8 @@ class WorkerApp extends ConsumerWidget {
         return const HomeScreen();
       case AuthStatus.needsPhoneVerification:
         return const PhoneVerificationScreen();
+      case AuthStatus.needsConsent:
+        return const ConsentScreen();
       case AuthStatus.needsProfileCompletion:
         return const ProfileCompletionScreen();
       default:

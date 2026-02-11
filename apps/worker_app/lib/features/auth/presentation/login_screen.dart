@@ -26,8 +26,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const Icon(Icons.shield, size: 80, color: Colors.indigo),
               const SizedBox(height: 16),
               const Text(
-                '출퇴근GO',
+                'WorkFlow',
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'by tkholdings',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               ),
               const SizedBox(height: 8),
               Text(
