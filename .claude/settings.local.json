@@ -44,7 +44,9 @@
       "mcp__supabase__get_advisors",
       "Bash(dart run build_runner build:*)",
       "Bash(flutter pub get:*)",
-      "mcp__supabase__search_docs"
+      "mcp__supabase__search_docs",
+      "Bash(flutter devices:*)",
+      "Bash(flutter create:*)"
     ]
   },
   "enableAllProjectMcpServers": true
