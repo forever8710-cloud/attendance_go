@@ -62,14 +62,21 @@ class ManagerShell extends ConsumerStatefulWidget {
 
 class _ManagerShellState extends ConsumerState<ManagerShell> {
   int _selectedIndex = 0;
+  String? _detailWorkerId;
   String? _detailWorkerName;
 
-  void _openWorkerDetail(String name) {
-    setState(() => _detailWorkerName = name);
+  void _openWorkerDetail(String id, String name) {
+    setState(() {
+      _detailWorkerId = id;
+      _detailWorkerName = name;
+    });
   }
 
   void _closeWorkerDetail() {
-    setState(() => _detailWorkerName = null);
+    setState(() {
+      _detailWorkerId = null;
+      _detailWorkerName = null;
+    });
   }
 
   @override
@@ -88,9 +95,10 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       body: Row(
         children: [
           SideNavDrawer(
-            selectedIndex: _detailWorkerName != null ? -1 : _selectedIndex,
+            selectedIndex: _detailWorkerId != null ? -1 : _selectedIndex,
             onDestinationSelected: (i) => setState(() {
               _selectedIndex = i;
+              _detailWorkerId = null;
               _detailWorkerName = null;
             }),
             role: role,
@@ -180,9 +188,10 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
 
   Widget _buildPage(AppRole role) {
     // 상세 페이지 표시
-    if (_detailWorkerName != null) {
+    if (_detailWorkerId != null) {
       return WorkerDetailScreen(
-        workerName: _detailWorkerName!,
+        workerId: _detailWorkerId!,
+        workerName: _detailWorkerName ?? '',
         onBack: _closeWorkerDetail,
       );
     }

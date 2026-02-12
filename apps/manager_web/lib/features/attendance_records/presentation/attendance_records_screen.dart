@@ -7,7 +7,7 @@ import '../../dashboard/providers/dashboard_provider.dart';
 class AttendanceRecordsScreen extends ConsumerStatefulWidget {
   const AttendanceRecordsScreen({super.key, this.onWorkerTap});
 
-  final void Function(String name)? onWorkerTap;
+  final void Function(String id, String name)? onWorkerTap;
 
   @override
   ConsumerState<AttendanceRecordsScreen> createState() => _AttendanceRecordsScreenState();
@@ -154,7 +154,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             1 => Text(DateFormat('yyyy-MM-dd').format(DateTime.now()), style: const TextStyle(fontSize: 13)),
                             2 => widget.onWorkerTap != null
                                 ? GestureDetector(
-                                    onTap: () => widget.onWorkerTap!(r.name),
+                                    onTap: () => widget.onWorkerTap!(r.id ?? '', r.name),
                                     child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
                                   )
                                 : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),

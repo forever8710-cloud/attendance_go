@@ -62,13 +62,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
     try {
       final worker = await _repository.verifyOtp(phone, token);
+      final profileComplete = await _repository.isProfileComplete(worker.id);
       state = state.copyWith(
-        status: AuthStatus.authenticated,
+        status: profileComplete ? AuthStatus.authenticated : AuthStatus.needsConsent,
         worker: worker,
         loginProvider: LoginProvider.sms,
       );
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, errorMessage: '인증에 실패했습니다');
+      state = state.copyWith(status: AuthStatus.error, errorMessage: e.toString());
     }
   }
 

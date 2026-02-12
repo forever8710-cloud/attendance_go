@@ -100,8 +100,9 @@ class _PhoneVerificationScreenState extends ConsumerState<PhoneVerificationScree
                     ? null
                     : () {
                         if (!_otpSent) {
+                          if (_phoneController.text.isEmpty) return;
+                          ref.read(authProvider.notifier).sendOtp(_phoneController.text);
                           setState(() => _otpSent = true);
-                          // 데모에서는 OTP 전송만 시뮬레이션
                         } else {
                           ref.read(authProvider.notifier).verifyPhoneAfterGoogle(
                             _phoneController.text,

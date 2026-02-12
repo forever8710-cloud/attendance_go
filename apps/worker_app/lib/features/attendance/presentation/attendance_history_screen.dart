@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../data/attendance_repository.dart';
+import '../providers/attendance_provider.dart';
 
 final _monthProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
 final _monthlyAttendancesProvider = FutureProvider.family<List<Attendance>, DateTime>((ref, month) async {
   final worker = ref.watch(authProvider).worker;
   if (worker == null) return [];
-  final repo = AttendanceRepository();
+  final repo = ref.watch(attendanceRepositoryProvider);
   return repo.getMonthlyAttendances(worker.id, month.year, month.month);
 });
 

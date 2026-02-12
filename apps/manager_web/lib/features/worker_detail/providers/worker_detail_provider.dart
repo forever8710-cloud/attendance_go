@@ -9,18 +9,18 @@ final detailYearMonthProvider = StateProvider<String>((ref) {
   return '${now.year}-${now.month.toString().padLeft(2, '0')}';
 });
 
-/// 월별 근태 데이터 (workerName을 family 파라미터로)
+/// 월별 근태 데이터 (workerId를 family 파라미터로)
 final workerMonthlyAttendanceProvider = FutureProvider.family<List<WorkerMonthlyAttendanceRow>, String>(
-  (ref, workerName) {
+  (ref, workerId) {
     final yearMonth = ref.watch(detailYearMonthProvider);
-    return ref.watch(workerDetailRepositoryProvider).getMonthlyAttendance(workerName, yearMonth);
+    return ref.watch(workerDetailRepositoryProvider).getMonthlyAttendance(workerId, yearMonth);
   },
 );
 
-/// 월별 요약 (workerName을 family 파라미터로)
+/// 월별 요약 (workerId를 family 파라미터로)
 final workerMonthlySummaryProvider = FutureProvider.family<WorkerMonthlySummary, String>(
-  (ref, workerName) {
+  (ref, workerId) {
     final yearMonth = ref.watch(detailYearMonthProvider);
-    return ref.watch(workerDetailRepositoryProvider).getMonthlySummary(workerName, yearMonth);
+    return ref.watch(workerDetailRepositoryProvider).getMonthlySummary(workerId, yearMonth);
   },
 );

@@ -1,5 +1,8 @@
+import 'package:supabase_client/supabase_client.dart';
+
 class PayrollRow {
   const PayrollRow({
+    required this.workerId,
     required this.name,
     required this.part,
     required this.workDays,
@@ -8,6 +11,7 @@ class PayrollRow {
     required this.baseSalary,
     required this.totalSalary,
   });
+  final String workerId;
   final String name, part;
   final int workDays;
   final double totalHours;
@@ -15,16 +19,78 @@ class PayrollRow {
 }
 
 class PayrollRepository {
+  final SupabaseService _supabase = SupabaseService.instance;
+
+  Map<String, String> _partNames = {};
+  Map<String, int> _partWages = {};
+
+  Future<void> _loadParts() async {
+    if (_partNames.isNotEmpty) return;
+    final parts = await _supabase.from('parts').select('id, name, hourly_wage');
+    _partNames = {for (final p in parts) p['id'] as String: p['name'] as String};
+    _partWages = {for (final p in parts) p['id'] as String: (p['hourly_wage'] as num).toInt()};
+  }
+
   Future<List<PayrollRow>> calculatePayroll(String siteId, String yearMonth) async {
-    await Future.delayed(const Duration(seconds: 1));
-    // Demo payroll data
-    return [
-      const PayrollRow(name: '김영수', part: '지게차', workDays: 22, totalHours: 198.0, hourlyWage: 12000, baseSalary: 2376000, totalSalary: 2376000),
-      const PayrollRow(name: '이민호', part: '사무', workDays: 22, totalHours: 220.5, hourlyWage: 15000, baseSalary: 3307500, totalSalary: 3307500),
-      const PayrollRow(name: '최지우', part: '현장', workDays: 21, totalHours: 189.0, hourlyWage: 13000, baseSalary: 2457000, totalSalary: 2457000),
-      const PayrollRow(name: '박강성', part: '일용직', workDays: 20, totalHours: 180.0, hourlyWage: 11000, baseSalary: 1980000, totalSalary: 1980000),
-      const PayrollRow(name: '정우성', part: '사무', workDays: 22, totalHours: 198.0, hourlyWage: 20000, baseSalary: 3960000, totalSalary: 3960000),
-      const PayrollRow(name: '한지민', part: '현장', workDays: 18, totalHours: 162.0, hourlyWage: 13000, baseSalary: 2106000, totalSalary: 2106000),
-    ];
+    await _loadParts();
+
+    final parts = yearMonth.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
+    final start = DateTime(year, month, 1).toUtc().toIso8601String();
+    final end = DateTime(year, month + 1, 1).toUtc().toIso8601String();
+
+    // 활성 근로자 목록
+    final workers = await _supabase
+        .from('workers')
+        .select('id, name, part_id')
+        .eq('is_active', true)
+        .eq('role', 'worker');
+
+    // 해당 월 출퇴근 기록
+    final attendances = await _supabase
+        .from('attendances')
+        .select('worker_id, work_hours')
+        .gte('check_in_time', start)
+        .lt('check_in_time', end);
+
+    // worker_id별 집계
+    final workerStats = <String, ({int days, double hours})>{};
+    for (final att in attendances) {
+      final wId = att['worker_id'] as String;
+      final wh = att['work_hours'];
+      final hours = wh != null
+          ? ((wh is num) ? wh.toDouble() : double.tryParse(wh.toString()) ?? 0)
+          : 0.0;
+      final prev = workerStats[wId] ?? (days: 0, hours: 0.0);
+      workerStats[wId] = (days: prev.days + 1, hours: prev.hours + hours);
+    }
+
+    final rows = <PayrollRow>[];
+    for (final w in workers) {
+      final wId = w['id'] as String;
+      final partId = w['part_id'] as String?;
+      final partName = partId != null ? (_partNames[partId] ?? '-') : '-';
+      final hourlyWage = partId != null ? (_partWages[partId] ?? 0) : 0;
+
+      final stats = workerStats[wId];
+      if (stats == null || stats.days == 0) continue;
+
+      final baseSalary = (stats.hours * hourlyWage).round();
+      rows.add(PayrollRow(
+        workerId: wId,
+        name: w['name'] as String,
+        part: partName,
+        workDays: stats.days,
+        totalHours: stats.hours,
+        hourlyWage: hourlyWage,
+        baseSalary: baseSalary,
+        totalSalary: baseSalary,
+      ));
+    }
+
+    rows.sort((a, b) => a.name.compareTo(b.name));
+    return rows;
   }
 }

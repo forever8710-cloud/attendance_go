@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/widgets/sticky_data_table.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../data/payroll_repository.dart';
 import '../providers/payroll_provider.dart';
 
@@ -10,7 +11,7 @@ class PayrollScreen extends ConsumerStatefulWidget {
   const PayrollScreen({super.key, required this.role, this.onWorkerTap});
 
   final AppRole role;
-  final void Function(String name)? onWorkerTap;
+  final void Function(String id, String name)? onWorkerTap;
 
   @override
   ConsumerState<PayrollScreen> createState() => _PayrollScreenState();
@@ -135,7 +136,8 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
   Future<void> _generatePayroll(String yearMonth) async {
     setState(() => _loading = true);
     try {
-      final data = await ref.read(payrollRepositoryProvider).calculatePayroll('demo-site-id', yearMonth);
+      final siteId = ref.read(authProvider).worker?.siteId ?? '';
+      final data = await ref.read(payrollRepositoryProvider).calculatePayroll(siteId, yearMonth);
       setState(() {
         _payrollData = data;
         _loading = false;
@@ -197,7 +199,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
           0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
           1 => widget.onWorkerTap != null
               ? GestureDetector(
-                  onTap: () => widget.onWorkerTap!(r.name),
+                  onTap: () => widget.onWorkerTap!(r.workerId, r.name),
                   child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
                 )
               : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),

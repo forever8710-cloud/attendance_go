@@ -15,7 +15,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
   final AppRole role;
   final String userSiteId;
-  final void Function(String name)? onWorkerTap;
+  final void Function(String id, String name)? onWorkerTap;
 
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
@@ -28,39 +28,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int? _sortColumnIndex;
   bool _isAscending = true;
 
-  // 센터 목록 (전체, 서이천, 안성, 의왕, 부평)
-  static const _allCenters = ['전체', '서이천', '안성', '의왕', '부평'];
-
-  // siteId → 센터명 매핑 (데모용)
-  String _getSiteName(String siteId) {
-    return switch (siteId) {
-      'site-seoicheon' => '서이천',
-      'site-anseong' => '안성',
-      'site-uiwang' => '의왕',
-      'site-bupyeong' => '부평',
-      'demo-site-id' => '서이천', // 데모 센터장용
-      _ => '서이천',
-    };
-  }
-
-  List<String> get _availableCenters {
-    if (canAccessAllSites(widget.role)) {
-      return _allCenters;
-    } else {
-      // 센터장은 본인 센터만
-      final mySite = _getSiteName(widget.userSiteId);
-      return [mySite];
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    // 센터장은 자기 센터로 초기화, 그 외는 '전체'
+    _selectedCenter = canAccessAllSites(widget.role) ? '전체' : null;
+  }
+
+  List<String> _getAvailableCenters(List<Map<String, String>> sites) {
     if (canAccessAllSites(widget.role)) {
-      _selectedCenter = '전체';
+      return ['전체', ...sites.map((s) => s['name']!)];
     } else {
-      _selectedCenter = _getSiteName(widget.userSiteId);
+      // 센터장은 자기 센터만 — attendances에서 site 매칭으로 표시
+      final mySiteName = sites
+          .where((s) => s['id'] == widget.userSiteId)
+          .map((s) => s['name']!)
+          .firstOrNull;
+      return [mySiteName ?? ''];
     }
   }
 
@@ -68,6 +51,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final summary = ref.watch(dashboardSummaryProvider);
     final attendances = ref.watch(todayAttendancesProvider);
+    final sitesAsync = ref.watch(sitesProvider);
+
+    // 사이트 로드 후 센터장 초기화
+    final sites = sitesAsync.valueOrNull ?? [];
+    if (_selectedCenter == null && sites.isNotEmpty && !canAccessAllSites(widget.role)) {
+      final mySiteName = sites
+          .where((s) => s['id'] == widget.userSiteId)
+          .map((s) => s['name']!)
+          .firstOrNull;
+      if (mySiteName != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _selectedCenter = mySiteName);
+        });
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +245,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       1 => Text(e.site, style: const TextStyle(fontSize: 13)),
                       2 => widget.onWorkerTap != null
                           ? GestureDetector(
-                              onTap: () => widget.onWorkerTap!(e.name),
+                              onTap: () => widget.onWorkerTap!(e.id ?? '', e.name),
                               child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
                             )
                           : Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
@@ -341,7 +339,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildCenterDropdown() {
-    final centers = _availableCenters;
+    final sites = ref.watch(sitesProvider).valueOrNull ?? [];
+    final centers = _getAvailableCenters(sites);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),

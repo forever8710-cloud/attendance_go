@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../data/attendance_repository.dart';
 
 enum AttendanceStatus { idle, loading, checkedIn, checkedOut, error }
@@ -50,14 +51,42 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     }
   }
 
+  /// GPS 위치 가져오기
+  Future<Position> _getCurrentPosition() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('위치 서비스가 꺼져 있습니다. 설정에서 활성화해주세요.');
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('위치 권한이 거부되었습니다.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('위치 권한이 영구적으로 거부되었습니다. 설정에서 변경해주세요.');
+    }
+
+    return await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+  }
+
   Future<void> checkIn(String workerId) async {
     state = state.copyWith(status: AttendanceStatus.loading);
     try {
-      // TODO: Get actual GPS coordinates
-      final attendance = await _repository.checkIn(workerId, 37.2636, 127.0286);
+      final position = await _getCurrentPosition();
+      final attendance = await _repository.checkIn(
+        workerId,
+        position.latitude,
+        position.longitude,
+      );
       state = state.copyWith(status: AttendanceStatus.checkedIn, todayAttendance: attendance);
     } catch (e) {
-      state = state.copyWith(status: AttendanceStatus.error, errorMessage: '출근 처리에 실패했습니다');
+      state = state.copyWith(status: AttendanceStatus.error, errorMessage: e.toString());
     }
   }
 
@@ -65,14 +94,15 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     if (state.todayAttendance == null) return;
     state = state.copyWith(status: AttendanceStatus.loading);
     try {
+      final position = await _getCurrentPosition();
       final attendance = await _repository.checkOut(
         state.todayAttendance!.id,
-        37.2636,
-        127.0286,
+        position.latitude,
+        position.longitude,
       );
       state = state.copyWith(status: AttendanceStatus.checkedOut, todayAttendance: attendance);
     } catch (e) {
-      state = state.copyWith(status: AttendanceStatus.error, errorMessage: '퇴근 처리에 실패했습니다');
+      state = state.copyWith(status: AttendanceStatus.error, errorMessage: e.toString());
     }
   }
 }

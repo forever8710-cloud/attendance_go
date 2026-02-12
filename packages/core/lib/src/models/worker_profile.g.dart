@@ -30,6 +30,8 @@ _WorkerProfile _$WorkerProfileFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String?,
       job: json['job'] as String?,
       photoUrl: json['photo_url'] as String?,
+      bank: json['bank'] as String?,
+      accountNumber: json['account_number'] as String?,
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -58,6 +60,8 @@ Map<String, dynamic> _$WorkerProfileToJson(_WorkerProfile instance) =>
       'title': instance.title,
       'job': instance.job,
       'photo_url': instance.photoUrl,
+      'bank': instance.bank,
+      'account_number': instance.accountNumber,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
     };

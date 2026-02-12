@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WorkerProfile {
 
- String get id; String get workerId; String? get company; String? get employeeId; String? get ssn; String? get gender; String? get address; String? get detailAddress; String? get email; String? get emergencyContact; String? get resumeFile; String? get employmentStatus; DateTime? get joinDate; DateTime? get leaveDate; String? get position; String? get title; String? get job; String? get photoUrl; DateTime? get createdAt; DateTime? get updatedAt;
+ String get id; String get workerId; String? get company; String? get employeeId; String? get ssn; String? get gender; String? get address; String? get detailAddress; String? get email; String? get emergencyContact; String? get resumeFile; String? get employmentStatus; DateTime? get joinDate; DateTime? get leaveDate; String? get position; String? get title; String? get job; String? get photoUrl; String? get bank; String? get accountNumber; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of WorkerProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $WorkerProfileCopyWith<WorkerProfile> get copyWith => _$WorkerProfileCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkerProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.workerId, workerId) || other.workerId == workerId)&&(identical(other.company, company) || other.company == company)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.ssn, ssn) || other.ssn == ssn)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.address, address) || other.address == address)&&(identical(other.detailAddress, detailAddress) || other.detailAddress == detailAddress)&&(identical(other.email, email) || other.email == email)&&(identical(other.emergencyContact, emergencyContact) || other.emergencyContact == emergencyContact)&&(identical(other.resumeFile, resumeFile) || other.resumeFile == resumeFile)&&(identical(other.employmentStatus, employmentStatus) || other.employmentStatus == employmentStatus)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.leaveDate, leaveDate) || other.leaveDate == leaveDate)&&(identical(other.position, position) || other.position == position)&&(identical(other.title, title) || other.title == title)&&(identical(other.job, job) || other.job == job)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkerProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.workerId, workerId) || other.workerId == workerId)&&(identical(other.company, company) || other.company == company)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.ssn, ssn) || other.ssn == ssn)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.address, address) || other.address == address)&&(identical(other.detailAddress, detailAddress) || other.detailAddress == detailAddress)&&(identical(other.email, email) || other.email == email)&&(identical(other.emergencyContact, emergencyContact) || other.emergencyContact == emergencyContact)&&(identical(other.resumeFile, resumeFile) || other.resumeFile == resumeFile)&&(identical(other.employmentStatus, employmentStatus) || other.employmentStatus == employmentStatus)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.leaveDate, leaveDate) || other.leaveDate == leaveDate)&&(identical(other.position, position) || other.position == position)&&(identical(other.title, title) || other.title == title)&&(identical(other.job, job) || other.job == job)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.bank, bank) || other.bank == bank)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,workerId,company,employeeId,ssn,gender,address,detailAddress,email,emergencyContact,resumeFile,employmentStatus,joinDate,leaveDate,position,title,job,photoUrl,createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,workerId,company,employeeId,ssn,gender,address,detailAddress,email,emergencyContact,resumeFile,employmentStatus,joinDate,leaveDate,position,title,job,photoUrl,bank,accountNumber,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'WorkerProfile(id: $id, workerId: $workerId, company: $company, employeeId: $employeeId, ssn: $ssn, gender: $gender, address: $address, detailAddress: $detailAddress, email: $email, emergencyContact: $emergencyContact, resumeFile: $resumeFile, employmentStatus: $employmentStatus, joinDate: $joinDate, leaveDate: $leaveDate, position: $position, title: $title, job: $job, photoUrl: $photoUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'WorkerProfile(id: $id, workerId: $workerId, company: $company, employeeId: $employeeId, ssn: $ssn, gender: $gender, address: $address, detailAddress: $detailAddress, email: $email, emergencyContact: $emergencyContact, resumeFile: $resumeFile, employmentStatus: $employmentStatus, joinDate: $joinDate, leaveDate: $leaveDate, position: $position, title: $title, job: $job, photoUrl: $photoUrl, bank: $bank, accountNumber: $accountNumber, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $WorkerProfileCopyWith<$Res>  {
   factory $WorkerProfileCopyWith(WorkerProfile value, $Res Function(WorkerProfile) _then) = _$WorkerProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, String workerId, String? company, String? employeeId, String? ssn, String? gender, String? address, String? detailAddress, String? email, String? emergencyContact, String? resumeFile, String? employmentStatus, DateTime? joinDate, DateTime? leaveDate, String? position, String? title, String? job, String? photoUrl, DateTime? createdAt, DateTime? updatedAt
+ String id, String workerId, String? company, String? employeeId, String? ssn, String? gender, String? address, String? detailAddress, String? email, String? emergencyContact, String? resumeFile, String? employmentStatus, DateTime? joinDate, DateTime? leaveDate, String? position, String? title, String? job, String? photoUrl, String? bank, String? accountNumber, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -65,7 +65,7 @@ class _$WorkerProfileCopyWithImpl<$Res>
 
 /// Create a copy of WorkerProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workerId = null,Object? company = freezed,Object? employeeId = freezed,Object? ssn = freezed,Object? gender = freezed,Object? address = freezed,Object? detailAddress = freezed,Object? email = freezed,Object? emergencyContact = freezed,Object? resumeFile = freezed,Object? employmentStatus = freezed,Object? joinDate = freezed,Object? leaveDate = freezed,Object? position = freezed,Object? title = freezed,Object? job = freezed,Object? photoUrl = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workerId = null,Object? company = freezed,Object? employeeId = freezed,Object? ssn = freezed,Object? gender = freezed,Object? address = freezed,Object? detailAddress = freezed,Object? email = freezed,Object? emergencyContact = freezed,Object? resumeFile = freezed,Object? employmentStatus = freezed,Object? joinDate = freezed,Object? leaveDate = freezed,Object? position = freezed,Object? title = freezed,Object? job = freezed,Object? photoUrl = freezed,Object? bank = freezed,Object? accountNumber = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workerId: null == workerId ? _self.workerId : workerId // ignore: cast_nullable_to_non_nullable
@@ -85,6 +85,8 @@ as DateTime?,position: freezed == position ? _self.position : position // ignore
 as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,job: freezed == job ? _self.job : job // ignore: cast_nullable_to_non_nullable
 as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,bank: freezed == bank ? _self.bank : bank // ignore: cast_nullable_to_non_nullable
+as String?,accountNumber: freezed == accountNumber ? _self.accountNumber : accountNumber // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -172,10 +174,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workerId,  String? company,  String? employeeId,  String? ssn,  String? gender,  String? address,  String? detailAddress,  String? email,  String? emergencyContact,  String? resumeFile,  String? employmentStatus,  DateTime? joinDate,  DateTime? leaveDate,  String? position,  String? title,  String? job,  String? photoUrl,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workerId,  String? company,  String? employeeId,  String? ssn,  String? gender,  String? address,  String? detailAddress,  String? email,  String? emergencyContact,  String? resumeFile,  String? employmentStatus,  DateTime? joinDate,  DateTime? leaveDate,  String? position,  String? title,  String? job,  String? photoUrl,  String? bank,  String? accountNumber,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WorkerProfile() when $default != null:
-return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn,_that.gender,_that.address,_that.detailAddress,_that.email,_that.emergencyContact,_that.resumeFile,_that.employmentStatus,_that.joinDate,_that.leaveDate,_that.position,_that.title,_that.job,_that.photoUrl,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn,_that.gender,_that.address,_that.detailAddress,_that.email,_that.emergencyContact,_that.resumeFile,_that.employmentStatus,_that.joinDate,_that.leaveDate,_that.position,_that.title,_that.job,_that.photoUrl,_that.bank,_that.accountNumber,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -193,10 +195,10 @@ return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workerId,  String? company,  String? employeeId,  String? ssn,  String? gender,  String? address,  String? detailAddress,  String? email,  String? emergencyContact,  String? resumeFile,  String? employmentStatus,  DateTime? joinDate,  DateTime? leaveDate,  String? position,  String? title,  String? job,  String? photoUrl,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workerId,  String? company,  String? employeeId,  String? ssn,  String? gender,  String? address,  String? detailAddress,  String? email,  String? emergencyContact,  String? resumeFile,  String? employmentStatus,  DateTime? joinDate,  DateTime? leaveDate,  String? position,  String? title,  String? job,  String? photoUrl,  String? bank,  String? accountNumber,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _WorkerProfile():
-return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn,_that.gender,_that.address,_that.detailAddress,_that.email,_that.emergencyContact,_that.resumeFile,_that.employmentStatus,_that.joinDate,_that.leaveDate,_that.position,_that.title,_that.job,_that.photoUrl,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn,_that.gender,_that.address,_that.detailAddress,_that.email,_that.emergencyContact,_that.resumeFile,_that.employmentStatus,_that.joinDate,_that.leaveDate,_that.position,_that.title,_that.job,_that.photoUrl,_that.bank,_that.accountNumber,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +215,10 @@ return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workerId,  String? company,  String? employeeId,  String? ssn,  String? gender,  String? address,  String? detailAddress,  String? email,  String? emergencyContact,  String? resumeFile,  String? employmentStatus,  DateTime? joinDate,  DateTime? leaveDate,  String? position,  String? title,  String? job,  String? photoUrl,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workerId,  String? company,  String? employeeId,  String? ssn,  String? gender,  String? address,  String? detailAddress,  String? email,  String? emergencyContact,  String? resumeFile,  String? employmentStatus,  DateTime? joinDate,  DateTime? leaveDate,  String? position,  String? title,  String? job,  String? photoUrl,  String? bank,  String? accountNumber,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _WorkerProfile() when $default != null:
-return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn,_that.gender,_that.address,_that.detailAddress,_that.email,_that.emergencyContact,_that.resumeFile,_that.employmentStatus,_that.joinDate,_that.leaveDate,_that.position,_that.title,_that.job,_that.photoUrl,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn,_that.gender,_that.address,_that.detailAddress,_that.email,_that.emergencyContact,_that.resumeFile,_that.employmentStatus,_that.joinDate,_that.leaveDate,_that.position,_that.title,_that.job,_that.photoUrl,_that.bank,_that.accountNumber,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -228,7 +230,7 @@ return $default(_that.id,_that.workerId,_that.company,_that.employeeId,_that.ssn
 @JsonSerializable()
 
 class _WorkerProfile implements WorkerProfile {
-  const _WorkerProfile({required this.id, required this.workerId, this.company, this.employeeId, this.ssn, this.gender, this.address, this.detailAddress, this.email, this.emergencyContact, this.resumeFile, this.employmentStatus, this.joinDate, this.leaveDate, this.position, this.title, this.job, this.photoUrl, this.createdAt, this.updatedAt});
+  const _WorkerProfile({required this.id, required this.workerId, this.company, this.employeeId, this.ssn, this.gender, this.address, this.detailAddress, this.email, this.emergencyContact, this.resumeFile, this.employmentStatus, this.joinDate, this.leaveDate, this.position, this.title, this.job, this.photoUrl, this.bank, this.accountNumber, this.createdAt, this.updatedAt});
   factory _WorkerProfile.fromJson(Map<String, dynamic> json) => _$WorkerProfileFromJson(json);
 
 @override final  String id;
@@ -249,6 +251,8 @@ class _WorkerProfile implements WorkerProfile {
 @override final  String? title;
 @override final  String? job;
 @override final  String? photoUrl;
+@override final  String? bank;
+@override final  String? accountNumber;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -265,16 +269,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkerProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.workerId, workerId) || other.workerId == workerId)&&(identical(other.company, company) || other.company == company)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.ssn, ssn) || other.ssn == ssn)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.address, address) || other.address == address)&&(identical(other.detailAddress, detailAddress) || other.detailAddress == detailAddress)&&(identical(other.email, email) || other.email == email)&&(identical(other.emergencyContact, emergencyContact) || other.emergencyContact == emergencyContact)&&(identical(other.resumeFile, resumeFile) || other.resumeFile == resumeFile)&&(identical(other.employmentStatus, employmentStatus) || other.employmentStatus == employmentStatus)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.leaveDate, leaveDate) || other.leaveDate == leaveDate)&&(identical(other.position, position) || other.position == position)&&(identical(other.title, title) || other.title == title)&&(identical(other.job, job) || other.job == job)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkerProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.workerId, workerId) || other.workerId == workerId)&&(identical(other.company, company) || other.company == company)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.ssn, ssn) || other.ssn == ssn)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.address, address) || other.address == address)&&(identical(other.detailAddress, detailAddress) || other.detailAddress == detailAddress)&&(identical(other.email, email) || other.email == email)&&(identical(other.emergencyContact, emergencyContact) || other.emergencyContact == emergencyContact)&&(identical(other.resumeFile, resumeFile) || other.resumeFile == resumeFile)&&(identical(other.employmentStatus, employmentStatus) || other.employmentStatus == employmentStatus)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.leaveDate, leaveDate) || other.leaveDate == leaveDate)&&(identical(other.position, position) || other.position == position)&&(identical(other.title, title) || other.title == title)&&(identical(other.job, job) || other.job == job)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.bank, bank) || other.bank == bank)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,workerId,company,employeeId,ssn,gender,address,detailAddress,email,emergencyContact,resumeFile,employmentStatus,joinDate,leaveDate,position,title,job,photoUrl,createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,workerId,company,employeeId,ssn,gender,address,detailAddress,email,emergencyContact,resumeFile,employmentStatus,joinDate,leaveDate,position,title,job,photoUrl,bank,accountNumber,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'WorkerProfile(id: $id, workerId: $workerId, company: $company, employeeId: $employeeId, ssn: $ssn, gender: $gender, address: $address, detailAddress: $detailAddress, email: $email, emergencyContact: $emergencyContact, resumeFile: $resumeFile, employmentStatus: $employmentStatus, joinDate: $joinDate, leaveDate: $leaveDate, position: $position, title: $title, job: $job, photoUrl: $photoUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'WorkerProfile(id: $id, workerId: $workerId, company: $company, employeeId: $employeeId, ssn: $ssn, gender: $gender, address: $address, detailAddress: $detailAddress, email: $email, emergencyContact: $emergencyContact, resumeFile: $resumeFile, employmentStatus: $employmentStatus, joinDate: $joinDate, leaveDate: $leaveDate, position: $position, title: $title, job: $job, photoUrl: $photoUrl, bank: $bank, accountNumber: $accountNumber, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -285,7 +289,7 @@ abstract mixin class _$WorkerProfileCopyWith<$Res> implements $WorkerProfileCopy
   factory _$WorkerProfileCopyWith(_WorkerProfile value, $Res Function(_WorkerProfile) _then) = __$WorkerProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String workerId, String? company, String? employeeId, String? ssn, String? gender, String? address, String? detailAddress, String? email, String? emergencyContact, String? resumeFile, String? employmentStatus, DateTime? joinDate, DateTime? leaveDate, String? position, String? title, String? job, String? photoUrl, DateTime? createdAt, DateTime? updatedAt
+ String id, String workerId, String? company, String? employeeId, String? ssn, String? gender, String? address, String? detailAddress, String? email, String? emergencyContact, String? resumeFile, String? employmentStatus, DateTime? joinDate, DateTime? leaveDate, String? position, String? title, String? job, String? photoUrl, String? bank, String? accountNumber, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -302,7 +306,7 @@ class __$WorkerProfileCopyWithImpl<$Res>
 
 /// Create a copy of WorkerProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workerId = null,Object? company = freezed,Object? employeeId = freezed,Object? ssn = freezed,Object? gender = freezed,Object? address = freezed,Object? detailAddress = freezed,Object? email = freezed,Object? emergencyContact = freezed,Object? resumeFile = freezed,Object? employmentStatus = freezed,Object? joinDate = freezed,Object? leaveDate = freezed,Object? position = freezed,Object? title = freezed,Object? job = freezed,Object? photoUrl = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workerId = null,Object? company = freezed,Object? employeeId = freezed,Object? ssn = freezed,Object? gender = freezed,Object? address = freezed,Object? detailAddress = freezed,Object? email = freezed,Object? emergencyContact = freezed,Object? resumeFile = freezed,Object? employmentStatus = freezed,Object? joinDate = freezed,Object? leaveDate = freezed,Object? position = freezed,Object? title = freezed,Object? job = freezed,Object? photoUrl = freezed,Object? bank = freezed,Object? accountNumber = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_WorkerProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workerId: null == workerId ? _self.workerId : workerId // ignore: cast_nullable_to_non_nullable
@@ -322,6 +326,8 @@ as DateTime?,position: freezed == position ? _self.position : position // ignore
 as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,job: freezed == job ? _self.job : job // ignore: cast_nullable_to_non_nullable
 as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,bank: freezed == bank ? _self.bank : bank // ignore: cast_nullable_to_non_nullable
+as String?,accountNumber: freezed == accountNumber ? _self.accountNumber : accountNumber // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

@@ -12,7 +12,7 @@ class WorkersScreen extends ConsumerStatefulWidget {
   const WorkersScreen({super.key, required this.role, this.onWorkerTap});
 
   final AppRole role;
-  final void Function(String name)? onWorkerTap;
+  final void Function(String id, String name)? onWorkerTap;
 
   @override
   ConsumerState<WorkersScreen> createState() => _WorkersScreenState();
@@ -583,7 +583,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
                       1 => widget.onWorkerTap != null
                           ? GestureDetector(
-                              onTap: () => widget.onWorkerTap!(w.name),
+                              onTap: () => widget.onWorkerTap!(w.id, w.name),
                               child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
                             )
                           : Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),

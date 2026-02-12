@@ -9,10 +9,12 @@ import '../providers/worker_detail_provider.dart';
 class WorkerDetailScreen extends ConsumerWidget {
   const WorkerDetailScreen({
     super.key,
+    required this.workerId,
     required this.workerName,
     required this.onBack,
   });
 
+  final String workerId;
   final String workerName;
   final VoidCallback onBack;
 
@@ -20,8 +22,8 @@ class WorkerDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workersAsync = ref.watch(workersProvider);
     final yearMonth = ref.watch(detailYearMonthProvider);
-    final attendanceAsync = ref.watch(workerMonthlyAttendanceProvider(workerName));
-    final summaryAsync = ref.watch(workerMonthlySummaryProvider(workerName));
+    final attendanceAsync = ref.watch(workerMonthlyAttendanceProvider(workerId));
+    final summaryAsync = ref.watch(workerMonthlySummaryProvider(workerId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +57,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                 // ── 인사기록카드 ──
                 workersAsync.when(
                   data: (workers) {
-                    final worker = workers.where((w) => w.name == workerName).firstOrNull;
+                    final worker = workers.where((w) => w.id == workerId).firstOrNull;
                     if (worker == null) {
                       return ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 1100),

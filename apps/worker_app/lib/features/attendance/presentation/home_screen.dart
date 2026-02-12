@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_client/supabase_client.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/attendance_provider.dart';
 import 'attendance_history_screen.dart';
+
+/// 사이트명을 가져오는 프로바이더
+final _siteNameProvider = FutureProvider.family<String, String?>((ref, siteId) async {
+  if (siteId == null || siteId.isEmpty) return '';
+  try {
+    final row = await SupabaseService.instance
+        .from('sites')
+        .select('name')
+        .eq('id', siteId)
+        .single();
+    return row['name'] as String? ?? '';
+  } catch (_) {
+    return '';
+  }
+});
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +45,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authProvider);
     final attState = ref.watch(attendanceProvider);
     final worker = authState.worker;
+    final siteNameAsync = ref.watch(_siteNameProvider(worker?.siteId));
+    final siteName = siteNameAsync.valueOrNull ?? '';
     final timeFormat = DateFormat('HH:mm:ss');
 
     return Scaffold(
@@ -60,7 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '서이천 사업장',
+                siteName.isNotEmpty ? '$siteName 사업장' : '',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 48),

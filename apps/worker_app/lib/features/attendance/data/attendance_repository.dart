@@ -1,67 +1,75 @@
 import 'package:core/core.dart';
+import 'package:supabase_client/supabase_client.dart';
 
 class AttendanceRepository {
-  Attendance? _todayAttendance;
+  final SupabaseService _supabase = SupabaseService.instance;
 
   Future<Attendance?> getTodayAttendance(String workerId) async {
-    // TODO: Query Supabase for today's attendance
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _todayAttendance;
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+    final tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
+
+    final rows = await _supabase
+        .from('attendances')
+        .select()
+        .eq('worker_id', workerId)
+        .gte('check_in_time', todayStart)
+        .lt('check_in_time', tomorrowStart)
+        .order('check_in_time', ascending: false)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    return Attendance.fromJson(rows.first);
   }
 
   Future<Attendance> checkIn(String workerId, double lat, double lng) async {
-    // TODO: Insert into Supabase attendances table
-    await Future.delayed(const Duration(seconds: 1));
-    final now = DateTime.now();
-    final attendance = Attendance(
-      id: 'att-${now.millisecondsSinceEpoch}',
-      workerId: workerId,
-      checkInTime: now,
-      checkInLatitude: lat,
-      checkInLongitude: lng,
-      status: 'present',
-    );
-    _todayAttendance = attendance;
-    return attendance;
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    final row = await _supabase
+        .from('attendances')
+        .insert({
+          'worker_id': workerId,
+          'check_in_time': now,
+          'check_in_latitude': lat,
+          'check_in_longitude': lng,
+          'status': 'present',
+        })
+        .select()
+        .single();
+
+    return Attendance.fromJson(row);
   }
 
   Future<Attendance> checkOut(String attendanceId, double lat, double lng) async {
-    // TODO: Update Supabase attendance record
-    await Future.delayed(const Duration(seconds: 1));
-    final now = DateTime.now();
-    final updated = _todayAttendance!.copyWith(
-      checkOutTime: now,
-      checkOutLatitude: lat,
-      checkOutLongitude: lng,
-      workHours: now.difference(_todayAttendance!.checkInTime).inMinutes / 60.0,
-    );
-    _todayAttendance = updated;
-    return updated;
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    // work_hours는 DB trigger가 자동 계산
+    final row = await _supabase
+        .from('attendances')
+        .update({
+          'check_out_time': now,
+          'check_out_latitude': lat,
+          'check_out_longitude': lng,
+        })
+        .eq('id', attendanceId)
+        .select()
+        .single();
+
+    return Attendance.fromJson(row);
   }
 
   Future<List<Attendance>> getMonthlyAttendances(String workerId, int year, int month) async {
-    // TODO: Query Supabase
-    await Future.delayed(const Duration(milliseconds: 500));
-    // Return demo data
-    final List<Attendance> records = [];
-    final daysInMonth = DateTime(year, month + 1, 0).day;
-    for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(year, month, day);
-      if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) continue;
-      if (date.isAfter(DateTime.now())) continue;
-      records.add(Attendance(
-        id: 'att-$year$month$day',
-        workerId: workerId,
-        checkInTime: DateTime(year, month, day, 8, 50),
-        checkInLatitude: 37.2636,
-        checkInLongitude: 127.0286,
-        checkOutTime: DateTime(year, month, day, 18, 10),
-        checkOutLatitude: 37.2636,
-        checkOutLongitude: 127.0286,
-        workHours: 9.33,
-        status: 'present',
-      ));
-    }
-    return records;
+    final start = DateTime(year, month, 1).toUtc().toIso8601String();
+    final end = DateTime(year, month + 1, 1).toUtc().toIso8601String();
+
+    final rows = await _supabase
+        .from('attendances')
+        .select()
+        .eq('worker_id', workerId)
+        .gte('check_in_time', start)
+        .lt('check_in_time', end)
+        .order('check_in_time', ascending: true);
+
+    return (rows as List).map((r) => Attendance.fromJson(r)).toList();
   }
 }

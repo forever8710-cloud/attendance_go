@@ -24,6 +24,8 @@ abstract class WorkerProfile with _$WorkerProfile {
     String? title,
     String? job,
     String? photoUrl,
+    String? bank,
+    String? accountNumber,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _WorkerProfile;

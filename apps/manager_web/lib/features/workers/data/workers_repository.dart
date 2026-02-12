@@ -26,6 +26,8 @@ class WorkerRow {
     this.role,
     this.job,
     this.photoUrl,
+    this.bank,
+    this.accountNumber,
   });
 
   final String id, name, phone, part, site;
@@ -50,6 +52,8 @@ class WorkerRow {
   final String? role;          // 직책: 조장, 파트장
   final String? job;           // 직무: 지게차, 지게차(야간), 피커, 피커(야간), 검수, 사무
   final String? photoUrl;      // 사진
+  final String? bank;          // 은행
+  final String? accountNumber; // 계좌번호
 
   WorkerRow copyWith({
     String? id,
@@ -74,6 +78,8 @@ class WorkerRow {
     String? role,
     String? job,
     String? photoUrl,
+    String? bank,
+    String? accountNumber,
   }) {
     return WorkerRow(
       id: id ?? this.id,
@@ -98,6 +104,8 @@ class WorkerRow {
       role: role ?? this.role,
       job: job ?? this.job,
       photoUrl: photoUrl ?? this.photoUrl,
+      bank: bank ?? this.bank,
+      accountNumber: accountNumber ?? this.accountNumber,
     );
   }
 }
@@ -158,6 +166,8 @@ class WorkersRepository {
           role: profile?['title'] as String?,
           job: profile?['job'] as String?,
           photoUrl: profile?['photo_url'] as String?,
+          bank: profile?['bank'] as String?,
+          accountNumber: profile?['account_number'] as String?,
         );
       }).toList();
     } catch (e) {
@@ -244,6 +254,8 @@ class WorkersRepository {
       'title': worker.role,
       'job': worker.job,
       'photo_url': worker.photoUrl,
+      'bank': worker.bank,
+      'account_number': worker.accountNumber,
     }, onConflict: 'worker_id');
   }
 
