@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:core/core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_client/supabase_client.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show OtpType;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/utils/phone_utils.dart';
 
 class WorkerAuthRepository {
@@ -12,13 +12,11 @@ class WorkerAuthRepository {
 
   // ─── 세션 복원 ───
 
-  /// 앱 시작 시 기존 세션 확인 → Worker 반환 (없으면 null)
   Future<Worker?> restoreSession() async {
-    // 1) Supabase 세션 확인 (SMS OTP 로그인 시 자동 보존됨)
     final user = _supabase.auth.currentUser;
     if (user != null) {
       try {
-        // auth uid 또는 phone으로 workers 테이블 조회
+        // auth uid로 workers 조회
         final rows = await _supabase
             .from('workers')
             .select()
@@ -31,7 +29,7 @@ class WorkerAuthRepository {
           return worker;
         }
 
-        // uid로 못 찾으면 phone으로 시도
+        // phone으로 시도
         final phone = user.phone;
         if (phone != null && phone.isNotEmpty) {
           final byPhone = await _supabase
@@ -50,17 +48,15 @@ class WorkerAuthRepository {
       }
     }
 
-    // 2) 로컬 캐시 확인 (데모/카카오/구글 로그인 용)
+    // 로컬 캐시 확인 (OAuth 로그인 후 매칭된 worker)
     return _loadWorkerLocal();
   }
 
-  /// Worker 정보를 로컬에 저장
   Future<void> saveWorkerLocal(Worker worker) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_workerKey, jsonEncode(worker.toJson()));
   }
 
-  /// 로컬에서 Worker 정보 로드
   Future<Worker?> _loadWorkerLocal() async {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_workerKey);
@@ -73,10 +69,63 @@ class WorkerAuthRepository {
     }
   }
 
-  /// 로컬 캐시 삭제
   Future<void> _clearWorkerLocal() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_workerKey);
+  }
+
+  // ─── Supabase 세션 확인 ───
+
+  /// OAuth 로그인 후 세션은 있으나 worker 매칭이 안 된 경우 판별
+  bool get hasActiveSession => _supabase.auth.currentUser != null;
+
+  // ─── OAuth 로그인 (실제 연동) ───
+
+  Future<void> loginWithKakao() async {
+    await _signInWithOAuth(OAuthProvider.kakao);
+  }
+
+  Future<void> loginWithGoogle() async {
+    await _signInWithOAuth(OAuthProvider.google);
+  }
+
+  Future<void> _signInWithOAuth(OAuthProvider provider) async {
+    // supabase_flutter v2: 자동으로 브라우저를 열고 딥링크 콜백을 처리
+    await _supabase.auth.signInWithOAuth(
+      provider,
+      redirectTo: 'io.supabase.workflowapp://login-callback',
+    );
+  }
+
+  // ─── OAuth 후 전화번호로 근로자 매칭 ───
+
+  Future<Worker> matchWorkerByPhone(String phone) async {
+    // 입력된 전화번호 형식 정리 (010-1234-5678 → 010-1234-5678)
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9\-]'), '');
+
+    final rows = await _supabase
+        .from('workers')
+        .select()
+        .eq('phone', cleanPhone)
+        .limit(1);
+
+    if (rows.isEmpty) {
+      throw Exception('등록되지 않은 전화번호입니다. 관리자에게 문의하세요.');
+    }
+
+    final worker = Worker.fromJson(rows.first);
+    await saveWorkerLocal(worker);
+    return worker;
+  }
+
+  // ─── Auth 상태 변경 리스너 ───
+
+  void listenToAuthChanges(void Function() onSignedIn) {
+    _supabase.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn) {
+        onSignedIn();
+      }
+    });
   }
 
   // ─── SMS 인증 ───
@@ -119,38 +168,6 @@ class WorkerAuthRepository {
     }
 
     final worker = Worker.fromJson(workerRows.first);
-    await saveWorkerLocal(worker);
-    return worker;
-  }
-
-  // ─── 소셜 로그인 (데모) ───
-
-  Future<Worker> loginWithKakao() async {
-    await Future.delayed(const Duration(seconds: 1));
-    final worker = Worker(
-      id: 'kakao-worker-id',
-      siteId: 'site-icheon',
-      name: '김영수',
-      phone: '010-1234-0001',
-      role: 'worker',
-    );
-    await saveWorkerLocal(worker);
-    return worker;
-  }
-
-  Future<void> loginWithGoogle() async {
-    await Future.delayed(const Duration(seconds: 1));
-  }
-
-  Future<Worker> verifyPhoneAndMatch(String phone, String otp) async {
-    await Future.delayed(const Duration(seconds: 1));
-    final worker = Worker(
-      id: 'google-worker-id',
-      siteId: 'site-icheon',
-      name: '이민호',
-      phone: phone,
-      role: 'worker',
-    );
     await saveWorkerLocal(worker);
     return worker;
   }

@@ -19,6 +19,8 @@ dependencies:
   intl: ^0.20.2
   google_fonts: ^6.1.0
   shared_preferences: ^2.3.4
+  url_launcher: ^6.2.5
+  http: ^1.2.1
   core:
     path: ../../packages/core
   supabase_client:
