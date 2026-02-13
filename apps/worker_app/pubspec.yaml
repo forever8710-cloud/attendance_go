@@ -17,6 +17,8 @@ dependencies:
   geolocator: ^13.0.2
   permission_handler: ^11.4.0
   intl: ^0.20.2
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.3.4
   core:
     path: ../../packages/core
   supabase_client:

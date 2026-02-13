@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -23,21 +24,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.shield, size: 80, color: Colors.indigo),
+              Icon(Icons.shield_rounded, size: 64, color: AppColors.primary),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'WorkFlow',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                style: AppTheme.brandTitle,
               ),
               const SizedBox(height: 4),
               Text(
                 'by tkholdings',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 13, color: AppColors.textHint, letterSpacing: 1),
               ),
               const SizedBox(height: 8),
               Text(
                 '근로자 로그인',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 48),
 

@@ -9,6 +9,7 @@ enum AuthStatus {
   unauthenticated,
   needsPhoneVerification,
   needsConsent,
+  needsPermission,
   needsProfileCompletion,
   error,
 }
@@ -44,9 +45,29 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repository) : super(const AuthState());
+  AuthNotifier(this._repository) : super(const AuthState()) {
+    restoreSession();
+  }
 
   final WorkerAuthRepository _repository;
+
+  /// 앱 시작 시 기존 세션 복원
+  Future<void> restoreSession() async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final worker = await _repository.restoreSession();
+      if (worker != null) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          worker: worker,
+        );
+      } else {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+      }
+    } catch (_) {
+      state = state.copyWith(status: AuthStatus.unauthenticated);
+    }
+  }
 
   Future<void> sendOtp(String phone) async {
     state = state.copyWith(status: AuthStatus.loading);
@@ -139,8 +160,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// 개인정보 동의 완료
+  /// 개인정보 동의 완료 → 권한 설정으로 이동
   void acceptConsent({required bool locationConsent}) {
+    state = state.copyWith(status: AuthStatus.needsPermission);
+  }
+
+  /// 앱 권한 설정 완료 → 프로필 입력으로 이동
+  void acceptPermissions() {
     state = state.copyWith(status: AuthStatus.needsProfileCompletion);
   }
 
@@ -150,16 +176,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// Demo login for testing without Supabase
-  void demoLogin() {
+  Future<void> demoLogin() async {
+    final worker = Worker(
+      id: 'demo-worker-id',
+      siteId: 'demo-site-id',
+      name: '김영수',
+      phone: '010-1234-0001',
+      role: 'worker',
+    );
+    // 로컬에도 저장하여 앱 재시작 시 자동 로그인
+    await _repository.saveWorkerLocal(worker);
     state = AuthState(
       status: AuthStatus.authenticated,
-      worker: Worker(
-        id: 'demo-worker-id',
-        siteId: 'demo-site-id',
-        name: '김영수',
-        phone: '010-1234-0001',
-        role: 'worker',
-      ),
+      worker: worker,
       loginProvider: LoginProvider.kakao,
     );
   }

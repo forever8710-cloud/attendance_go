@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'core/theme/app_theme.dart';
+import 'core/navigation/main_scaffold.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/phone_verification_screen.dart';
 import 'features/auth/presentation/consent_screen.dart';
+import 'features/auth/presentation/permission_screen.dart';
 import 'features/auth/presentation/profile_completion_screen.dart';
-import 'features/attendance/presentation/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ko');
   await dotenv.load();
   await SupabaseService.instance.initialize(
     url: dotenv.env['SUPABASE_URL']!,
@@ -29,10 +33,7 @@ class WorkerApp extends ConsumerWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'WorkFlow',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       builder: (context, child) {
         // 웹에서도 모바일 기기처럼 보이게 프레임 추가
         return Container(
@@ -66,16 +67,46 @@ class WorkerApp extends ConsumerWidget {
 
   Widget _buildHome(AuthState authState) {
     switch (authState.status) {
+      case AuthStatus.initial:
+      case AuthStatus.loading:
+        return const _SplashScreen();
       case AuthStatus.authenticated:
-        return const HomeScreen();
+        return const MainScaffold();
       case AuthStatus.needsPhoneVerification:
         return const PhoneVerificationScreen();
       case AuthStatus.needsConsent:
         return const ConsentScreen();
+      case AuthStatus.needsPermission:
+        return const PermissionScreen();
       case AuthStatus.needsProfileCompletion:
         return const ProfileCompletionScreen();
       default:
         return const LoginScreen();
     }
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('WorkFlow', style: AppTheme.brandTitle),
+            const SizedBox(height: 24),
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -46,7 +46,9 @@
       "Bash(flutter pub get:*)",
       "mcp__supabase__search_docs",
       "Bash(flutter devices:*)",
-      "Bash(flutter create:*)"
+      "Bash(flutter create:*)",
+      "Bash(start \"\" \"C:\\\\my_project\\\\attendance_go\\\\docs\\\\architecture_frontend_backend_communication.html\")",
+      "Bash(test:*)"
     ]
   },
   "enableAllProjectMcpServers": true

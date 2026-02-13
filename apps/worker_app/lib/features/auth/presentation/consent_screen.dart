@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
 class ConsentScreen extends ConsumerStatefulWidget {
@@ -25,104 +26,126 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('개인정보 동의'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => ref.read(authProvider.notifier).signOut(),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '서비스 이용을 위해\n아래 약관에 동의해 주세요.',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 전체 동의
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.indigo.shade50,
-                      borderRadius: BorderRadius.circular(12),
+      backgroundColor: AppColors.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 뒤로가기
+                    GestureDetector(
+                      onTap: () => ref.read(authProvider.notifier).signOut(),
+                      child: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
                     ),
-                    child: CheckboxListTile(
-                      value: _allChecked,
-                      onChanged: _toggleAll,
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      '서비스 이용을 위해\n아래 약관에 동의해 주세요.',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // 전체 동의
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: CheckboxListTile(
+                        value: _allChecked,
+                        onChanged: _toggleAll,
+                        title: const Text(
+                          '전체 동의',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        activeColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(color: Colors.grey[200]),
+                    const SizedBox(height: 8),
+
+                    // [필수] 개인정보 수집·이용 동의
+                    CheckboxListTile(
+                      value: _personalInfoConsent,
+                      onChanged: (v) => setState(() => _personalInfoConsent = v ?? false),
                       title: const Text(
-                        '전체 동의',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        '[필수] 개인정보 수집·이용 동의',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                       ),
                       controlAffinity: ListTileControlAffinity.leading,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      activeColor: AppColors.primary,
+                      contentPadding: EdgeInsets.zero,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 8),
+                    _buildExpansionDetail(
+                      children: [
+                        _buildDetailRow('수집 항목', '이름, 전화번호, 주민등록번호, 주소, 계좌정보'),
+                        _buildDetailRow('수집 목적', '근로계약 관리, 급여 지급, 인사관리'),
+                        _buildDetailRow('보유 기간', '근로관계 종료 후 3년'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
 
-                  // [필수] 개인정보 수집·이용 동의
-                  CheckboxListTile(
-                    value: _personalInfoConsent,
-                    onChanged: (v) => setState(() => _personalInfoConsent = v ?? false),
-                    title: const Text(
-                      '[필수] 개인정보 수집·이용 동의',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    // [필수] 위치정보 이용 동의
+                    CheckboxListTile(
+                      value: _locationConsent,
+                      onChanged: (v) => setState(() => _locationConsent = v ?? false),
+                      title: const Text(
+                        '[필수] 위치정보 이용 동의',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: AppColors.primary,
+                      contentPadding: EdgeInsets.zero,
                     ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  _buildExpansionDetail(
-                    children: [
-                      _buildDetailRow('수집 항목', '이름, 전화번호, 주민등록번호, 주소, 계좌정보'),
-                      _buildDetailRow('수집 목적', '근로계약 관리, 급여 지급, 인사관리'),
-                      _buildDetailRow('보유 기간', '근로관계 종료 후 3년'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // [선택] 위치정보 이용 동의
-                  CheckboxListTile(
-                    value: _locationConsent,
-                    onChanged: (v) => setState(() => _locationConsent = v ?? false),
-                    title: const Text(
-                      '[선택] 위치정보 이용 동의',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    _buildExpansionDetail(
+                      children: [
+                        _buildDetailRow('수집 항목', 'GPS 위치정보'),
+                        _buildDetailRow('이용 목적', '출퇴근 장소 확인 (근무지 반경 내 확인)'),
+                        _buildDetailRow('수집 시점', '출근·퇴근 버튼 누를 때만 수집'),
+                        _buildDetailRow('보유 기간', '출퇴근 기록 저장 후 좌표 즉시 파기'),
+                      ],
                     ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  _buildExpansionDetail(
-                    children: [
-                      _buildDetailRow('수집 항목', 'GPS 위치정보'),
-                      _buildDetailRow('이용 목적', '출퇴근 장소 확인'),
-                      _buildDetailRow('보유 기간', '출퇴근 기록 후 즉시 파기'),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // 하단 버튼
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            // 하단 버튼
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: FilledButton(
-                  onPressed: _personalInfoConsent
+                  onPressed: _allChecked
                       ? () => ref.read(authProvider.notifier).acceptConsent(
                             locationConsent: _locationConsent,
                           )
                       : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                   child: const Text(
                     '동의하고 계속하기',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -130,8 +153,8 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -140,12 +163,15 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     return Container(
       margin: const EdgeInsets.only(left: 16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
       ),
       child: ExpansionTile(
-        title: const Text('상세 내용 보기', style: TextStyle(fontSize: 13, color: Colors.grey)),
+        title: const Text(
+          '상세 내용 보기',
+          style: TextStyle(fontSize: 13, color: AppColors.textHint),
+        ),
         tilePadding: const EdgeInsets.symmetric(horizontal: 12),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         children: children,
@@ -163,11 +189,15 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
             width: 72,
             child: Text(
               label,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13)),
+            child: Text(value, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
           ),
         ],
       ),
