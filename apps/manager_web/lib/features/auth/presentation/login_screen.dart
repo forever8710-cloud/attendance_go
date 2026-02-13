@@ -27,8 +27,11 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDark ? const Color(0xFF161624) : Colors.grey[100],
       body: Center(
         child: Card(
           elevation: 4,
@@ -47,7 +50,7 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'by TKholdings',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.5)),
                 ),
                 const SizedBox(height: 32),
                 TextField(
@@ -94,16 +97,16 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Divider(color: Colors.grey[300]),
+                Divider(color: cs.outlineVariant.withValues(alpha: 0.4)),
                 const SizedBox(height: 12),
-                Text('데모 로그인', style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.bold)),
+                Text('데모 로그인', style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<AppRole>(
                         initialValue: _demoRole,
-                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                        style: TextStyle(fontSize: 13, color: cs.onSurface),
                         decoration: const InputDecoration(
                           labelText: '역할 선택',
                           labelStyle: TextStyle(fontSize: 12),

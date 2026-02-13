@@ -39,7 +39,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.grey[200]!),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Padding(
@@ -78,7 +78,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             hintText: '이름 검색...',
                             prefixIcon: const Icon(Icons.search, size: 18),
                             filled: true,
-                            fillColor: Colors.grey[100],
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                             contentPadding: EdgeInsets.zero,
                           ),
@@ -141,7 +141,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('총 ${filtered.length}건', style: TextStyle(color: Colors.grey[600])),
+                    Text('총 ${filtered.length}건', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
                     const SizedBox(height: 12),
                     Expanded(
                       child: StickyHeaderTable.wrapWithCard(
@@ -186,7 +186,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

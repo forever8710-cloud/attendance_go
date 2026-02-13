@@ -81,7 +81,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 children: [
                   Text(
                     DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(DateTime.now()),
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                   ),
                   if (_selectedStatus != null) ...[
                     const SizedBox(width: 16),
@@ -131,7 +131,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         hintText: '이름/사업장 검색...',
                         prefixIcon: const Icon(Icons.search, size: 18),
                         filled: true,
-                        fillColor: Colors.grey[100],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                         contentPadding: EdgeInsets.zero,
                       ),
@@ -147,7 +147,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
                   if (_selectedStatus != null) ...[
                     const SizedBox(width: 8),
-                    Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                    Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
                   ],
                 ],
               ),
@@ -271,6 +271,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildSummaryCard(String title, String value, IconData icon, Color color, String? filterValue) {
+    final cs = Theme.of(context).colorScheme;
     final isSelected = _selectedStatus == filterValue;
 
     return InkWell(
@@ -288,10 +289,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: 155,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.15) : cs.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.grey[200]!,
+            color: isSelected ? color : cs.outlineVariant.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -308,8 +309,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isSelected ? color : null)),
+            Text(title, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.55), fontSize: 12)),
+            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isSelected ? color : cs.onSurface)),
           ],
         ),
       ),
@@ -339,14 +340,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildCenterDropdown() {
+    final cs = Theme.of(context).colorScheme;
     final sites = ref.watch(sitesProvider).valueOrNull ?? [];
     final centers = _getAvailableCenters(sites);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey[300]!),
+        color: cs.surface,
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

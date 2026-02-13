@@ -182,7 +182,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                   child: Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              side: BorderSide(color: Colors.grey[300]!),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
@@ -224,9 +224,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                               width: 110,
                               height: 140,
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey[400]!),
+                                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                               ),
                               child: _selectedWorker?.photoUrl != null
                                   ? ClipRRect(
@@ -236,9 +236,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                   : Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.person, size: 44, color: Colors.grey[400]),
+                                        Icon(Icons.person, size: 44, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
                                         const SizedBox(height: 4),
-                                        Text('반명함', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                                        Text('반명함', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 11)),
                                       ],
                                     ),
                             ),
@@ -289,12 +289,12 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                         labelText: '사번',
                                         labelStyle: const TextStyle(fontSize: 12),
                                         hintText: '(자동)',
-                                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                                        hintStyle: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
                                         border: const OutlineInputBorder(),
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                         isDense: true,
                                         filled: true,
-                                        fillColor: Colors.grey[100],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                                       ),
                                     ),
                                   ),
@@ -336,12 +336,12 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                               labelText: '주소',
                                               labelStyle: const TextStyle(fontSize: 12),
                                               hintText: '주소찾기 버튼을 클릭하세요',
-                                              hintStyle: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                                              hintStyle: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
                                               border: const OutlineInputBorder(),
                                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                               isDense: true,
                                               filled: true,
-                                              fillColor: Colors.grey[50],
+                                              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
                                             ),
                                           ),
                                         ),
@@ -412,9 +412,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.attach_file, size: 16, color: Colors.grey),
+                                    Icon(Icons.attach_file, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
                                     const SizedBox(width: 6),
-                                    const Text('이력서 첨부', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                    Text('이력서 첨부', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), fontSize: 13)),
                                     const Spacer(),
                                     TextButton(
                                       onPressed: () {},
@@ -453,13 +453,13 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         ],
                       ),
                   ] else ...[
-                    const Center(
+                    Center(
                       child: Padding(
-                        padding: EdgeInsets.all(32),
+                        padding: const EdgeInsets.all(32),
                         child: Text(
                           '아래 목록에서 근로자를 선택하거나\n신규 등록 버튼을 클릭하세요.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
                         ),
                       ),
                     ),
@@ -491,7 +491,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                 Card(
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(color: Colors.grey[200]!),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Padding(
@@ -516,7 +516,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                               hintText: '이름 검색...',
                               prefixIcon: const Icon(Icons.search, size: 18),
                               filled: true,
-                              fillColor: Colors.grey[100],
+                              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                               contentPadding: EdgeInsets.zero,
                             ),
@@ -635,7 +635,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         isDense: true,
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
     );
   }
@@ -643,7 +643,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   Widget _buildDropdown(String label, List<String> items, String? value, ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
       initialValue: value,
-      style: const TextStyle(fontSize: 13, color: Colors.black87),
+      style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(fontSize: 12),
@@ -714,7 +714,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

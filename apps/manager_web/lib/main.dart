@@ -42,7 +42,15 @@ class ManagerApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.dark,
+          surface: const Color(0xFF1E1E2E),
+          onSurface: const Color(0xFFE0E0E8),
+        ),
+        scaffoldBackgroundColor: const Color(0xFF161624),
+        cardColor: const Color(0xFF252538),
+        dividerColor: const Color(0xFF3A3A50),
         useMaterial3: true,
       ),
       themeMode: settings.themeMode,
@@ -91,6 +99,10 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       });
     }
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       body: Row(
         children: [
@@ -103,7 +115,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
             }),
             role: role,
           ),
-          const VerticalDivider(width: 1, thickness: 1, color: Colors.black12),
+          VerticalDivider(width: 1, thickness: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           Expanded(
             child: Column(
               children: [
@@ -112,24 +124,24 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                   height: 56,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                    color: cs.surface,
+                    border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
                   ),
                   child: Row(
                     children: [
-                      const Text('Workflow by TKholdings', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                      Text('Workflow by TKholdings', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: cs.onSurface)),
                       const Spacer(),
                       // 역할 배지
                       _buildRoleBadge(role),
                       const SizedBox(width: 12),
-                      Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                      Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6))),
                       const SizedBox(width: 16),
-                      Text(authState.worker?.name ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      Text(authState.worker?.name ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: cs.onSurface)),
                       const SizedBox(width: 8),
-                      const CircleAvatar(radius: 15, child: Icon(Icons.person, size: 18)),
+                      CircleAvatar(radius: 15, backgroundColor: cs.primaryContainer, child: Icon(Icons.person, size: 18, color: cs.onPrimaryContainer)),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.logout, size: 20),
+                        icon: Icon(Icons.logout, size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
                         tooltip: '로그아웃',
                         onPressed: () => ref.read(authProvider.notifier).signOut(),
                       ),
@@ -139,7 +151,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                 // Content
                 Expanded(
                   child: Container(
-                    color: Colors.grey[50],
+                    color: isDark ? const Color(0xFF161624) : Colors.grey[50],
                     child: _buildPage(role),
                   ),
                 ),
@@ -147,13 +159,13 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                 Container(
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                    color: cs.surface,
+                    border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
                   ),
                   child: Center(
                     child: Text(
                       '© since 2026- Taekyungholdings All Rights Reserved.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.4)),
                     ),
                   ),
                 ),

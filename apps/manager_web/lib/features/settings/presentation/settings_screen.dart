@@ -47,17 +47,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
               constraints: const BoxConstraints(maxWidth: 800),
               child: Card(
                 elevation: 0,
+                color: Theme.of(context).colorScheme.surface,
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.grey[300]!),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
                     TabBar(
                       controller: _tabController,
-                      labelColor: Colors.indigo,
-                      unselectedLabelColor: Colors.grey[600],
-                      indicatorColor: Colors.indigo,
+                      labelColor: Theme.of(context).colorScheme.primary,
+                      unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      indicatorColor: Theme.of(context).colorScheme.primary,
                       tabs: const [
                         Tab(icon: Icon(Icons.admin_panel_settings, size: 20), text: '관리자 계정'),
                         Tab(icon: Icon(Icons.display_settings, size: 20), text: '화면 설정'),
@@ -270,7 +271,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                   label: Text('${option.label} (${option == FontSizeOption.small ? "13px" : option == FontSizeOption.medium ? "15px" : "17px"})'),
                   selected: isSelected,
                   onSelected: (_) => notifier.setFontSize(option),
-                  selectedColor: Colors.indigo.withValues(alpha: 0.2),
+                  selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 ),
               );
             }).toList(),
@@ -279,7 +280,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -301,7 +302,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                   label: Text('${count}건'),
                   selected: isSelected,
                   onSelected: (_) => notifier.setTableRowsPerPage(count),
-                  selectedColor: Colors.indigo.withValues(alpha: 0.2),
+                  selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 ),
               );
             }).toList(),
@@ -312,6 +313,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
   }
 
   Widget _buildThemeCard(String label, IconData icon, ThemeMode mode, ThemeMode current, AppSettingsNotifier notifier) {
+    final cs = Theme.of(context).colorScheme;
     final isSelected = current == mode;
     return InkWell(
       onTap: () => notifier.setThemeMode(mode),
@@ -320,18 +322,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
         width: 120,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.indigo.withValues(alpha: 0.1) : Colors.white,
+          color: isSelected ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.indigo : Colors.grey[300]!,
+            color: isSelected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.4),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 32, color: isSelected ? Colors.indigo : Colors.grey),
+            Icon(icon, size: 32, color: isSelected ? cs.primary : cs.onSurface.withValues(alpha: 0.5)),
             const SizedBox(height: 8),
-            Text(label, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.indigo : null)),
+            Text(label, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? cs.primary : cs.onSurface)),
           ],
         ),
       ),
@@ -360,7 +362,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
             trailing: Switch(
               value: settings.lateAlertEnabled,
               onChanged: notifier.setLateAlertEnabled,
-              activeThumbColor: Colors.indigo,
+              activeThumbColor: Theme.of(context).colorScheme.primary,
             ),
           ),
           const Divider(height: 1),
@@ -374,7 +376,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
             trailing: Switch(
               value: settings.absentAlertEnabled,
               onChanged: notifier.setAbsentAlertEnabled,
-              activeThumbColor: Colors.indigo,
+              activeThumbColor: Theme.of(context).colorScheme.primary,
             ),
           ),
 
@@ -383,7 +385,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
               padding: const EdgeInsets.only(left: 56, top: 8, bottom: 8),
               child: Row(
                 children: [
-                  Text('알림 시간:', style: TextStyle(color: Colors.grey[600])),
+                  Text('알림 시간:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.access_time, size: 18),
@@ -412,7 +414,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
             title: const Text('웹 알림'),
             subtitle: const Text('브라우저 푸시 알림을 통해 받습니다'),
             secondary: const Icon(Icons.web),
-            activeColor: Colors.indigo,
+            activeColor: Theme.of(context).colorScheme.primary,
             controlAffinity: ListTileControlAffinity.trailing,
           ),
           CheckboxListTile(
@@ -421,7 +423,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
             title: const Text('이메일 알림'),
             subtitle: const Text('등록된 이메일로 알림을 받습니다'),
             secondary: const Icon(Icons.email),
-            activeColor: Colors.indigo,
+            activeColor: Theme.of(context).colorScheme.primary,
             controlAffinity: ListTileControlAffinity.trailing,
           ),
         ],

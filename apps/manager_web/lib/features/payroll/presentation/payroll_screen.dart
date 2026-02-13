@@ -44,7 +44,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonHideUnderline(
@@ -107,9 +107,9 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.payments_outlined, size: 64, color: Colors.grey[300]),
+                        Icon(Icons.payments_outlined, size: 64, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)),
                         const SizedBox(height: 16),
-                        Text('년월을 선택하고 "급여대장 생성" 버튼을 클릭하세요', style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+                        Text('년월을 선택하고 "급여대장 생성" 버튼을 클릭하세요', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 16)),
                       ],
                     ),
                   )

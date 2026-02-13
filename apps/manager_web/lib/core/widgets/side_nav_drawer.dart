@@ -37,6 +37,9 @@ class SideNavDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     // 역할에 따라 접근 가능한 메뉴만 필터링
     final visibleDestinations = _allDestinations
         .where((d) => canAccessMenu(role, d.index))
@@ -44,21 +47,21 @@ class SideNavDrawer extends StatelessWidget {
 
     return Container(
       width: 220,
-      color: Colors.white,
+      color: cs.surface,
       child: Column(
         children: [
           // 헤더: Workflow 로고
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             child: Row(
               children: [
-                Icon(Icons.shield, size: 40, color: Colors.indigo),
-                SizedBox(width: 8),
-                Text('Workflow', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Icon(Icons.shield, size: 40, color: cs.primary),
+                const SizedBox(width: 8),
+                Text('Workflow', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface)),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           // 메뉴 리스트
           Expanded(
             child: ListView.builder(
@@ -68,6 +71,7 @@ class SideNavDrawer extends StatelessWidget {
                 final isSelected = selectedIndex == dest.index;
 
                 return _buildMenuItem(
+                  context: context,
                   icon: dest.icon,
                   label: dest.label,
                   isSelected: isSelected,
@@ -83,16 +87,18 @@ class SideNavDrawer extends StatelessWidget {
   }
 
   Widget _buildMenuItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool isSelected,
     required bool isSubMenu,
     required VoidCallback onTap,
   }) {
+    final cs = Theme.of(context).colorScheme;
     final leftPadding = isSubMenu ? 40.0 : 16.0;
 
     return Material(
-      color: isSelected ? Colors.indigo.withValues(alpha: 0.1) : Colors.transparent,
+      color: isSelected ? cs.primary.withValues(alpha: 0.12) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -103,7 +109,7 @@ class SideNavDrawer extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? Colors.indigo : Colors.black54,
+                color: isSelected ? cs.primary : cs.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -112,7 +118,7 @@ class SideNavDrawer extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Colors.indigo : Colors.black87,
+                    color: isSelected ? cs.primary : cs.onSurface.withValues(alpha: 0.85),
                   ),
                 ),
               ),

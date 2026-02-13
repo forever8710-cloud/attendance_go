@@ -64,15 +64,15 @@ class WorkerDetailScreen extends ConsumerWidget {
                         child: Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            side: BorderSide(color: Colors.grey[300]!),
+                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Padding(
-                            padding: EdgeInsets.all(32),
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
                             child: Center(
                               child: Text(
                                 '상세 인사정보가 등록되지 않았습니다',
-                                style: TextStyle(color: Colors.grey, fontSize: 15),
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), fontSize: 15),
                               ),
                             ),
                           ),
@@ -85,7 +85,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                       child: Card(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.grey[300]!),
+                        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Padding(
@@ -102,10 +102,10 @@ class WorkerDetailScreen extends ConsumerWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Text('읽기전용', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  child: Text('읽기전용', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
                                 ),
                               ],
                             ),
@@ -118,9 +118,9 @@ class WorkerDetailScreen extends ConsumerWidget {
                                   width: 100,
                                   height: 130,
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[200],
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.grey[400]!),
+                                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                   ),
                                   child: worker.photoUrl != null
                                       ? ClipRRect(
@@ -130,9 +130,9 @@ class WorkerDetailScreen extends ConsumerWidget {
                                       : Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.person, size: 40, color: Colors.grey[400]),
+                                            Icon(Icons.person, size: 40, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
                                             const SizedBox(height: 4),
-                                            Text('반명함', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                                            Text('반명함', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 11)),
                                           ],
                                         ),
                                 ),
@@ -257,9 +257,9 @@ class WorkerDetailScreen extends ConsumerWidget {
                                 ? Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Colors.grey[300]!),
+                                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                                     ),
                                     child: Text(r.note, style: const TextStyle(fontSize: 12)),
                                   )
@@ -282,26 +282,30 @@ class WorkerDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-        const SizedBox(height: 2),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: Colors.grey[300]!),
+    return Builder(builder: (context) {
+      final cs = Theme.of(context).colorScheme;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.55))),
+          const SizedBox(height: 2),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: Text(value, style: const TextStyle(fontSize: 13)),
           ),
-          child: Text(value, style: const TextStyle(fontSize: 13)),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
   Widget _buildMonthSelector(BuildContext context, WidgetRef ref, String yearMonth) {
+    final cs = Theme.of(context).colorScheme;
     final items = <DropdownMenuItem<String>>[];
     final now = DateTime.now();
     for (int i = 0; i < 12; i++) {
@@ -313,7 +317,7 @@ class WorkerDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -327,24 +331,27 @@ class WorkerDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      width: 130,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
-          Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 11)),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-        ],
-      ),
-    );
+    return Builder(builder: (context) {
+      final cs = Theme.of(context).colorScheme;
+      return Container(
+        width: 130,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 6),
+            Text(title, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.55), fontSize: 11)),
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildStatusBadge(String status) {

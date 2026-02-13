@@ -61,6 +61,7 @@ class StickyHeaderTable extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final cs = Theme.of(context).colorScheme;
         // 헤더(46) + 행당(43) + 테두리(2) → 데이터에 맞는 높이, 최대 constraints
         final contentHeight = 46.0 + rowCount * 43.0 + 2.0;
         final effectiveHeight = min(contentHeight, constraints.maxHeight);
@@ -75,7 +76,7 @@ class StickyHeaderTable extends StatelessWidget {
               elevation: 0,
               margin: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
-                side: BorderSide(color: Colors.grey[200]!),
+                side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
@@ -98,14 +99,17 @@ class StickyHeaderTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         // ── 고정 헤더 ──
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFE8EAF6), // indigo[50]
+            color: isDark ? cs.primary.withValues(alpha: 0.12) : const Color(0xFFE8EAF6),
             border: Border(
-              bottom: BorderSide(color: Colors.indigo.shade200, width: 1.5),
+              bottom: BorderSide(color: cs.primary.withValues(alpha: 0.3), width: 1.5),
             ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -116,7 +120,7 @@ class StickyHeaderTable extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: Colors.indigo[900],
+                  color: isDark ? cs.primary.withValues(alpha: 0.9) : Colors.indigo[900],
                 ),
               );
 
@@ -134,7 +138,7 @@ class StickyHeaderTable extends StatelessWidget {
                               ? Icons.arrow_upward
                               : Icons.arrow_downward,
                           size: 14,
-                          color: Colors.indigo,
+                          color: cs.primary,
                         ),
                       ],
                     ],
@@ -160,7 +164,7 @@ class StickyHeaderTable extends StatelessWidget {
                     padding: const EdgeInsets.all(32),
                     child: Text(
                       emptyMessage ?? '데이터가 없습니다.',
-                      style: TextStyle(color: Colors.grey[500]),
+                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                     ),
                   ),
                 )
@@ -172,14 +176,14 @@ class StickyHeaderTable extends StatelessWidget {
 
                     Color bgColor;
                     if (selected) {
-                      bgColor = Colors.indigo.withValues(alpha: 0.1);
+                      bgColor = cs.primary.withValues(alpha: 0.1);
                     } else if (rowColorBuilder != null &&
                         rowColorBuilder!(rowIndex) != null) {
                       bgColor = rowColorBuilder!(rowIndex)!;
                     } else {
                       bgColor = rowIndex.isEven
-                          ? Colors.white
-                          : const Color(0xFFFAFAFA);
+                          ? (isDark ? cs.surface : Colors.white)
+                          : (isDark ? cs.surface.withValues(alpha: 0.7) : const Color(0xFFFAFAFA));
                     }
 
                     return InkWell(
@@ -193,7 +197,7 @@ class StickyHeaderTable extends StatelessWidget {
                           color: bgColor,
                           border: Border(
                             bottom:
-                                BorderSide(color: Colors.grey[200]!),
+                                BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
                           ),
                         ),
                         child: Row(
