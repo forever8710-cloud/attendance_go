@@ -8,6 +8,7 @@ class AccountRow {
     required this.phone,
     this.email,
     this.role = 'worker',
+    this.position,
     this.isActive = true,
     this.createdAt,
   });
@@ -17,6 +18,7 @@ class AccountRow {
   final String phone;
   final String? email;
   final String role;
+  final String? position;
   final bool isActive;
   final DateTime? createdAt;
 }
@@ -28,7 +30,7 @@ class AccountsRepository {
     // 관리자 계정 (role != 'worker') 조회
     final rows = await _supabase
         .from('workers')
-        .select('id, name, phone, role, is_active, created_at, worker_profiles(email)')
+        .select('id, name, phone, role, is_active, created_at, worker_profiles(email, position)')
         .neq('role', 'worker');
 
     return (rows as List).map((row) {
@@ -41,6 +43,7 @@ class AccountsRepository {
         phone: row['phone'] as String,
         email: profile?['email'] as String?,
         role: row['role'] as String,
+        position: profile?['position'] as String?,
         isActive: row['is_active'] as bool? ?? true,
         createdAt: row['created_at'] != null ? DateTime.tryParse(row['created_at'] as String) : null,
       );
@@ -55,11 +58,16 @@ class AccountsRepository {
       'is_active': account.isActive,
     }).eq('id', account.id);
 
-    if (account.email != null) {
-      await _supabase.from('worker_profiles').upsert({
+    if (account.email != null || account.position != null) {
+      final profileData = <String, dynamic>{
         'worker_id': account.id,
-        'email': account.email,
-      }, onConflict: 'worker_id');
+      };
+      if (account.email != null) profileData['email'] = account.email;
+      if (account.position != null) profileData['position'] = account.position;
+      await _supabase.from('worker_profiles').upsert(
+        profileData,
+        onConflict: 'worker_id',
+      );
     }
   }
 

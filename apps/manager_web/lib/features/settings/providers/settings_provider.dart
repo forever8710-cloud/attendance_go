@@ -79,13 +79,19 @@ final appSettingsProvider = StateNotifierProvider<AppSettingsNotifier, AppSettin
 
 // 관리자 계정 데이터
 class AdminUser {
-  const AdminUser({required this.name, required this.email, required this.role, required this.isActive});
-  final String name, email, role;
+  const AdminUser({
+    required this.name,
+    required this.email,
+    required this.position,
+    required this.role,
+    required this.isActive,
+  });
+  final String name, email, position, role;
   final bool isActive;
 }
 
 final adminUsersProvider = Provider<List<AdminUser>>((ref) => [
-  const AdminUser(name: '관리자', email: 'admin@taekyung.com', role: '최고관리자', isActive: true),
-  const AdminUser(name: '김부장', email: 'kim@taekyung.com', role: '관리자', isActive: true),
-  const AdminUser(name: '이과장', email: 'lee@taekyung.com', role: '부관리자', isActive: true),
+  const AdminUser(name: '박대표', email: 'park@taekyung.com', position: '대표이사', role: '대표이사', isActive: true),
+  const AdminUser(name: '김부장', email: 'kim@taekyung.com', position: '부장', role: '센터장', isActive: true),
+  const AdminUser(name: '이과장', email: 'lee@taekyung.com', position: '과장', role: '센터장', isActive: true),
 ]);

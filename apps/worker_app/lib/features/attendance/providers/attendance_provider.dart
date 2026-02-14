@@ -77,24 +77,31 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     try {
       permission = await Geolocator.checkPermission();
     } catch (_) {
-      throw Exception('위치 권한 상태를 확인할 수 없습니다.');
+      // 권한 확인 실패 시 바로 요청 시도
+      permission = LocationPermission.denied;
     }
 
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+      try {
+        permission = await Geolocator.requestPermission();
+      } catch (_) {
+        throw Exception(
+          '[OPEN_SETTINGS]위치 권한을 요청할 수 없습니다.\n'
+          '아래 버튼을 눌러 위치 권한을 허용해주세요.',
+        );
+      }
       if (permission == LocationPermission.denied) {
         throw Exception(
-          '위치 권한이 거부되었습니다.\n'
-          '출퇴근 기록을 위해 위치 권한을 허용해주세요.',
+          '[OPEN_SETTINGS]위치 권한이 거부되었습니다.\n'
+          '아래 버튼을 눌러 위치 권한을 허용해주세요.',
         );
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
       throw Exception(
-        '위치 권한이 영구 거부되었습니다.\n'
-        '기기 설정 > 앱 > WorkFlow > 권한에서\n'
-        '위치 권한을 허용해주세요.',
+        '[OPEN_SETTINGS]위치 권한이 영구 거부되었습니다.\n'
+        '아래 버튼을 눌러 위치 권한을 허용해주세요.',
       );
     }
 

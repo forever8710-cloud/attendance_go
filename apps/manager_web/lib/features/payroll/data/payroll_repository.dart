@@ -93,4 +93,39 @@ class PayrollRepository {
     rows.sort((a, b) => a.name.compareTo(b.name));
     return rows;
   }
+
+  /// 해당 월 확정된 worker_id 집합 조회
+  Future<Set<String>> checkFinalizationStatus(String yearMonth) async {
+    final rows = await _supabase
+        .from('payrolls')
+        .select('worker_id')
+        .eq('year_month', yearMonth)
+        .eq('is_finalized', true);
+
+    return {for (final r in rows) r['worker_id'] as String};
+  }
+
+  /// 급여 확정: payrolls 테이블에 upsert (worker_id, year_month 기준)
+  Future<int> finalizePayroll(List<PayrollRow> rows, String yearMonth) async {
+    await _loadParts();
+
+    final records = rows.map((r) => {
+      'worker_id': r.workerId,
+      'year_month': yearMonth,
+      'total_work_hours': r.totalHours,
+      'total_work_days': r.workDays,
+      'base_salary': r.baseSalary,
+      'overtime_pay': 0,
+      'holiday_pay': 0,
+      'total_salary': r.totalSalary,
+      'is_finalized': true,
+      'finalized_at': DateTime.now().toUtc().toIso8601String(),
+    }).toList();
+
+    await _supabase
+        .from('payrolls')
+        .upsert(records, onConflict: 'worker_id,year_month');
+
+    return records.length;
+  }
 }

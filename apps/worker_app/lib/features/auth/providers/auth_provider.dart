@@ -190,21 +190,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  /// Demo login for testing without Supabase
+  /// Demo login — Supabase 실제 인증 (RLS 통과를 위해 auth 세션 필요)
   Future<void> demoLogin() async {
-    final worker = Worker(
-      id: 'demo-worker-id',
-      siteId: 'demo-site-id',
-      name: '김영수',
-      phone: '010-1234-0001',
-      role: 'worker',
-    );
-    await _repository.saveWorkerLocal(worker);
-    state = AuthState(
-      status: AuthStatus.authenticated,
-      worker: worker,
-      loginProvider: LoginProvider.kakao,
-    );
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _repository.demoSignIn();
+      await restoreSession();
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: '데모 로그인 실패: ${e.toString().replaceAll('Exception: ', '')}',
+      );
+    }
   }
 }
 

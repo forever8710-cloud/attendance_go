@@ -10,6 +10,7 @@ import 'features/dashboard/presentation/dashboard_screen.dart';
 import 'features/workers/presentation/workers_screen.dart';
 import 'features/attendance_records/presentation/attendance_records_screen.dart';
 import 'features/payroll/presentation/payroll_screen.dart';
+import 'features/accounts/presentation/accounts_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
 import 'core/widgets/side_nav_drawer.dart';
@@ -222,6 +223,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       2 => AttendanceRecordsScreen(onWorkerTap: _openWorkerDetail),
       3 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
       4 => const SettingsScreen(),
+      5 => const AccountsScreen(),
       _ => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
     };
   }

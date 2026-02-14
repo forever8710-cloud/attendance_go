@@ -35,7 +35,12 @@ class WorkerApp extends ConsumerWidget {
       title: 'WorkFlow',
       theme: AppTheme.light,
       builder: (context, child) {
-        // 웹에서도 모바일 기기처럼 보이게 프레임 추가
+        // 웹에서만 폰 프레임 목업 적용, 실기기에서는 전체 화면
+        final platform = Theme.of(context).platform;
+        final isNativeMobile = platform == TargetPlatform.android ||
+            platform == TargetPlatform.iOS;
+        if (isNativeMobile) return child!;
+        // 웹/데스크톱: 폰 프레임 목업
         return Container(
           color: Colors.grey[300],
           child: Center(

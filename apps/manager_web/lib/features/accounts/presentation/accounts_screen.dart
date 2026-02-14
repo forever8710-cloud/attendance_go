@@ -20,6 +20,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   String _role = 'worker';
+  String? _position;
   bool _isActive = true;
 
   @override
@@ -38,6 +39,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       _phoneController.text = account.phone;
       _emailController.text = account.email ?? '';
       _role = account.role;
+      _position = account.position;
       _isActive = account.isActive;
     });
   }
@@ -50,6 +52,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       _phoneController.clear();
       _emailController.clear();
       _role = 'worker';
+      _position = null;
       _isActive = true;
     });
   }
@@ -68,6 +71,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       phone: _phoneController.text,
       email: _emailController.text.isEmpty ? null : _emailController.text,
       role: _role,
+      position: _position,
       isActive: _isActive,
       createdAt: _selectedAccount?.createdAt ?? DateTime.now(),
     );
@@ -146,16 +150,38 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // 2행: 역할, 상태, 생성일
+                    // 2행: 직위, 역할, 상태, 생성일
                     Row(
                       children: [
+                        SizedBox(
+                          width: 160,
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _position,
+                            style: const TextStyle(fontSize: 13, color: Colors.black87),
+                            decoration: const InputDecoration(
+                              labelText: '직위',
+                              labelStyle: TextStyle(fontSize: 12),
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              isDense: true,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: '과장', child: Text('과장')),
+                              DropdownMenuItem(value: '부장', child: Text('부장')),
+                              DropdownMenuItem(value: '센터장', child: Text('센터장')),
+                              DropdownMenuItem(value: '대표이사', child: Text('대표이사')),
+                            ],
+                            onChanged: (v) => setState(() => _position = v),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         SizedBox(
                           width: 200,
                           child: DropdownButtonFormField<String>(
                             initialValue: _role,
                             style: const TextStyle(fontSize: 13, color: Colors.black87),
                             decoration: const InputDecoration(
-                              labelText: '역할',
+                              labelText: '권한',
                               labelStyle: TextStyle(fontSize: 12),
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -163,9 +189,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                             ),
                             items: const [
                               DropdownMenuItem(value: 'worker', child: Text('근로자')),
-                              DropdownMenuItem(value: 'center_manager', child: Text('센터장')),
-                              DropdownMenuItem(value: 'owner', child: Text('대표이사')),
-                              DropdownMenuItem(value: 'system_admin', child: Text('시스템관리자')),
+                              DropdownMenuItem(value: 'center_manager', child: Text('센터장 (소속 센터)')),
+                              DropdownMenuItem(value: 'owner', child: Text('대표이사 (전체 조회)')),
                             ],
                             onChanged: (v) => setState(() => _role = v ?? 'worker'),
                           ),
@@ -295,9 +320,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     columns: const [
                       DataColumn(label: Text('No.')),
                       DataColumn(label: Text('이름')),
+                      DataColumn(label: Text('직위')),
                       DataColumn(label: Text('전화번호')),
                       DataColumn(label: Text('이메일')),
-                      DataColumn(label: Text('역할')),
+                      DataColumn(label: Text('권한')),
                       DataColumn(label: Text('상태')),
                       DataColumn(label: Text('생성일')),
                     ],
@@ -318,6 +344,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         cells: [
                           DataCell(Text('${i + 1}')),
                           DataCell(Text(a.name, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null))),
+                          DataCell(Text(a.position ?? '-', style: const TextStyle(fontSize: 13))),
                           DataCell(Text(a.phone)),
                           DataCell(Text(a.email ?? '-')),
                           DataCell(_buildRoleBadge(a.role)),

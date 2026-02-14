@@ -173,7 +173,7 @@ class AttendanceHistoryScreen extends ConsumerWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          dateFormat.format(r.checkInTime),
+                                          dateFormat.format(r.checkInTime.toLocal()),
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
@@ -182,7 +182,7 @@ class AttendanceHistoryScreen extends ConsumerWidget {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${timeFormat.format(r.checkInTime)} ~ ${r.checkOutTime != null ? timeFormat.format(r.checkOutTime!) : '-'}',
+                                          '${timeFormat.format(r.checkInTime.toLocal())} ~ ${r.checkOutTime != null ? timeFormat.format(r.checkOutTime!.toLocal()) : '-'}',
                                           style: const TextStyle(
                                             fontSize: 13,
                                             color: AppColors.textSecondary,

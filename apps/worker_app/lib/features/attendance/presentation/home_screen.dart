@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_client/supabase_client.dart';
@@ -131,10 +132,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _StatusBanner(
                 status: attState.status,
                 checkInTime: attState.todayAttendance != null
-                    ? timeFormat.format(attState.todayAttendance!.checkInTime)
+                    ? timeFormat.format(attState.todayAttendance!.checkInTime.toLocal())
                     : null,
                 checkOutTime: attState.todayAttendance?.checkOutTime != null
-                    ? timeFormat.format(attState.todayAttendance!.checkOutTime!)
+                    ? timeFormat.format(attState.todayAttendance!.checkOutTime!.toLocal())
                     : null,
                 workHours: attState.todayAttendance?.workHours,
               ),
@@ -155,19 +156,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       label: '출근',
                       gradientColors: [AppColors.checkIn, AppColors.checkInLight],
                       enabled: isIdle,
-                      onTap: () {
-                        final w = ref.read(authProvider).worker;
-                        if (w != null) {
-                          ref.read(attendanceProvider.notifier).checkIn(w.id);
-                        }
-                      },
+                      onTap: () => _showConfirmDialog(
+                        title: '출근 확인',
+                        message: '출근 처리하시겠습니까?',
+                        icon: Icons.login_rounded,
+                        color: AppColors.checkIn,
+                        onConfirm: () {
+                          final w = ref.read(authProvider).worker;
+                          if (w != null) {
+                            ref.read(attendanceProvider.notifier).checkIn(w.id);
+                          }
+                        },
+                      ),
                     ),
                     ActionButton(
                       icon: Icons.logout_rounded,
                       label: '퇴근',
                       gradientColors: [AppColors.checkOut, AppColors.checkOutLight],
                       enabled: isCheckedIn,
-                      onTap: () => ref.read(attendanceProvider.notifier).checkOut(),
+                      onTap: () => _showConfirmDialog(
+                        title: '퇴근 확인',
+                        message: '퇴근 처리하시겠습니까?',
+                        icon: Icons.logout_rounded,
+                        color: AppColors.checkOut,
+                        onConfirm: () => ref.read(attendanceProvider.notifier).checkOut(),
+                      ),
                     ),
                     ActionButton(
                       icon: Icons.directions_run_rounded,
@@ -181,18 +194,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               if (attState.errorMessage != null) ...[
                 const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    attState.errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
-                  ),
-                ),
+                Builder(builder: (context) {
+                  final needsSettings = attState.errorMessage!.startsWith('[OPEN_SETTINGS]');
+                  final displayMsg = needsSettings
+                      ? attState.errorMessage!.replaceFirst('[OPEN_SETTINGS]', '')
+                      : attState.errorMessage!;
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayMsg,
+                          style: const TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                        if (needsSettings) ...[
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => Geolocator.openAppSettings(),
+                              icon: const Icon(Icons.settings, size: 18),
+                              label: const Text('앱 설정에서 위치 권한 허용하기'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: BorderSide(color: AppColors.primary),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
               ],
 
               const SizedBox(height: 24),
@@ -210,7 +252,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 12),
                 StatusCard(
                   label: '출근 시간',
-                  value: timeFormat.format(attState.todayAttendance!.checkInTime),
+                  value: timeFormat.format(attState.todayAttendance!.checkInTime.toLocal()),
                   icon: Icons.login_rounded,
                   color: AppColors.checkIn,
                 ),
@@ -218,7 +260,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (attState.todayAttendance!.checkOutTime != null) ...[
                   StatusCard(
                     label: '퇴근 시간',
-                    value: timeFormat.format(attState.todayAttendance!.checkOutTime!),
+                    value: timeFormat.format(attState.todayAttendance!.checkOutTime!.toLocal()),
                     icon: Icons.logout_rounded,
                     color: AppColors.checkOut,
                   ),
@@ -263,6 +305,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showConfirmDialog({
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onConfirm,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
+        content: Text(message, style: const TextStyle(fontSize: 15)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onConfirm();
+            },
+            style: FilledButton.styleFrom(backgroundColor: color),
+            child: const Text('확인'),
+          ),
+        ],
       ),
     );
   }

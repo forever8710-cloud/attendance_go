@@ -6,6 +6,7 @@ import '../../../core/widgets/sticky_data_table.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/payroll_repository.dart';
 import '../providers/payroll_provider.dart';
+import '../utils/payroll_excel_export.dart';
 
 class PayrollScreen extends ConsumerStatefulWidget {
   const PayrollScreen({super.key, required this.role, this.onWorkerTap});
@@ -19,8 +20,15 @@ class PayrollScreen extends ConsumerStatefulWidget {
 
 class _PayrollScreenState extends ConsumerState<PayrollScreen> {
   List<PayrollRow>? _payrollData;
+  Set<String> _finalizedWorkerIds = {};
   bool _loading = false;
+  bool _finalizing = false;
   final _numberFormat = NumberFormat('#,###');
+
+  bool get _allFinalized =>
+      _payrollData != null &&
+      _payrollData!.isNotEmpty &&
+      _payrollData!.every((r) => _finalizedWorkerIds.contains(r.workerId));
 
   @override
   Widget build(BuildContext context) {
@@ -66,24 +74,34 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                   if (_payrollData != null && canEditPayroll(widget.role)) ...[
                     const SizedBox(width: 16),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('엑셀 파일이 다운로드되었습니다. (TODO: 실제 엑셀 생성)')),
-                        );
-                      },
+                      onPressed: _payrollData!.isEmpty
+                          ? null
+                          : () {
+                              PayrollExcelExport.exportToExcel(_payrollData!, yearMonth);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('엑셀 파일이 다운로드되었습니다.')),
+                              );
+                            },
                       icon: const Icon(Icons.download, size: 16),
                       label: const Text('엑셀 내보내기'),
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
                     ),
                     const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('급여대장이 확정되었습니다.')),
-                        );
-                      },
-                      style: FilledButton.styleFrom(backgroundColor: Colors.orange[700]),
-                      child: const Text('확정'),
+                    Tooltip(
+                      message: _allFinalized ? '모두 확정됨' : '급여대장을 확정합니다',
+                      child: FilledButton(
+                        onPressed: (_allFinalized || _finalizing || _payrollData!.isEmpty)
+                            ? null
+                            : () => _showFinalizeDialog(yearMonth),
+                        style: FilledButton.styleFrom(backgroundColor: Colors.orange[700]),
+                        child: _finalizing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(_allFinalized ? '확정 완료' : '확정'),
+                      ),
                     ),
                   ],
                 ],
@@ -137,15 +155,61 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
     setState(() => _loading = true);
     try {
       final siteId = ref.read(authProvider).worker?.siteId ?? '';
-      final data = await ref.read(payrollRepositoryProvider).calculatePayroll(siteId, yearMonth);
+      final repo = ref.read(payrollRepositoryProvider);
+      final results = await Future.wait([
+        repo.calculatePayroll(siteId, yearMonth),
+        repo.checkFinalizationStatus(yearMonth),
+      ]);
       setState(() {
-        _payrollData = data;
+        _payrollData = results[0] as List<PayrollRow>;
+        _finalizedWorkerIds = results[1] as Set<String>;
         _loading = false;
       });
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
+      }
+    }
+  }
+
+  Future<void> _showFinalizeDialog(String yearMonth) async {
+    final unfinalizedCount = _payrollData!.where((r) => !_finalizedWorkerIds.contains(r.workerId)).length;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('급여 확정'),
+        content: Text('$yearMonth 급여대장을 확정하시겠습니까?\n\n미확정 $unfinalizedCount명의 급여가 확정됩니다.\n확정 후에는 수정이 어렵습니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange[700]),
+            child: const Text('확정'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _finalizing = true);
+    try {
+      final count = await ref.read(payrollRepositoryProvider).finalizePayroll(_payrollData!, yearMonth);
+      setState(() {
+        _finalizedWorkerIds = _payrollData!.map((r) => r.workerId).toSet();
+        _finalizing = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$count명의 급여가 확정되었습니다.')),
+        );
+      }
+    } catch (e) {
+      setState(() => _finalizing = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('확정 오류: $e')));
       }
     }
   }
@@ -168,6 +232,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
       const TableColumnDef(label: '시급', width: 90, numeric: true),
       const TableColumnDef(label: '기본급', width: 105, numeric: true),
       const TableColumnDef(label: '총 급여', width: 125, numeric: true),
+      const TableColumnDef(label: '상태', width: 80),
     ];
 
     return StickyHeaderTable.wrapWithCard(
@@ -190,11 +255,14 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
             5 => const SizedBox(),
             6 => const SizedBox(),
             7 => Text('${_numberFormat.format(totalSalary)}원', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            8 => const SizedBox(),
             _ => const SizedBox(),
           };
         }
 
         final r = data[rowIndex];
+        final isFinalized = _finalizedWorkerIds.contains(r.workerId);
+
         return switch (colIndex) {
           0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
           1 => widget.onWorkerTap != null
@@ -209,6 +277,24 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
           5 => Text('${_numberFormat.format(r.hourlyWage)}원', style: const TextStyle(fontSize: 13)),
           6 => Text('${_numberFormat.format(r.baseSalary)}원', style: const TextStyle(fontSize: 13)),
           7 => Text('${_numberFormat.format(r.totalSalary)}원', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          8 => isFinalized
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green[300]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, size: 14, color: Colors.green[700]),
+                      const SizedBox(width: 4),
+                      Text('확정', style: TextStyle(fontSize: 11, color: Colors.green[700], fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                )
+              : Text('미확정', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
           _ => const SizedBox(),
         };
       },

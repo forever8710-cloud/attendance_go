@@ -53,7 +53,8 @@ bool canAccessMenu(AppRole role, int menuIndex) {
     1 => role != AppRole.worker,                        // 근로자관리: center_manager 이상
     2 => role != AppRole.worker,                        // 근태기록: center_manager 이상
     3 => role != AppRole.worker,                        // 급여관리: center_manager 이상 (조회만 가능 여부는 별도)
-    4 => role == AppRole.systemAdmin,                   // 설정: system_admin만
+    4 => role != AppRole.worker,                        // 설정: 센터장 이상
+    5 => role == AppRole.systemAdmin,                   // 계정관리: system_admin만
     _ => false,
   };
 }
@@ -78,9 +79,9 @@ bool canManageAccounts(AppRole role) {
   return role == AppRole.systemAdmin || role == AppRole.owner;
 }
 
-/// 설정 접근 권한
+/// 설정 접근 권한 (센터장 이상)
 bool canAccessSettings(AppRole role) {
-  return role == AppRole.systemAdmin;
+  return role != AppRole.worker;
 }
 
 /// 전체 센터 데이터 접근 (owner, system_admin)

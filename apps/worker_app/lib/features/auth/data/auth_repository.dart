@@ -57,12 +57,22 @@ class WorkerAuthRepository {
     await prefs.setString(_workerKey, jsonEncode(worker.toJson()));
   }
 
+  static final _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
   Future<Worker?> _loadWorkerLocal() async {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_workerKey);
     if (json == null) return null;
     try {
-      return Worker.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      final worker = Worker.fromJson(jsonDecode(json) as Map<String, dynamic>);
+      // 유효하지 않은 ID(예: "demo-worker-id")가 캐시된 경우 제거
+      if (!_uuidRegex.hasMatch(worker.id)) {
+        await prefs.remove(_workerKey);
+        return null;
+      }
+      return worker;
     } catch (_) {
       await prefs.remove(_workerKey);
       return null;
@@ -205,6 +215,15 @@ class WorkerAuthRepository {
       'bank': bank,
       'account_number': accountNumber,
     }, onConflict: 'worker_id');
+  }
+
+  // ─── 데모 로그인 (테스트용) ───
+
+  Future<void> demoSignIn() async {
+    await _supabase.auth.signInWithPassword(
+      email: 'ys.kim@botrens.com',
+      password: 'demo1234!',
+    );
   }
 
   // ─── 로그아웃 ───
