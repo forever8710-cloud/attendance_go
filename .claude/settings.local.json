@@ -48,7 +48,12 @@
       "Bash(flutter devices:*)",
       "Bash(flutter create:*)",
       "Bash(start \"\" \"C:\\\\my_project\\\\attendance_go\\\\docs\\\\architecture_frontend_backend_communication.html\")",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:pub.dev)",
+      "Bash(start \"\" \"C:\\\\my_project\\\\attendance_go\\\\docs\\\\v1.20_설정가이드.html\")"
     ]
   },
   "enableAllProjectMcpServers": true
