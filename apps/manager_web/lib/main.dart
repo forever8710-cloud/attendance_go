@@ -220,7 +220,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     return switch (_selectedIndex) {
       0 => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
       1 => WorkersScreen(role: role, onWorkerTap: _openWorkerDetail),
-      2 => AttendanceRecordsScreen(onWorkerTap: _openWorkerDetail),
+      2 => AttendanceRecordsScreen(role: role, onWorkerTap: _openWorkerDetail),
       3 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
       4 => const SettingsScreen(),
       5 => const AccountsScreen(),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/dashboard_provider.dart';
+import 'widgets/dashboard_charts.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({
@@ -52,6 +53,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final summary = ref.watch(dashboardSummaryProvider);
     final attendances = ref.watch(todayAttendancesProvider);
     final sitesAsync = ref.watch(sitesProvider);
+    final weeklyTrend = ref.watch(weeklyTrendProvider);
 
     // 사이트 로드 후 센터장 초기화
     final sites = sitesAsync.valueOrNull ?? [];
@@ -114,6 +116,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text('오류: $e'),
+              ),
+              const SizedBox(height: 24),
+
+              // Charts
+              SizedBox(
+                height: 220,
+                child: Row(
+                  children: [
+                    // 주간 출근율 라인차트 (60%)
+                    Expanded(
+                      flex: 6,
+                      child: weeklyTrend.when(
+                        data: (stats) => AttendanceTrendChart(stats: stats),
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(child: Text('차트 오류: $e')),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // 오늘 상태 파이차트 (40%)
+                    Expanded(
+                      flex: 4,
+                      child: summary.when(
+                        data: (s) => StatusDistributionChart(summary: s),
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(child: Text('차트 오류: $e')),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 

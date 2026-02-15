@@ -84,6 +84,11 @@ bool canAccessSettings(AppRole role) {
   return role != AppRole.worker;
 }
 
+/// 근태 기록 수정/삭제 권한 (center_manager 이상)
+bool canEditAttendance(AppRole role) {
+  return role != AppRole.worker;
+}
+
 /// 전체 센터 데이터 접근 (owner, system_admin)
 bool canAccessAllSites(AppRole role) {
   return role == AppRole.systemAdmin || role == AppRole.owner;

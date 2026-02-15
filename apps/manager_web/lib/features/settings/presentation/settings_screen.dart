@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../dashboard/providers/dashboard_provider.dart';
+import '../providers/announcement_provider.dart';
 import '../providers/settings_provider.dart';
+import 'widgets/announcement_form_dialog.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -15,7 +19,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -55,6 +59,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                       tabs: const [
                         Tab(icon: Icon(Icons.display_settings, size: 20), text: '화면 설정'),
                         Tab(icon: Icon(Icons.notifications, size: 20), text: '알림 설정'),
+                        Tab(icon: Icon(Icons.campaign, size: 20), text: '공지사항'),
                       ],
                     ),
                     SizedBox(
@@ -64,6 +69,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                         children: [
                           _buildDisplayTab(),
                           _buildNotificationTab(),
+                          _buildAnnouncementTab(),
                         ],
                       ),
                     ),
@@ -289,5 +295,198 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
       trailing: trailing,
     );
+  }
+
+  // ─── 탭 3: 공지사항 관리 ───
+  Widget _buildAnnouncementTab() {
+    final announcementsAsync = ref.watch(announcementsProvider);
+    final sitesAsync = ref.watch(sitesProvider);
+    final sites = sitesAsync.valueOrNull ?? [];
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('공지사항 관리', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () => _showAnnouncementForm(sites: sites),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('새 공지'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: announcementsAsync.when(
+              data: (announcements) {
+                if (announcements.isEmpty) {
+                  return const Center(
+                    child: Text('등록된 공지사항이 없습니다.', style: TextStyle(color: Colors.grey)),
+                  );
+                }
+                return ListView.separated(
+                  itemCount: announcements.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final a = announcements[index];
+                    final createdAt = a['created_at'] != null
+                        ? DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(a['created_at'] as String).toLocal())
+                        : '';
+                    final isActive = a['is_active'] as bool? ?? true;
+                    final siteId = a['site_id'] as String?;
+                    final siteName = siteId != null
+                        ? sites.where((s) => s['id'] == siteId).map((s) => s['name']).firstOrNull ?? '지정됨'
+                        : '전체';
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: isActive
+                            ? Colors.indigo.withValues(alpha: 0.1)
+                            : Colors.grey.withValues(alpha: 0.1),
+                        child: Icon(
+                          Icons.campaign,
+                          color: isActive ? Colors.indigo : Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        a['title'] as String? ?? '',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isActive ? null : Colors.grey,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '$createdAt · 대상: $siteName${!isActive ? ' · 비활성' : ''}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) =>
+                            _handleAnnouncementAction(action, a, sites),
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(value: 'edit', child: Text('수정')),
+                          PopupMenuItem(
+                            value: 'toggle',
+                            child: Text(isActive ? '비활성화' : '활성화'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text('삭제', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('오류: $e')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAnnouncementForm({
+    required List<Map<String, String>> sites,
+    Map<String, dynamic>? existing,
+  }) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => AnnouncementFormDialog(
+        initialTitle: existing?['title'] as String?,
+        initialContent: existing?['content'] as String?,
+        initialSiteId: existing?['site_id'] as String?,
+        sites: sites,
+        isEdit: existing != null,
+      ),
+    );
+
+    if (result != null && mounted) {
+      try {
+        final repo = ref.read(announcementRepositoryProvider);
+        if (existing != null) {
+          await repo.updateAnnouncement(
+            existing['id'] as String,
+            title: result['title'] as String?,
+            content: result['content'] as String?,
+            siteId: result['siteId'] as String?,
+          );
+        } else {
+          await repo.createAnnouncement(
+            title: result['title'] as String,
+            content: result['content'] as String,
+            siteId: result['siteId'] as String?,
+          );
+        }
+        ref.invalidate(announcementsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(existing != null ? '공지사항이 수정되었습니다.' : '공지사항이 등록되었습니다.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('오류: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleAnnouncementAction(
+    String action,
+    Map<String, dynamic> announcement,
+    List<Map<String, String>> sites,
+  ) async {
+    final repo = ref.read(announcementRepositoryProvider);
+    try {
+      switch (action) {
+        case 'edit':
+          await _showAnnouncementForm(sites: sites, existing: announcement);
+          return;
+        case 'toggle':
+          final current = announcement['is_active'] as bool? ?? true;
+          await repo.updateAnnouncement(announcement['id'] as String, isActive: !current);
+          break;
+        case 'delete':
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('공지사항 삭제'),
+              content: const Text('이 공지사항을 삭제하시겠습니까?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('삭제'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed != true) return;
+          await repo.deleteAnnouncement(announcement['id'] as String);
+          break;
+      }
+      ref.invalidate(announcementsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('처리되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류: $e')),
+        );
+      }
+    }
   }
 }

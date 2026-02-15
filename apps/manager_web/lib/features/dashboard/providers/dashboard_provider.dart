@@ -14,6 +14,11 @@ final todayAttendancesProvider = FutureProvider<List<WorkerAttendanceRow>>((ref)
   return ref.watch(dashboardRepositoryProvider).getTodayAttendances(siteId);
 });
 
+final weeklyTrendProvider = FutureProvider<List<DailyAttendanceStat>>((ref) {
+  final siteId = ref.watch(authProvider).worker?.siteId ?? '';
+  return ref.watch(dashboardRepositoryProvider).getWeeklyTrend(siteId);
+});
+
 /// 사이트 목록 프로바이더
 final sitesProvider = FutureProvider<List<Map<String, String>>>((ref) {
   return ref.watch(dashboardRepositoryProvider).getSites();

@@ -2,6 +2,12 @@
 .env
 .env.local
 .env*.local
+**/.env
+apps/**/.env
+!.env.example
+
+# Build output (may contain .env copies)
+**/build/
 
 # MCP configuration (contains tokens)
 .mcp.json
@@ -9,6 +15,13 @@
 
 # Firebase
 .firebase/
+
+# Keystore / signing keys
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
 
 # Miscellaneous
 *.class

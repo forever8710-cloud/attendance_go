@@ -58,6 +58,30 @@ class AttendanceRepository {
     return Attendance.fromJson(row);
   }
 
+  Future<Attendance> earlyLeaveCheckOut(
+    String attendanceId,
+    double lat,
+    double lng,
+    String reason,
+  ) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    final row = await _supabase
+        .from('attendances')
+        .update({
+          'check_out_time': now,
+          'check_out_latitude': lat,
+          'check_out_longitude': lng,
+          'status': 'leave',
+          'notes': reason,
+        })
+        .eq('id', attendanceId)
+        .select()
+        .single();
+
+    return Attendance.fromJson(row);
+  }
+
   Future<List<Attendance>> getMonthlyAttendances(String workerId, int year, int month) async {
     final start = DateTime(year, month, 1).toUtc().toIso8601String();
     final end = DateTime(year, month + 1, 1).toUtc().toIso8601String();

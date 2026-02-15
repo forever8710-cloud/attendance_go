@@ -200,6 +200,75 @@ class DashboardRepository {
     return rows;
   }
 
+  /// 최근 N일간 일별 출근 통계
+  Future<List<DailyAttendanceStat>> getWeeklyTrend(String siteId, {int days = 7}) async {
+    await _loadMappings();
+
+    final now = DateTime.now();
+    final stats = <DailyAttendanceStat>[];
+
+    // 전체 활성 근로자 수
+    final allWorkers = await _supabase
+        .from('workers')
+        .select('id')
+        .eq('is_active', true)
+        .eq('role', 'worker');
+    final totalWorkers = allWorkers.length;
+
+    for (int i = days - 1; i >= 0; i--) {
+      final date = DateTime(now.year, now.month, now.day - i);
+      final dayStart = date.toUtc().toIso8601String();
+      final dayEnd = DateTime(date.year, date.month, date.day + 1).toUtc().toIso8601String();
+
+      final attendances = await _supabase
+          .from('attendances')
+          .select('*, workers!inner(part_id)')
+          .gte('check_in_time', dayStart)
+          .lt('check_in_time', dayEnd);
+
+      int present = 0;
+      int lateCount = 0;
+      int earlyLeaveCount = 0;
+
+      final checkedWorkerIds = <String>{};
+
+      for (final att in attendances) {
+        checkedWorkerIds.add(att['worker_id'] as String);
+        final worker = att['workers'] as Map<String, dynamic>?;
+        final partId = worker?['part_id'] as String?;
+        final partName = partId != null ? (_partNames[partId] ?? '') : '';
+        final isNight = partName.contains('야간');
+        final checkInTime = DateTime.parse(att['check_in_time'] as String).toLocal();
+
+        present++;
+
+        if (!isNight && checkInTime.hour >= 9 && checkInTime.minute > 0) {
+          lateCount++;
+        }
+
+        if (att['check_out_time'] != null) {
+          final checkOutTime = DateTime.parse(att['check_out_time'] as String).toLocal();
+          if (!isNight && checkOutTime.hour < 16) {
+            earlyLeaveCount++;
+          }
+        }
+      }
+
+      final absent = totalWorkers - checkedWorkerIds.length;
+
+      stats.add(DailyAttendanceStat(
+        date: date,
+        totalWorkers: totalWorkers,
+        presentCount: present,
+        lateCount: lateCount,
+        earlyLeaveCount: earlyLeaveCount,
+        absentCount: absent < 0 ? 0 : absent,
+      ));
+    }
+
+    return stats;
+  }
+
   /// 사이트 목록 조회
   Future<List<Map<String, String>>> getSites() async {
     final sites = await _supabase.from('sites').select('id, name');
@@ -226,6 +295,26 @@ class DashboardSummary {
   final int late;
   final int? earlyLeave;
   final int absent;
+}
+
+class DailyAttendanceStat {
+  const DailyAttendanceStat({
+    required this.date,
+    required this.totalWorkers,
+    required this.presentCount,
+    required this.lateCount,
+    required this.earlyLeaveCount,
+    required this.absentCount,
+  });
+  final DateTime date;
+  final int totalWorkers;
+  final int presentCount;
+  final int lateCount;
+  final int earlyLeaveCount;
+  final int absentCount;
+
+  double get attendanceRate =>
+      totalWorkers > 0 ? (presentCount / totalWorkers * 100) : 0;
 }
 
 class WorkerAttendanceRow {

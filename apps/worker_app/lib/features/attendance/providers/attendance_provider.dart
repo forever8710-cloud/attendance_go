@@ -172,6 +172,27 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     }
   }
 
+  Future<void> earlyLeave(String reason) async {
+    if (state.todayAttendance == null) return;
+    state = state.copyWith(status: AttendanceStatus.loading);
+    try {
+      final position = await _getCurrentPosition();
+      final attendance = await _repository.earlyLeaveCheckOut(
+        state.todayAttendance!.id,
+        position.latitude,
+        position.longitude,
+        reason,
+      );
+      state = state.copyWith(
+          status: AttendanceStatus.checkedOut, todayAttendance: attendance);
+    } catch (e) {
+      state = state.copyWith(
+        status: AttendanceStatus.checkedIn,
+        errorMessage: _friendlyError(e),
+      );
+    }
+  }
+
   /// 에러 메시지를 사용자 친화적으로 변환
   String _friendlyError(Object e) {
     final msg = e.toString();

@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/permissions.dart';
 import '../../../core/widgets/sticky_data_table.dart';
-import '../../dashboard/providers/dashboard_provider.dart';
+import '../data/attendance_records_repository.dart';
+import '../providers/attendance_records_provider.dart';
+import 'widgets/attendance_edit_dialog.dart';
+import 'widgets/attendance_delete_dialog.dart';
 
 class AttendanceRecordsScreen extends ConsumerStatefulWidget {
-  const AttendanceRecordsScreen({super.key, this.onWorkerTap});
+  const AttendanceRecordsScreen({
+    super.key,
+    this.onWorkerTap,
+    this.role = AppRole.worker,
+  });
 
   final void Function(String id, String name)? onWorkerTap;
+  final AppRole role;
 
   @override
   ConsumerState<AttendanceRecordsScreen> createState() => _AttendanceRecordsScreenState();
 }
 
 class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScreen> {
-  DateTimeRange? _dateRange;
   String _jobFilter = '전체';
   String _statusFilter = '전체';
   String _nameQuery = '';
 
   @override
   Widget build(BuildContext context) {
-    final attendances = ref.watch(todayAttendancesProvider);
+    final dateRange = ref.watch(attendanceDateRangeProvider);
+    final attendances = ref.watch(attendanceRecordsProvider);
+    final hasEditPermission = canEditAttendance(widget.role);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,22 +62,23 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                       OutlinedButton.icon(
                         icon: const Icon(Icons.calendar_today, size: 16),
                         label: Text(
-                          _dateRange != null
-                              ? '${DateFormat('MM/dd').format(_dateRange!.start)} ~ ${DateFormat('MM/dd').format(_dateRange!.end)}'
-                              : '날짜 선택',
+                          '${DateFormat('MM/dd').format(dateRange.start)} ~ ${DateFormat('MM/dd').format(dateRange.end)}',
                         ),
                         onPressed: () async {
                           final range = await showDateRangePicker(
                             context: context,
                             firstDate: DateTime(2024),
                             lastDate: DateTime.now(),
+                            initialDateRange: dateRange,
                           );
-                          if (range != null) setState(() => _dateRange = range);
+                          if (range != null) {
+                            ref.read(attendanceDateRangeProvider.notifier).state = range;
+                          }
                         },
                       ),
                       _buildFilterDropdown('직무', _jobFilter, ['전체', '사무', '지게차', '피커', '검수', '지게차(야간)', '피커(야간)'],
                           (v) => setState(() => _jobFilter = v!)),
-                      _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '퇴근', '지각', '조퇴', '미출근'],
+                      _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '지각', '조퇴', '미출근'],
                           (v) => setState(() => _statusFilter = v!)),
                       SizedBox(
                         width: 180,
@@ -85,23 +96,18 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                         ),
                       ),
                       TextButton(
-                        onPressed: () => setState(() {
-                          _dateRange = null;
-                          _jobFilter = '전체';
-                          _statusFilter = '전체';
-                          _nameQuery = '';
-                        }),
-                        child: const Text('초기화'),
-                      ),
-                      ElevatedButton.icon(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('엑셀 파일이 다운로드되었습니다. (TODO: 실제 엑셀 생성)')),
-                          );
+                          final now = DateTime.now();
+                          final today = DateTime(now.year, now.month, now.day);
+                          ref.read(attendanceDateRangeProvider.notifier).state =
+                              DateTimeRange(start: today, end: today);
+                          setState(() {
+                            _jobFilter = '전체';
+                            _statusFilter = '전체';
+                            _nameQuery = '';
+                          });
                         },
-                        icon: const Icon(Icons.download, size: 16),
-                        label: const Text('엑셀 내보내기'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
+                        child: const Text('초기화'),
                       ),
                     ],
                   ),
@@ -121,7 +127,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                 var filtered = rows.where((r) {
                   if (_jobFilter != '전체' && r.job != _jobFilter) return false;
                   if (_statusFilter != '전체' && r.status != _statusFilter) return false;
-                  if (_nameQuery.isNotEmpty && !r.name.contains(_nameQuery)) return false;
+                  if (_nameQuery.isNotEmpty && !r.workerName.contains(_nameQuery)) return false;
                   return true;
                 }).toList();
 
@@ -136,6 +142,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                   const TableColumnDef(label: '퇴근', width: 75),
                   const TableColumnDef(label: '근무시간', width: 90),
                   const TableColumnDef(label: '상태', width: 80),
+                  if (hasEditPermission) const TableColumnDef(label: '관리', width: 90),
                 ];
 
                 return Column(
@@ -149,22 +156,25 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                         rowCount: filtered.length,
                         cellBuilder: (colIndex, rowIndex) {
                           final r = filtered[rowIndex];
+                          final maxCol = hasEditPermission ? 10 : 9;
                           return switch (colIndex) {
                             0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-                            1 => Text(DateFormat('yyyy-MM-dd').format(DateTime.now()), style: const TextStyle(fontSize: 13)),
+                            1 => Text(DateFormat('yyyy-MM-dd').format(r.date), style: const TextStyle(fontSize: 13)),
                             2 => widget.onWorkerTap != null
                                 ? GestureDetector(
-                                    onTap: () => widget.onWorkerTap!(r.id ?? '', r.name),
-                                    child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                                    onTap: () => widget.onWorkerTap!(r.workerId, r.workerName),
+                                    child: Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
                                   )
-                                : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                : Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             3 => Text(r.position, style: const TextStyle(fontSize: 13)),
                             4 => Text(r.job, style: const TextStyle(fontSize: 13)),
                             5 => Text(r.site, style: const TextStyle(fontSize: 13)),
-                            6 => Text(r.checkIn, style: const TextStyle(fontSize: 13)),
-                            7 => Text(r.checkOut, style: const TextStyle(fontSize: 13)),
+                            6 => Text(r.checkInTime, style: const TextStyle(fontSize: 13)),
+                            7 => Text(r.checkOutTime, style: const TextStyle(fontSize: 13)),
                             8 => Text(r.workHours, style: const TextStyle(fontSize: 13)),
                             9 => _buildStatusBadge(r.status),
+                            _ when colIndex == maxCol && hasEditPermission =>
+                              _buildActionButtons(r),
                             _ => const SizedBox(),
                           };
                         },
@@ -180,6 +190,87 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
         ),
       ],
     );
+  }
+
+  Widget _buildActionButtons(AttendanceRecordRow record) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () => _showEditDialog(record),
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.edit_outlined, size: 18, color: Colors.indigo[600]),
+          ),
+        ),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: () => _showDeleteDialog(record),
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.delete_outline, size: 18, color: Colors.red[600]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showEditDialog(AttendanceRecordRow record) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => AttendanceEditDialog(record: record),
+    );
+
+    if (result != null && mounted) {
+      try {
+        await ref.read(attendanceRecordsRepositoryProvider).updateAttendance(
+              record.id,
+              checkInTime: result['checkInTime'] as DateTime?,
+              checkOutTime: result['checkOutTime'] as DateTime?,
+              status: result['status'] as String?,
+              notes: result['notes'] as String?,
+            );
+        ref.invalidate(attendanceRecordsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('근태 기록이 수정되었습니다.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('수정 실패: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showDeleteDialog(AttendanceRecordRow record) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AttendanceDeleteDialog(record: record),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await ref.read(attendanceRecordsRepositoryProvider).deleteAttendance(record.id);
+        ref.invalidate(attendanceRecordsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('근태 기록이 삭제되었습니다.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('삭제 실패: $e')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildFilterDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {

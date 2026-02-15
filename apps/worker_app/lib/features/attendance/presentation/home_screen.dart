@@ -9,6 +9,7 @@ import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/status_card.dart';
 import '../../../core/navigation/nav_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../announcements/providers/announcement_provider.dart';
 import '../providers/attendance_provider.dart';
 
 /// 사이트명을 가져오는 프로바이더
@@ -275,6 +276,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 24),
               ],
 
+              // ── 공지사항 ──
+              _AnnouncementSection(),
+
+              const SizedBox(height: 24),
+
               // ── 퀵 액세스 ──
               Text(
                 '바로가기',
@@ -348,67 +354,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _showEarlyLeaveDialog() {
     final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.directions_run_rounded, color: AppColors.earlyLeave, size: 24),
-            const SizedBox(width: 8),
-            const Text('조퇴 신청'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '조퇴 사유를 입력해주세요.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.directions_run_rounded, color: AppColors.earlyLeave, size: 24),
+              const SizedBox(width: 8),
+              const Text('조퇴 신청'),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '조퇴 사유를 입력해주세요.',
+                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  onChanged: (_) => setDialogState(() {}),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? '사유를 입력해주세요' : null,
+                  decoration: InputDecoration(
+                    hintText: '예: 병원 방문, 개인 사유 등',
+                    hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.earlyLeave),
+                    ),
+                    contentPadding: const EdgeInsets.all(14),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: '예: 병원 방문, 개인 사유 등',
-                hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.earlyLeave),
-                ),
-                contentPadding: const EdgeInsets.all(14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: reasonController.text.trim().isEmpty
+                  ? null
+                  : () {
+                      if (formKey.currentState!.validate()) {
+                        Navigator.pop(context);
+                        ref.read(attendanceProvider.notifier).earlyLeave(
+                              reasonController.text.trim(),
+                            );
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.earlyLeave,
               ),
+              child: const Text('조퇴 처리'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: 사유를 서버에 저장하는 로직 추가 가능
-              ref.read(attendanceProvider.notifier).checkOut();
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.earlyLeave,
-            ),
-            child: const Text('조퇴 처리'),
-          ),
-        ],
       ),
     );
   }
@@ -612,6 +631,137 @@ class _QuickAccessCard extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 공지사항 섹션 ──
+class _AnnouncementSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final announcementsAsync = ref.watch(workerAnnouncementsProvider);
+
+    return announcementsAsync.when(
+      data: (announcements) {
+        if (announcements.isEmpty) return const SizedBox();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '공지사항',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...announcements.take(3).map((a) => _AnnouncementCard(
+                  title: a['title'] as String? ?? '',
+                  content: a['content'] as String? ?? '',
+                  createdAt: a['created_at'] != null
+                      ? DateTime.parse(a['created_at'] as String).toLocal()
+                      : null,
+                )),
+          ],
+        );
+      },
+      loading: () => const SizedBox(),
+      error: (_, __) => const SizedBox(),
+    );
+  }
+}
+
+class _AnnouncementCard extends StatefulWidget {
+  const _AnnouncementCard({
+    required this.title,
+    required this.content,
+    this.createdAt,
+  });
+
+  final String title;
+  final String content;
+  final DateTime? createdAt;
+
+  @override
+  State<_AnnouncementCard> createState() => _AnnouncementCardState();
+}
+
+class _AnnouncementCardState extends State<_AnnouncementCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr = widget.createdAt != null
+        ? DateFormat('MM/dd').format(widget.createdAt!)
+        : '';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.indigo.withValues(alpha: 0.12)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.campaign, color: Colors.indigo, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    dateStr,
+                    style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: AppColors.textHint,
+                  ),
+                ],
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 10),
+                Text(
+                  widget.content,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
