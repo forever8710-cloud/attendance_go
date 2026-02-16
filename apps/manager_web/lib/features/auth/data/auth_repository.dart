@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase_flutter;
 
 class ManagerAuthRepository {
   final SupabaseService _supabase = SupabaseService.instance;
@@ -28,5 +29,20 @@ class ManagerAuthRepository {
 
   Future<void> signOut() async {
     await _supabase.auth.signOut();
+  }
+
+  /// 비밀번호 재설정 이메일 발송
+  Future<void> resetPasswordForEmail(String email, {String? redirectTo}) async {
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: redirectTo,
+    );
+  }
+
+  /// 비밀번호 변경 (recovery 후 호출)
+  Future<void> updatePassword(String newPassword) async {
+    await _supabase.auth.updateUser(
+      supabase_flutter.UserAttributes(password: newPassword),
+    );
   }
 }

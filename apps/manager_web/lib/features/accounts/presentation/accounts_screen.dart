@@ -19,15 +19,18 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   String _role = 'worker';
   String? _position;
   bool _isActive = true;
+  bool _isSaving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -51,6 +54,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       _nameController.clear();
       _phoneController.clear();
       _emailController.clear();
+      _passwordController.clear();
       _role = 'worker';
       _position = null;
       _isActive = true;
@@ -65,24 +69,71 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       return;
     }
 
-    final account = AccountRow(
-      id: _selectedAccount?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text,
-      phone: _phoneController.text,
-      email: _emailController.text.isEmpty ? null : _emailController.text,
-      role: _role,
-      position: _position,
-      isActive: _isActive,
-      createdAt: _selectedAccount?.createdAt ?? DateTime.now(),
-    );
+    // 신규 등록 시 이메일, 비밀번호 필수
+    if (_isNewAccount) {
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('신규 등록 시 이메일과 비밀번호는 필수입니다.')),
+        );
+        return;
+      }
+      if (_passwordController.text.length < 6) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('비밀번호는 6자 이상이어야 합니다.')),
+        );
+        return;
+      }
+    }
 
-    await ref.read(accountsRepositoryProvider).saveAccount(account);
-    ref.invalidate(accountsProvider);
+    setState(() => _isSaving = true);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${account.name}님의 계정이 저장되었습니다.')),
-      );
+    try {
+      if (_isNewAccount) {
+        // Edge Function으로 Auth 유저 + DB 레코드 생성
+        await ref.read(accountsRepositoryProvider).createAccount(
+          email: _emailController.text,
+          password: _passwordController.text,
+          name: _nameController.text,
+          phone: _phoneController.text,
+          role: _role,
+          position: _position,
+        );
+        ref.invalidate(accountsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${_nameController.text}님의 계정이 생성되었습니다.')),
+          );
+          _clearForm();
+          setState(() => _isNewAccount = false);
+        }
+      } else {
+        // 기존 계정 수정
+        final account = AccountRow(
+          id: _selectedAccount!.id,
+          name: _nameController.text,
+          phone: _phoneController.text,
+          email: _emailController.text.isEmpty ? null : _emailController.text,
+          role: _role,
+          position: _position,
+          isActive: _isActive,
+          createdAt: _selectedAccount?.createdAt ?? DateTime.now(),
+        );
+        await ref.read(accountsRepositoryProvider).saveAccount(account);
+        ref.invalidate(accountsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${account.name}님의 계정이 저장되었습니다.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -134,7 +185,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   const Divider(height: 24),
 
                   if (_selectedAccount != null || _isNewAccount) ...[
-                    // 1행: ID (읽기전용), 이름, 전화번호
+                    // 1행: ID (읽기전용), 이름, 전화번호, 이메일
                     Row(
                       children: [
                         if (_selectedAccount != null) ...[
@@ -145,9 +196,34 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         const SizedBox(width: 12),
                         Expanded(child: _buildFormField('전화번호 *', _phoneController)),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildFormField('이메일', _emailController)),
+                        Expanded(child: _buildFormField(_isNewAccount ? '이메일 *' : '이메일', _emailController)),
                       ],
                     ),
+                    // 신규 등록 시: 비밀번호 필드
+                    if (_isNewAccount) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 300,
+                            child: TextField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              style: const TextStyle(fontSize: 13),
+                              decoration: const InputDecoration(
+                                labelText: '초기 비밀번호 *',
+                                labelStyle: TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                isDense: true,
+                                helperText: '6자 이상 (로그인 후 본인이 변경 가능)',
+                                helperStyle: TextStyle(fontSize: 11),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 12),
 
                     // 2행: 직위, 역할, 상태, 생성일
@@ -246,9 +322,11 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                           const SizedBox(width: 12),
                         ],
                         FilledButton.icon(
-                          onPressed: _saveAccount,
-                          icon: const Icon(Icons.save, size: 16),
-                          label: const Text('저장', style: TextStyle(fontSize: 13)),
+                          onPressed: _isSaving ? null : _saveAccount,
+                          icon: _isSaving
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.save, size: 16),
+                          label: Text(_isNewAccount ? '계정 생성' : '저장', style: const TextStyle(fontSize: 13)),
                         ),
                       ],
                     ),

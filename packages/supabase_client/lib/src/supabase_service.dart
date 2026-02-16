@@ -27,4 +27,6 @@ class SupabaseService {
   SupabaseQueryBuilder from(String table) => client.from(table);
 
   RealtimeChannel channel(String name) => client.channel(name);
+
+  FunctionsClient get functions => client.functions;
 }

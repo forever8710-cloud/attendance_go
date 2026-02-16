@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent, AuthException, Supabase;
 import '../../../core/utils/permissions.dart';
 import '../data/auth_repository.dart';
 
@@ -12,27 +13,43 @@ class AuthState {
     this.worker,
     this.errorMessage,
     this.role = AppRole.worker,
+    this.isPasswordRecovery = false,
   });
 
   final AuthStatus status;
   final Worker? worker;
   final String? errorMessage;
   final AppRole role;
+  final bool isPasswordRecovery;
 
-  AuthState copyWith({AuthStatus? status, Worker? worker, String? errorMessage, AppRole? role}) {
+  AuthState copyWith({AuthStatus? status, Worker? worker, String? errorMessage, AppRole? role, bool? isPasswordRecovery}) {
     return AuthState(
       status: status ?? this.status,
       worker: worker ?? this.worker,
       errorMessage: errorMessage,
       role: role ?? this.role,
+      isPasswordRecovery: isPasswordRecovery ?? this.isPasswordRecovery,
     );
   }
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repository) : super(const AuthState());
+  AuthNotifier(this._repository) : super(const AuthState()) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        state = state.copyWith(isPasswordRecovery: true);
+      }
+    });
+  }
 
   final ManagerAuthRepository _repository;
+  StreamSubscription? _authSubscription;
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
 
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(status: AuthStatus.loading);
@@ -65,6 +82,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     await _repository.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  Future<void> resetPassword(String email, {String? redirectTo}) async {
+    await _repository.resetPasswordForEmail(email, redirectTo: redirectTo);
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    await _repository.updatePassword(newPassword);
+    state = state.copyWith(isPasswordRecovery: false);
+  }
+
+  void clearRecovery() {
+    state = state.copyWith(isPasswordRecovery: false);
   }
 
   void demoLogin(AppRole role) {

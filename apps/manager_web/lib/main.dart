@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'core/utils/permissions.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
+import 'features/auth/presentation/password_reset_dialog.dart';
 import 'features/dashboard/presentation/dashboard_screen.dart';
 import 'features/workers/presentation/workers_screen.dart';
 import 'features/attendance_records/presentation/attendance_records_screen.dart';
@@ -27,15 +29,42 @@ void main() async {
   runApp(const ProviderScope(child: ManagerApp()));
 }
 
-class ManagerApp extends ConsumerWidget {
+final _navigatorKey = GlobalKey<NavigatorState>();
+
+class ManagerApp extends ConsumerStatefulWidget {
   const ManagerApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManagerApp> createState() => _ManagerAppState();
+}
+
+class _ManagerAppState extends ConsumerState<ManagerApp> {
+  bool _recoveryDialogShown = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final settings = ref.watch(appSettingsProvider);
 
+    // Recovery 이벤트 감지 → 비밀번호 변경 다이얼로그 표시
+    if (authState.isPasswordRecovery && !_recoveryDialogShown) {
+      _recoveryDialogShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navContext = _navigatorKey.currentContext;
+        if (navContext != null) {
+          showDialog(
+            context: navContext,
+            barrierDismissible: false,
+            builder: (_) => const PasswordChangeDialog(),
+          ).then((_) => _recoveryDialogShown = false);
+        } else {
+          _recoveryDialogShown = false;
+        }
+      });
+    }
+
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Workflow by TKholdings',
       theme: ThemeData(
@@ -130,7 +159,10 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                   ),
                   child: Row(
                     children: [
-                      Text('Workflow by TKholdings', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                      Text(
+                        DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(DateTime.now()),
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: cs.onSurface),
+                      ),
                       const Spacer(),
                       // 역할 배지
                       _buildRoleBadge(role),

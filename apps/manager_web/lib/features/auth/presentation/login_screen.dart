@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/permissions.dart';
 import '../providers/auth_provider.dart';
+import 'password_reset_dialog.dart';
 
 class ManagerLoginScreen extends ConsumerStatefulWidget {
   const ManagerLoginScreen({super.key});
@@ -21,6 +22,15 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _doLogin() {
+    final authState = ref.read(authProvider);
+    if (authState.status == AuthStatus.loading) return;
+    ref.read(authProvider.notifier).signIn(
+      _emailController.text,
+      _passwordController.text,
+    );
   }
 
   @override
@@ -53,27 +63,38 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                   style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.5)),
                 ),
                 const SizedBox(height: 32),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: '이메일',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: '비밀번호',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    ),
+                AutofillGroup(
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.email, AutofillHints.username],
+                        decoration: const InputDecoration(
+                          labelText: '이메일',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.password],
+                        onSubmitted: (_) => _doLogin(),
+                        decoration: InputDecoration(
+                          labelText: '비밀번호',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (authState.errorMessage != null) ...[
@@ -87,16 +108,29 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                   child: FilledButton(
                     onPressed: authState.status == AuthStatus.loading
                         ? null
-                        : () => ref.read(authProvider.notifier).signIn(
-                              _emailController.text,
-                              _passwordController.text,
-                            ),
+                        : _doLogin,
                     child: authState.status == AuthStatus.loading
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Text('로그인', style: TextStyle(fontSize: 16)),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => const PasswordResetRequestDialog(),
+                      );
+                    },
+                    child: Text(
+                      '비밀번호를 잊으셨나요?',
+                      style: TextStyle(fontSize: 13, color: cs.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Divider(color: cs.outlineVariant.withValues(alpha: 0.4)),
                 const SizedBox(height: 12),
                 Text('데모 로그인', style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),

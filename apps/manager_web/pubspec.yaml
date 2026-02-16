@@ -17,6 +17,7 @@ dependencies:
   intl: ^0.20.2
   excel: ^4.0.6
   fl_chart: ^0.70.2
+  table_calendar: ^3.2.0
   core:
     path: ../../packages/core
   supabase_client:

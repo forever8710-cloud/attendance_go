@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_client/supabase_client.dart';
 
@@ -69,6 +70,54 @@ class AccountsRepository {
         onConflict: 'worker_id',
       );
     }
+  }
+
+  /// Edge Function을 호출하여 Auth 유저 + workers + worker_profiles 생성
+  Future<AccountRow> createAccount({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    required String role,
+    String? siteId,
+    String? position,
+  }) async {
+    final body = <String, dynamic>{
+      'email': email,
+      'password': password,
+      'name': name,
+      'phone': phone,
+      'role': role,
+    };
+    if (siteId != null) body['site_id'] = siteId;
+    if (position != null) body['position'] = position;
+
+    final response = await _supabase.functions.invoke(
+      'create-auth-user',
+      body: body,
+    );
+
+    if (response.status != 200) {
+      final errorData = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+      throw Exception(errorData['error'] ?? '계정 생성에 실패했습니다');
+    }
+
+    final data = response.data is String
+        ? jsonDecode(response.data as String) as Map<String, dynamic>
+        : response.data as Map<String, dynamic>;
+
+    return AccountRow(
+      id: data['id'] as String,
+      name: data['name'] as String,
+      phone: data['phone'] as String,
+      email: data['email'] as String?,
+      role: data['role'] as String,
+      position: data['position'] as String?,
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
   }
 
   Future<void> toggleAccountStatus(String id) async {
