@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -100,23 +101,33 @@ class WorkerAuthRepository {
   }
 
   Future<void> _signInWithOAuth(OAuthProvider provider) async {
-    // supabase_flutter v2: 자동으로 브라우저를 열고 딥링크 콜백을 처리
+    // 웹: 현재 URL로 리다이렉트, 모바일: 딥링크 사용
+    final redirectUrl = kIsWeb
+        ? Uri.base.origin
+        : 'io.supabase.workflowapp://login-callback';
     await _supabase.auth.signInWithOAuth(
       provider,
-      redirectTo: 'io.supabase.workflowapp://login-callback',
+      redirectTo: redirectUrl,
     );
   }
 
   // ─── OAuth 후 전화번호로 근로자 매칭 ───
 
   Future<Worker> matchWorkerByPhone(String phone) async {
-    // 입력된 전화번호 형식 정리 (010-1234-5678 → 010-1234-5678)
-    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9\-]'), '');
+    // 숫자만 추출 (010-1234-5678 → 01012345678)
+    final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // DB에 대시 포함/미포함 형식이 혼재 → 두 형식 모두 검색
+    String withDashes = digitsOnly;
+    if (digitsOnly.length == 11) {
+      withDashes =
+          '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}';
+    }
 
     final rows = await _supabase
         .from('workers')
         .select()
-        .eq('phone', cleanPhone)
+        .or('phone.eq.$digitsOnly,phone.eq.$withDashes')
         .limit(1);
 
     if (rows.isEmpty) {

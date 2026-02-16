@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head><title>WorkFlow App Icon Generator</title></head>
+<body style="background:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0">
+<canvas id="icon" width="512" height="512"></canvas>
+<br>
+<a id="download128" style="color:#fff;font-size:18px;margin:8px;cursor:pointer;background:#4F46E5;padding:12px 24px;border-radius:8px;text-decoration:none">⬇ 128x128 다운로드 (카카오용)</a>
+<br>
+<a id="download512" style="color:#fff;font-size:18px;margin:8px;cursor:pointer;background:#4F46E5;padding:12px 24px;border-radius:8px;text-decoration:none">⬇ 512x512 다운로드 (고해상도)</a>
+
+<script>
+const canvas = document.getElementById('icon');
+const ctx = canvas.getContext('2d');
+const W = 512;
+
+// Background - rounded rect with gradient
+const grad = ctx.createLinearGradient(0, 0, W, W);
+grad.addColorStop(0, '#4F46E5');  // Indigo
+grad.addColorStop(1, '#7C3AED');  // Purple
+
+// Draw rounded rect background
+ctx.beginPath();
+ctx.roundRect(0, 0, W, W, 80);
+ctx.fillStyle = grad;
+ctx.fill();
+
+// Clock circle (white, semi-transparent)
+ctx.beginPath();
+ctx.arc(W/2, W/2 - 20, 150, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(255,255,255,0.15)';
+ctx.fill();
+ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+ctx.lineWidth = 8;
+ctx.stroke();
+
+// Clock hands
+ctx.beginPath();
+ctx.moveTo(W/2, W/2 - 20);
+ctx.lineTo(W/2, W/2 - 120); // 12 o'clock (minute)
+ctx.strokeStyle = '#fff';
+ctx.lineWidth = 10;
+ctx.lineCap = 'round';
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(W/2, W/2 - 20);
+ctx.lineTo(W/2 + 80, W/2 + 40); // ~4 o'clock (hour)
+ctx.strokeStyle = '#fff';
+ctx.lineWidth = 12;
+ctx.lineCap = 'round';
+ctx.stroke();
+
+// Clock center dot
+ctx.beginPath();
+ctx.arc(W/2, W/2 - 20, 12, 0, Math.PI * 2);
+ctx.fillStyle = '#FCD34D'; // Yellow accent
+ctx.fill();
+
+// Check mark (bottom right)
+ctx.beginPath();
+ctx.moveTo(W/2 + 60, W/2 + 80);
+ctx.lineTo(W/2 + 90, W/2 + 110);
+ctx.lineTo(W/2 + 150, W/2 + 50);
+ctx.strokeStyle = '#34D399'; // Green
+ctx.lineWidth = 14;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+ctx.stroke();
+
+// Text "GO" at bottom
+ctx.font = 'bold 80px Arial, sans-serif';
+ctx.fillStyle = '#fff';
+ctx.textAlign = 'center';
+ctx.fillText('GO', W/2, W - 50);
+
+// Small text "WorkFlow" at top
+ctx.font = '600 36px Arial, sans-serif';
+ctx.fillStyle = 'rgba(255,255,255,0.8)';
+ctx.fillText('WorkFlow', W/2, 60);
+
+// Download functions
+function downloadIcon(size) {
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = size;
+  tempCanvas.height = size;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(canvas, 0, 0, size, size);
+
+  const link = document.createElement('a');
+  link.download = `workflow_icon_${size}x${size}.png`;
+  link.href = tempCanvas.toDataURL('image/png');
+  link.click();
+}
+
+document.getElementById('download128').onclick = () => downloadIcon(128);
+document.getElementById('download512').onclick = () => downloadIcon(512);
+</script>
+</body>
+</html>

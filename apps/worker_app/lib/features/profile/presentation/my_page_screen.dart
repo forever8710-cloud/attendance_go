@@ -78,7 +78,7 @@ class MyPageScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            worker?.id ?? '',
+                            _roleLabel(worker?.role),
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withValues(alpha: 0.7),
@@ -182,6 +182,21 @@ class MyPageScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _roleLabel(String? role) {
+    switch (role) {
+      case 'system_admin':
+        return '시스템 관리자';
+      case 'owner':
+        return '대표';
+      case 'center_manager':
+        return '센터 관리자';
+      case 'worker':
+        return '근로자';
+      default:
+        return '근로자';
+    }
   }
 
   String _maskAddress(String? address) {
