@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**attendance_go** (출퇴근GO) is a workforce management system for logistics centers built with Flutter. It's a Dart workspace monorepo containing two apps and three shared packages, backed by Supabase (PostgreSQL + Auth).
+**attendance_go** (출퇴근GO) is a workforce management system for logistics centers built with Flutter. Dart workspace monorepo with two apps and three shared packages, backed by Supabase (PostgreSQL + Auth + Edge Functions).
 
-- **Manager Web** (`apps/manager_web/`) — Admin dashboard (Flutter Web) for worker management, attendance records, payroll, and settings
-- **Worker App** (`apps/worker_app/`) — Mobile app (iOS/Android) for GPS-verified check-in/out via OTP auth
+- **Manager Web** (`apps/manager_web/`) — Admin dashboard (Flutter Web) for worker management, attendance, payroll, calendar, settings
+- **Worker App** (`apps/worker_app/`) — Mobile app (iOS/Android) for GPS-verified check-in/out with OAuth/OTP auth
 
 ## Build & Run Commands
 
@@ -15,24 +15,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install all workspace dependencies (run from repo root)
 flutter pub get
 
-# Code generation (Freezed models + JSON serialization) — run from packages/core
+# Code generation (Freezed models) — run from packages/core
 cd packages/core && dart run build_runner build --delete-conflicting-outputs
 
-# Run Manager Web
-cd apps/manager_web && flutter run -d chrome
+# Run Manager Web (quote the path on Windows)
+cd "C:\my_project\attendance_go\apps\manager_web" && flutter run -d chrome
 
 # Run Worker App
 cd apps/worker_app && flutter run -d android   # or -d ios
 
-# Run tests for a specific app/package
+# Tests
 cd apps/manager_web && flutter test
-cd apps/worker_app && flutter test
-
-# Run a single test file
-flutter test test/path_to_test.dart
+flutter test test/path_to_test.dart  # single test
 
 # Production builds
-cd apps/manager_web && flutter build web
+cd apps/manager_web && flutter build web --no-tree-shake-icons
 cd apps/worker_app && flutter build apk --release
 ```
 
@@ -41,47 +38,93 @@ cd apps/worker_app && flutter build apk --release
 ### Workspace Structure
 
 ```
-pubspec.yaml              # Root workspace definition
+pubspec.yaml                # Root workspace definition
 ├── apps/
-│   ├── manager_web/      # Flutter Web app (flutter_riverpod, supabase_flutter, intl)
-│   └── worker_app/       # Flutter mobile app (adds geolocator, permission_handler)
+│   ├── manager_web/        # Flutter Web (Riverpod, supabase_flutter, intl, fl_chart, table_calendar, excel)
+│   └── worker_app/         # Flutter mobile (adds geolocator, permission_handler, google_fonts)
 ├── packages/
-│   ├── core/             # Shared data models (Freezed), services, exceptions
-│   ├── supabase_client/  # Supabase initialization & provider setup
-│   └── ui_components/    # Reusable widgets (StatusBadge, SummaryCard)
+│   ├── core/               # Shared Freezed models, services, exceptions
+│   ├── supabase_client/    # SupabaseService singleton + Riverpod providers
+│   └── ui_components/      # Reusable widgets (StatusBadge, SummaryCard)
 └── supabase/
-    ├── migrations/       # SQL schema: tables, indexes, triggers, RLS policies
-    └── functions/        # Edge Functions (e.g., calculate-payroll)
+    ├── migrations/         # 12 SQL migrations (001–012)
+    └── functions/          # Edge Functions (calculate-payroll, create-auth-user)
 ```
 
-### Key Patterns
+### Feature-based Organization
 
-- **State Management**: Flutter Riverpod — providers live alongside their features (e.g., `features/auth/providers/`)
-- **Data Models**: Freezed + JsonSerializable in `packages/core/lib/src/models/`. After modifying models, regenerate with `build_runner build`
-- **Feature-based Organization**: Each app organizes code under `features/<feature>/` with `presentation/`, `providers/`, `repositories/` subdirectories
-- **Layering**: Screens → Providers (Riverpod) → Repositories → Supabase services
-- **Authentication**: Email/password for managers, phone OTP for workers (role field: `worker` | `manager`)
+Each app uses `features/<feature>/` with subdirectories:
+- `presentation/` — Screens, widgets, dialogs
+- `providers/` — Riverpod providers and notifiers
+- `data/` — Repositories (Supabase queries)
 
-### Database
+**Manager Web features**: auth, dashboard, workers, worker_detail, attendance_records, payroll, settings, accounts
+**Worker App features**: auth, home, attendance, payroll, profile
 
-Five core tables: `sites`, `parts` (wage groups), `workers`, `attendances`, `payrolls`. Schema defined in `supabase/migrations/001-004`. Key details:
-- `work_hours` auto-calculated via PostgreSQL trigger on checkout
-- Row-Level Security enforces site-scoped access by role
-- `payrolls` has a UNIQUE constraint on `(worker_id, year_month)`
+### Data Flow
+
+Screens → Riverpod Providers/Notifiers → Repositories → `SupabaseService.instance`
+
+### Key Shared Packages
+
+- **`packages/core/lib/src/models/`** — Freezed models: Worker, WorkerProfile, Attendance, Payroll, Announcement, Site, Part. Regenerate after changes with `build_runner build`
+- **`packages/supabase_client/`** — `SupabaseService` singleton with `client`, `auth`, `functions` getters
+
+## RBAC & Permissions
+
+4-role hierarchy defined in `apps/manager_web/lib/core/utils/permissions.dart`:
+
+| Role | DB value | Web Access | Scope |
+|------|----------|------------|-------|
+| `AppRole.systemAdmin` | `system_admin` | All menus | All sites |
+| `AppRole.owner` | `owner` | All except Accounts | All sites |
+| `AppRole.centerManager` | `center_manager` | Dashboard~Settings | Own site only |
+| `AppRole.worker` | `worker` | Worker App only | Self only |
+
+Helper functions: `canAccessMenu(role, index)`, `canEditPayroll(role)`, `canEditAttendance(role)`, `canAccessAllSites(role)`, `canManageAccounts(role)`
+
+**Manager Web side nav indexes**: 0=Dashboard, 1=Workers, 2=Attendance, 3=Payroll, 4=Settings, 5=Accounts
+
+## Authentication
+
+- **Manager Web**: Email/password via `signInWithEmail()`. Password recovery via email link → `AuthChangeEvent.passwordRecovery` → `PasswordChangeDialog`
+- **Worker App**: Kakao/Google OAuth (`signInWithOAuth`) or SMS OTP. After OAuth, phone number matching against `workers` table. Deep link: `io.supabase.workflowapp://login-callback`
+
+## Database
+
+**Tables** (12 migrations applied):
+- `sites` — 4 centers (서이천, 안성, 의왕, 부평) with GPS coordinates
+- `parts` — 6 job types with hourly/daily wages
+- `workers` — Employee records with role, site_id, part_id
+- `worker_profiles` — Extended info (bank, address, SSN, emergency contact)
+- `attendances` — Check-in/out with GPS coords; `work_hours` auto-calculated by trigger
+- `payrolls` — Monthly salary with `is_finalized` flag; UNIQUE on `(worker_id, year_month)`
+- `announcements` — CRUD with `is_active` toggle, optional `site_id`
+- `calendar_events` — Dashboard calendar events with category, location, color
+
+**RLS**: Enforced via `get_my_role()` and `get_my_site_id()` helper functions (SECURITY DEFINER). Workers see own data, center_managers see own site, admins see all.
+
+**Edge Functions**:
+- `calculate-payroll` — Aggregates attendance data into payroll (service_role)
+- `create-auth-user` — Creates Supabase Auth user + workers + worker_profiles atomically (service_role, with rollback)
+
+## Important Conventions
+
+- **Class name `Center`** conflicts with Flutter Widget → use `SiteCenter` instead
+- **`DropdownButtonFormField`** uses `initialValue` (not deprecated `value`)
+- **`Geolocator`** uses `locationSettings: LocationSettings(accuracy:)` (deprecated positional params removed)
+- **Phone numbers**: Store as digits-only, convert with `phone_utils.dart` (E.164 format)
+- **Company constants**: `apps/manager_web/lib/core/utils/company_constants.dart` — companies (BT/TK), centers (IC/AS/UW/BP), parts
+- **Employee ID format**: `BT-IC001` (company-center-sequence) via `employee_id_generator.dart`
+- **`onWorkerTap` signature**: `void Function(String id, String name)` — workerId-based navigation
 
 ## Environment
 
-Requires Flutter SDK ≥ 3.10.7 / Dart ≥ 3.10.7. Copy `.env.example` to `.env` and provide:
+Requires Flutter SDK ≥ 3.41.1 / Dart ≥ 3.10.7. `.env` file in `apps/manager_web/` and `apps/worker_app/`:
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY` (required)
-- `GOOGLE_MAPS_API_KEY` (optional, for map features)
+- `GOOGLE_MAPS_API_KEY` (optional)
+- `JUSO_CONFIRM_KEY` (optional, juso.go.kr address API)
 
 ## Lint Configuration
 
-`analysis_options.yaml` excludes generated files (`*.g.dart`, `*.freezed.dart`). No custom lint rules currently configured.
-
-## Development Notes
-
-- Auth repositories currently use in-memory demo data; Supabase integration is in progress
-- The manager web UI uses Material Design 3 with Indigo seed color and light/dark mode support
-- Worker app GPS verification uses a configurable radius (default 100m) around site coordinates
-- Documentation (PRD, TRD, User Flow) is in `docs/`
+`analysis_options.yaml` excludes generated files (`*.g.dart`, `*.freezed.dart`). No custom lint rules.
