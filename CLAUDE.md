@@ -4,10 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**attendance_go** (출퇴근GO) is a workforce management system for logistics centers built with Flutter. Dart workspace monorepo with two apps and three shared packages, backed by Supabase (PostgreSQL + Auth + Edge Functions).
+**attendance_go** (WorkFlow) is a workforce management system for logistics centers built with Flutter. Dart workspace monorepo with two apps and three shared packages, backed by Supabase (PostgreSQL + Auth + Edge Functions).
 
 - **Manager Web** (`apps/manager_web/`) — Admin dashboard (Flutter Web) for worker management, attendance, payroll, calendar, settings
 - **Worker App** (`apps/worker_app/`) — Mobile app (iOS/Android) for GPS-verified check-in/out with OAuth/OTP auth
+
+## 중요 문서 위치 (항상 참고)
+
+- 제품 요구사항(PRD)          : @docs/workflow_proposal_md/01_PRD_Workflow.md
+- 기술 요구사항(TRD)           : @docs/workflow_proposal_md/02_TRD_Workflow.md
+- 사용자 흐름 다이어그램       : @docs/workflow_proposal_md/03_UserFlow_Workflow.md
+- 프롬프트 설계 가이드         : @docs/workflow_proposal_md/04_PromptDesign_Workflow.md
 
 ## Build & Run Commands
 
