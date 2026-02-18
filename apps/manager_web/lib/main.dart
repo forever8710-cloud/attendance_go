@@ -19,14 +19,34 @@ import 'core/widgets/side_nav_drawer.dart';
 import 'features/worker_detail/presentation/worker_detail_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
-  await SupabaseService.instance.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-  await initializeDateFormatting('ko');
-  runApp(const ProviderScope(child: ManagerApp()));
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await dotenv.load();
+    await SupabaseService.instance.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    );
+    await initializeDateFormatting('ko');
+    runApp(const ProviderScope(child: ManagerApp()));
+  } catch (e, st) {
+    debugPrint('INIT ERROR: $e');
+    debugPrint('STACK: $st');
+    runApp(MaterialApp(
+      home: Scaffold(
+        backgroundColor: const Color(0xFF1a1a2e),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text(
+              'Init Error:\n$e',
+              style: const TextStyle(color: Colors.red, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    ));
+  }
 }
 
 final _navigatorKey = GlobalKey<NavigatorState>();
@@ -198,7 +218,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                   child: Center(
                     child: Text(
                       '© since 2026- Taekyungholdings All Rights Reserved.',
-                      style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.4)),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface.withValues(alpha: 0.85)),
                     ),
                   ),
                 ),
@@ -251,7 +271,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
 
     return switch (_selectedIndex) {
       0 => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
-      1 => WorkersScreen(role: role, onWorkerTap: _openWorkerDetail),
+      1 => WorkersScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
       2 => AttendanceRecordsScreen(role: role, onWorkerTap: _openWorkerDetail),
       3 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
       4 => const SettingsScreen(),

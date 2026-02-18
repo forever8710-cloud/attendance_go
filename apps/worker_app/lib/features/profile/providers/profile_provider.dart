@@ -58,6 +58,19 @@ final workerSiteNameProvider = FutureProvider<String>((ref) async {
   }
 });
 
+/// 전체 센터 이름 목록 (프로필 입력 드롭다운용)
+final workerSiteNamesProvider = FutureProvider<List<String>>((ref) async {
+  try {
+    final rows = await SupabaseService.instance
+        .from('sites')
+        .select('name')
+        .order('name');
+    return (rows as List).map((r) => r['name'] as String).toList();
+  } catch (_) {
+    return [];
+  }
+});
+
 /// 파트명 프로바이더
 final workerPartNameProvider = FutureProvider<String>((ref) async {
   final worker = ref.watch(authProvider).worker;

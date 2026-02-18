@@ -5,8 +5,8 @@
 CREATE OR REPLACE FUNCTION calculate_work_hours()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.check_out_time IS NOT NULL THEN
-    NEW.work_hours := EXTRACT(EPOCH FROM (NEW.check_out_time - NEW.check_in_time)) / 3600.0;
+  IF NEW.check_out_time IS NOT NULL AND NEW.check_in_time IS NOT NULL THEN
+    NEW.work_hours := GREATEST(0, EXTRACT(EPOCH FROM (NEW.check_out_time - NEW.check_in_time)) / 3600.0);
   END IF;
   RETURN NEW;
 END;

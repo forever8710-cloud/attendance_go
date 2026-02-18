@@ -168,7 +168,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       const Icon(Icons.manage_accounts, color: Colors.indigo, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        _isNewAccount ? '신규 계정 생성' : (_selectedAccount != null ? '${_selectedAccount!.name} - 계정 정보' : '계정 정보'),
+                        _isNewAccount ? '신규 관리자 계정 생성' : (_selectedAccount != null ? '${_selectedAccount!.name} - 관리자 계정정보' : '관리자 계정정보'),
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const Spacer(),
@@ -354,7 +354,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               children: [
                 const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
                 const SizedBox(width: 8),
-                const Text('계정 목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                const Text('관리자 계정목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
                 const SizedBox(width: 16),
                 Expanded(child: Divider(color: Colors.grey[300])),
                 const SizedBox(width: 16),

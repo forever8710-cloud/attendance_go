@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/address_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../../profile/providers/profile_provider.dart';
 
 class ProfileCompletionScreen extends ConsumerStatefulWidget {
   const ProfileCompletionScreen({super.key});
@@ -25,12 +26,12 @@ class _ProfileCompletionScreenState
   String? _selectedSite;
   String? _selectedBank;
 
-  static const _sites = ['서이천', '안성', '의왕', '부평'];
-
   static const _banks = [
     '국민은행', '신한은행', '우리은행', '하나은행',
     'NH농협', 'IBK기업', '카카오뱅크', '토스뱅크',
     'SC제일', '대구은행', '부산은행', '경남은행',
+    '광주은행', '전북은행', '제주은행', '우체국',
+    '새마을금고', '신협', '수협', '케이뱅크',
   ];
 
   @override
@@ -80,18 +81,24 @@ class _ProfileCompletionScreenState
                 style:
                     TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedSite,
-              decoration: const InputDecoration(
-                hintText: '센터 선택',
-                border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              ),
-              items: _sites
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedSite = v),
+            Builder(
+              builder: (context) {
+                final sitesAsync = ref.watch(workerSiteNamesProvider);
+                final sites = sitesAsync.valueOrNull ?? [];
+                return DropdownButtonFormField<String>(
+                  initialValue: _selectedSite,
+                  decoration: InputDecoration(
+                    hintText: sites.isEmpty ? '로딩 중...' : '센터 선택',
+                    border: const OutlineInputBorder(),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  ),
+                  items: sites
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedSite = v),
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -250,6 +257,14 @@ class _ProfileCompletionScreenState
       );
       return;
     }
+    // 주민번호 뒷자리 첫 숫자 검증 (1~4만 유효)
+    final firstDigit = int.tryParse(_ssnBackController.text[0]);
+    if (firstDigit == null || firstDigit < 1 || firstDigit > 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('주민등록번호가 올바르지 않습니다.')),
+      );
+      return;
+    }
     if (_addressController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('주소를 검색해주세요.')),
@@ -277,6 +292,12 @@ class _ProfileCompletionScreenState
 
   void _showAddressSearch(BuildContext context) {
     final confmKey = dotenv.env['JUSO_CONFIRM_KEY'] ?? '';
+    if (confmKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('주소 검색 API가 설정되지 않았습니다. 관리자에게 문의하세요.')),
+      );
+      return;
+    }
     final service = AddressService(confmKey);
 
     List<AddressResult> results = [];

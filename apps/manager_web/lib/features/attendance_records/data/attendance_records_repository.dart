@@ -29,6 +29,7 @@ class AttendanceRecordsRepository {
         .select('*, workers!inner(name, phone, site_id, part_id, worker_profiles(position, job))')
         .gte('check_in_time', start)
         .lt('check_in_time', end)
+        .neq('status', 'deleted')
         .order('check_in_time', ascending: false);
 
     final rows = <AttendanceRecordRow>[];
@@ -118,7 +119,11 @@ class AttendanceRecordsRepository {
   }
 
   Future<void> deleteAttendance(String id) async {
-    await _supabase.from('attendances').delete().eq('id', id);
+    // 소프트 삭제: status를 'deleted'로 변경 (데이터 보존)
+    await _supabase.from('attendances').update({
+      'status': 'deleted',
+      'notes': '관리자에 의해 삭제됨 (${DateTime.now().toIso8601String().split('T').first})',
+    }).eq('id', id);
   }
 }
 

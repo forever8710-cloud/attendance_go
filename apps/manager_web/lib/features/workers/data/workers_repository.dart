@@ -171,8 +171,11 @@ class WorkersRepository {
         );
       }).toList();
     } catch (e) {
-      // Supabase 연결 실패 시 빈 목록 반환 (데모 로그인 시)
-      return [];
+      // 데모 로그인(non-UUID id) 시에만 빈 목록 반환
+      if (e.toString().contains('invalid input syntax for type uuid')) {
+        return [];
+      }
+      rethrow;
     }
   }
 

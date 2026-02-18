@@ -1,3 +1,4 @@
+import 'package:web/web.dart' as web;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/permissions.dart';
@@ -17,6 +18,18 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
   bool _obscurePassword = true;
   AppRole _demoRole = AppRole.systemAdmin;
 
+  static const _emailKey = 'last_login_email';
+
+  @override
+  void initState() {
+    super.initState();
+    // localStorage에서 마지막 로그인 이메일 복원
+    final saved = web.window.localStorage.getItem(_emailKey);
+    if (saved != null && saved.isNotEmpty) {
+      _emailController.text = saved;
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -27,6 +40,8 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
   void _doLogin() {
     final authState = ref.read(authProvider);
     if (authState.status == AuthStatus.loading) return;
+    // 로그인 시도 시 이메일 저장
+    web.window.localStorage.setItem(_emailKey, _emailController.text);
     ref.read(authProvider.notifier).signIn(
       _emailController.text,
       _passwordController.text,

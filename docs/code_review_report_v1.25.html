@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkFlow 전체 코드 리뷰 리포트 v1.25</title>
+<style>
+  @media print {
+    body { font-size: 11px; }
+    .no-print { display: none; }
+    .page-break { page-break-before: always; }
+    table { page-break-inside: avoid; }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; color: #1a1a2e; line-height: 1.6; padding: 40px; max-width: 1100px; margin: 0 auto; background: #fff; }
+
+  .print-btn { position: fixed; top: 20px; right: 20px; background: #3F51B5; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(63,81,181,0.3); z-index: 100; }
+  .print-btn:hover { background: #303F9F; }
+
+  h1 { font-size: 28px; color: #1a1a2e; border-bottom: 3px solid #3F51B5; padding-bottom: 12px; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 30px; }
+
+  h2 { font-size: 22px; color: #3F51B5; margin: 32px 0 16px; padding: 8px 0; border-bottom: 2px solid #e0e0e0; }
+  h3 { font-size: 17px; color: #1a1a2e; margin: 20px 0 10px; }
+  h4 { font-size: 14px; color: #333; margin: 12px 0 6px; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+  .summary-card { padding: 20px; border-radius: 12px; text-align: center; }
+  .summary-card .number { font-size: 36px; font-weight: 800; }
+  .summary-card .label { font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .critical { background: #FFEBEE; color: #C62828; }
+  .high { background: #FFF3E0; color: #E65100; }
+  .medium { background: #FFF8E1; color: #F57F17; }
+  .low { background: #E8F5E9; color: #2E7D32; }
+
+  .grade-box { display: inline-block; padding: 8px 20px; border-radius: 8px; font-size: 20px; font-weight: 800; margin: 8px 0; }
+  .grade-b { background: #E3F2FD; color: #1565C0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #3F51B5; color: white; padding: 10px 12px; text-align: left; font-weight: 600; }
+  td { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+  tr:hover { background: #f5f5ff; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+  .badge-critical { background: #C62828; color: white; }
+  .badge-high { background: #E65100; color: white; }
+  .badge-medium { background: #F57F17; color: white; }
+  .badge-low { background: #2E7D32; color: white; }
+  .badge-warn { background: #FF9800; color: white; }
+  .badge-info { background: #2196F3; color: white; }
+
+  .issue-card { background: #f8f9fa; border-left: 4px solid #ccc; padding: 14px 18px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+  .issue-card.critical { border-left-color: #C62828; }
+  .issue-card.high { border-left-color: #E65100; }
+  .issue-card.medium { border-left-color: #F57F17; }
+  .issue-card.low { border-left-color: #2E7D32; }
+  .issue-card .issue-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .issue-card .issue-file { font-size: 12px; color: #666; font-family: monospace; }
+  .issue-card .issue-desc { font-size: 13px; margin-top: 6px; }
+  .issue-card .issue-fix { font-size: 12px; color: #3F51B5; margin-top: 4px; font-weight: 600; }
+
+  .section-intro { background: #f0f0ff; padding: 16px; border-radius: 8px; margin: 12px 0; font-size: 14px; }
+
+  .advisor-list { list-style: none; }
+  .advisor-list li { padding: 8px 12px; margin: 6px 0; background: #fff8e1; border-radius: 6px; border-left: 3px solid #FF9800; font-size: 13px; }
+  .advisor-list li.info { background: #e3f2fd; border-left-color: #2196F3; }
+
+  .action-table td:first-child { font-weight: 700; white-space: nowrap; }
+
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #999; font-size: 12px; }
+
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'Consolas', monospace; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">PDF 다운로드 (Ctrl+P)</button>
+
+<h1>WorkFlow (attendance_go) 전체 코드 리뷰 리포트</h1>
+<div class="subtitle">
+  버전: v1.25 &nbsp;|&nbsp; 리뷰일: 2026-02-19 &nbsp;|&nbsp; 리뷰어: Claude Code (AI Reviewer)<br>
+  대상: Manager Web UI, Worker App UI, Supabase Backend (DB, RLS, Edge Functions, Triggers)
+</div>
+
+<!-- ================================================================ -->
+<h2>1. Executive Summary</h2>
+
+<div class="summary-grid">
+  <div class="summary-card critical">
+    <div class="number">6</div>
+    <div class="label">CRITICAL</div>
+  </div>
+  <div class="summary-card high">
+    <div class="number">14</div>
+    <div class="label">HIGH</div>
+  </div>
+  <div class="summary-card medium">
+    <div class="number">18</div>
+    <div class="label">MEDIUM</div>
+  </div>
+  <div class="summary-card low">
+    <div class="number">22</div>
+    <div class="label">LOW</div>
+  </div>
+</div>
+
+<p><strong>전체 평가:</strong> <span class="grade-box grade-b">B+</span></p>
+<p>아키텍처와 코드 구조는 우수하나(Riverpod, Feature-based 구조), 보안/에러 처리/입력 검증 부분에서 개선이 필요합니다.</p>
+
+<div class="section-intro">
+  <strong>핵심 요약:</strong><br>
+  - 전체 리뷰 파일 수: Manager Web 41개 + Worker App 28개 + Supabase 12개 마이그레이션 + 1개 Edge Function = <strong>82+ 파일</strong><br>
+  - Supabase Advisor 경고: 보안 4건, 성능 50+건 (RLS initplan, 중복 정책)<br>
+  - 즉시 수정 필요: 센터장 사업장 하드코딩, DB 트리거 함수명 불일치, 권한 에스컬레이션 위험
+</div>
+
+<!-- ================================================================ -->
+<h2 class="page-break">2. Manager Web UI 리뷰</h2>
+
+<h3>2.1 CRITICAL Issues</h3>
+
+<div class="issue-card critical">
+  <div class="issue-title"><span class="badge badge-critical">CRITICAL</span> 센터장 사업장 필터 하드코딩</div>
+  <div class="issue-file">workers_screen.dart:548</div>
+  <div class="issue-desc">센터장 권한일 때 <code>w.site == '서이천'</code>으로 하드코딩. 안성/의왕/부평 센터장은 자기 근로자를 볼 수 없음.</div>
+  <div class="issue-fix">FIX: auth state의 userSiteId를 사용하여 동적 필터링</div>
+</div>
+
+<div class="issue-card critical">
+  <div class="issue-title"><span class="badge badge-critical">CRITICAL</span> Dashboard siteId 빈 값 시 전체 데이터 노출</div>
+  <div class="issue-file">dashboard_repository.dart:22-48</div>
+  <div class="issue-desc">siteId가 빈 문자열이면 모든 사업장의 근로자/출근 데이터가 조회됨. 센터장이 다른 사업장 데이터를 볼 수 있는 보안 허점.</div>
+  <div class="issue-fix">FIX: siteId 미입력 시 auth 사용자의 site_id로 대체하거나 에러 반환</div>
+</div>
+
+<h3>2.2 HIGH Issues</h3>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> Worker ID 생성 시 timestamp 사용</div>
+  <div class="issue-file">workers_screen.dart:129</div>
+  <div class="issue-desc"><code>DateTime.now().millisecondsSinceEpoch.toString()</code>으로 ID 생성. 동시 등록 시 중복 가능성.</div>
+  <div class="issue-fix">FIX: Supabase 자동 UUID 생성 또는 uuid 패키지 사용</div>
+</div>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> Repository 에러 무시 (빈 리스트 반환)</div>
+  <div class="issue-file">workers_repository.dart:129-176</div>
+  <div class="issue-desc">Supabase 연결 실패 시 빈 배열을 반환하여 에러가 사용자에게 표시되지 않음.</div>
+  <div class="issue-fix">FIX: 예외를 throw하고 UI에서 에러 상태 표시</div>
+</div>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> Workers 저장 시 try-catch 누락</div>
+  <div class="issue-file">workers_screen.dart:151</div>
+  <div class="issue-desc"><code>_saveWorker()</code>에 에러 처리가 없어 Supabase 오류 시 앱 크래시.</div>
+  <div class="issue-fix">FIX: try-catch로 감싸고 SnackBar 에러 메시지 표시</div>
+</div>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> 근태 삭제가 Hard Delete</div>
+  <div class="issue-file">attendance_records_repository.dart:102-122</div>
+  <div class="issue-desc"><code>.delete().eq('id', id)</code>로 영구 삭제. 감사 이력 없음, 복구 불가.</div>
+  <div class="issue-fix">FIX: Soft delete (is_deleted 컬럼) 또는 감사 로그 테이블 도입</div>
+</div>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> 급여 확정 서버측 권한 미검증</div>
+  <div class="issue-file">payroll_screen.dart:74-106</div>
+  <div class="issue-desc">급여 확정 버튼이 클라이언트에서만 권한 체크. RLS에서 is_finalized 변경을 역할별로 제한하지 않음.</div>
+  <div class="issue-fix">FIX: RLS WITH CHECK에 owner/system_admin만 finalize 가능하도록 추가</div>
+</div>
+
+<h3>2.3 MEDIUM Issues</h3>
+
+<table>
+  <tr><th>#</th><th>파일</th><th>이슈</th><th>심각도</th></tr>
+  <tr><td>M1</td><td><code>accounts_screen.dart</code></td><td>비밀번호 복잡성 검증 없음 (6자리 길이만 체크)</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M2</td><td><code>settings_screen.dart</code></td><td>탭 개수 <code>length: 3</code> 하드코딩</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M3</td><td><code>dashboard_repository.dart</code></td><td>DateTime UTC 변환 엣지케이스 (자정 기준 타임존)</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M4</td><td><code>workers_screen.dart</code></td><td>Image.network에 errorBuilder/loadingBuilder 미설정</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M5</td><td><code>workers_screen.dart</code></td><td>Dropdown firstWhere 예외 미처리 (값 불일치 시)</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M6</td><td><code>workers_repository.dart</code></td><td>Repository Provider가 매번 새 인스턴스 생성 → 캐시 무효화</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2 class="page-break">3. Worker App UI 리뷰</h2>
+
+<h3>3.1 CRITICAL Issues</h3>
+
+<div class="issue-card critical">
+  <div class="issue-title"><span class="badge badge-critical">CRITICAL</span> GPS 정확도 임계값 부적절 (500m)</div>
+  <div class="issue-file">attendance_provider.dart:118-122</div>
+  <div class="issue-desc">GPS 정확도 500m 초과 시에만 경고. 일반 스마트폰 GPS는 5~50m 정확도. 500m는 사실상 검증 미작동.</div>
+  <div class="issue-fix">FIX: 50~100m로 변경하거나 사업장별 설정 가능하게 구현</div>
+</div>
+
+<div class="issue-card critical">
+  <div class="issue-title"><span class="badge badge-critical">CRITICAL</span> 출근 중복 체크 Race Condition</div>
+  <div class="issue-file">attendance_provider.dart:135-167</div>
+  <div class="issue-desc">DB 조회와 INSERT 사이에 시간차 존재. 두 요청이 동시에 들어오면 중복 출근 기록 생성 가능.</div>
+  <div class="issue-fix">FIX: DB UNIQUE 제약조건(worker_id + date)에 의존하고, 위반 에러를 핸들링</div>
+</div>
+
+<h3>3.2 HIGH Issues</h3>
+
+<table>
+  <tr><th>#</th><th>파일</th><th>이슈</th><th>심각도</th></tr>
+  <tr><td>H1</td><td><code>auth_provider.dart:56-64</code></td><td>OAuth 콜백 시 상태 루프 가능성 (needsPhoneVerification 상태에서 restoreSession 재호출)</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>H2</td><td><code>profile_completion_screen.dart:246</code></td><td>주민번호 형식 검증 없음 (아무 값이나 입력 가능)</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>H3</td><td><code>profile_completion_screen.dart:279</code></td><td>JUSO_CONFIRM_KEY 미설정 시 사용자에게 피드백 없이 빈 결과</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>H4</td><td><code>login_screen.dart:116-208</code></td><td>Bottom Sheet의 TextEditingController 미해제 → 메모리 누수</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>H5</td><td><code>auth_repository.dart:56-81</code></td><td>Supabase 세션은 있지만 worker 매칭 실패 시 상태 불일치</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>H6</td><td><code>profile_completion_screen.dart:28-34</code></td><td>사업장/은행 목록 하드코딩 (사업장 변경 시 앱 업데이트 필요)</td><td><span class="badge badge-high">HIGH</span></td></tr>
+</table>
+
+<h3>3.3 MEDIUM Issues</h3>
+
+<table>
+  <tr><th>#</th><th>파일</th><th>이슈</th><th>심각도</th></tr>
+  <tr><td>M1</td><td><code>phone_utils.dart</code></td><td>E164 변환 시 전화번호 형식 미검증</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M2</td><td><code>home_screen.dart:355-432</code></td><td>조퇴 다이얼로그 TextEditingController 미해제</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M3</td><td><code>my_page_screen.dart:208</code></td><td>계좌번호 마스킹 로직 오류 (짧은 번호 처리)</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M4</td><td>전체 Repository</td><td>오프라인 모드/캐싱 미구현 (네트워크 끊김 시 데이터 유실)</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M5</td><td><code>attendance_repository.dart</code></td><td>work_hours DB 트리거 계산 결과 검증 없음</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+  <tr><td>M6</td><td>전체</td><td>Crash Reporting(Sentry/Firebase) 미연동</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2 class="page-break">4. Supabase Backend 리뷰</h2>
+
+<h3>4.1 Database Schema</h3>
+
+<div class="issue-card critical">
+  <div class="issue-title"><span class="badge badge-critical">CRITICAL</span> announcements 트리거 함수명 불일치</div>
+  <div class="issue-file">migrations/012_create_announcements.sql:56</div>
+  <div class="issue-desc"><code>update_updated_at_column()</code> 호출하지만 실제 함수명은 <code>update_updated_at()</code>. 마이그레이션 실행 실패 가능.</div>
+  <div class="issue-fix">FIX: <code>EXECUTE FUNCTION update_updated_at();</code>로 수정</div>
+</div>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> work_hours 음수/24시간 초과 미검증</div>
+  <div class="issue-file">migrations/003_create_triggers.sql:5-13</div>
+  <div class="issue-desc"><code>calculate_work_hours()</code> 트리거에서 checkout < checkin 케이스 미처리. 음수 근무시간 가능.</div>
+  <div class="issue-fix">FIX: checkout > checkin 검증 + 24시간 초과 경고 추가</div>
+</div>
+
+<div class="issue-card high">
+  <div class="issue-title"><span class="badge badge-high">HIGH</span> 전화번호 포맷 불일치로 UNIQUE 우회</div>
+  <div class="issue-file">migrations/001_create_tables.sql:32</div>
+  <div class="issue-desc">phone 컬럼이 UNIQUE지만 "01012345678"과 "010-1234-5678"이 다른 값으로 저장됨. 같은 사람 중복 등록 가능.</div>
+  <div class="issue-fix">FIX: INSERT/UPDATE 트리거로 전화번호 정규화 (하이픈 제거)</div>
+</div>
+
+<h3>4.2 RLS (Row Level Security) 보안</h3>
+
+<div class="issue-card critical">
+  <div class="issue-title"><span class="badge badge-critical">CRITICAL</span> center_manager 권한 에스컬레이션 가능</div>
+  <div class="issue-file">migrations/006_fix_rls_policies.sql:77-81</div>
+  <div class="issue-desc">center_manager가 workers 테이블의 <code>role</code> 컬럼을 변경할 수 있음. 자신을 system_admin으로 승격 가능.</div>
+  <div class="issue-fix">FIX: WITH CHECK에서 role 변경을 owner/system_admin만 가능하도록 제한</div>
+</div>
+
+<div class="issue-card medium">
+  <div class="issue-title"><span class="badge badge-medium">MEDIUM</span> calendar_events RLS가 USING(true)</div>
+  <div class="issue-file">calendar_events 테이블</div>
+  <div class="issue-desc">INSERT/UPDATE/DELETE 모두 인증된 사용자면 무제한 허용. 어떤 사용자든 캘린더 이벤트 삭제 가능.</div>
+  <div class="issue-fix">FIX: 관리자 역할(owner/system_admin)만 CUD 가능하도록 수정</div>
+</div>
+
+<div class="issue-card medium">
+  <div class="issue-title"><span class="badge badge-medium">MEDIUM</span> worker가 출근 기록 임의 수정 가능</div>
+  <div class="issue-file">migrations/006:101-103 (worker_update_own_attendance)</div>
+  <div class="issue-desc">worker가 자기 attendance의 check_in_time, status 등 모든 컬럼을 변경 가능.</div>
+  <div class="issue-fix">FIX: UPDATE를 check_out_time/notes만 허용하도록 제한</div>
+</div>
+
+<h3>4.3 Edge Functions</h3>
+
+<div class="issue-card medium">
+  <div class="issue-title"><span class="badge badge-medium">MEDIUM</span> calculate-payroll 호출자 권한 미검증</div>
+  <div class="issue-file">functions/calculate-payroll/index.ts:26-33</div>
+  <div class="issue-desc">함수가 SERVICE_ROLE_KEY를 사용하므로 RLS 우회. 호출자의 역할(owner/system_admin)을 검증하지 않음.</div>
+  <div class="issue-fix">FIX: Authorization 헤더에서 JWT를 디코딩하여 역할 확인</div>
+</div>
+
+<div class="issue-card medium">
+  <div class="issue-title"><span class="badge badge-medium">MEDIUM</span> part_id NULL인 근로자 급여 $0 계산</div>
+  <div class="issue-file">functions/calculate-payroll/index.ts:75</div>
+  <div class="issue-desc">part_id가 없는 근로자는 hourly_wage 0으로 계산되어 급여 $0. 에러 없이 통과.</div>
+  <div class="issue-fix">FIX: part_id 미할당 근로자는 경고 로그 + 결과에 표시</div>
+</div>
+
+<h3>4.4 Supabase Advisor 경고</h3>
+
+<h4>보안 경고 (4건)</h4>
+<ul class="advisor-list">
+  <li><span class="badge badge-warn">WARN</span> calendar_events — DELETE/INSERT/UPDATE 정책이 USING(true)로 무제한 허용</li>
+  <li><span class="badge badge-warn">WARN</span> Leaked Password Protection 비활성화 — HaveIBeenPwned 유출 비밀번호 차단 미적용</li>
+</ul>
+
+<h4>성능 경고 (주요)</h4>
+<ul class="advisor-list">
+  <li><span class="badge badge-warn">WARN</span> RLS initplan 비최적화 — workers, attendances, payrolls, worker_profiles 등 11개 정책에서 <code>auth.uid()</code>가 행마다 재평가됨. <code>(select auth.uid())</code>로 래핑 필요</li>
+  <li class="info"><span class="badge badge-info">INFO</span> 미사용 인덱스 8개 — idx_workers_site_id, idx_workers_part_id, idx_attendances_status 등 (데이터가 적어서 아직 미사용이나 운영 시 필요할 수 있음)</li>
+  <li><span class="badge badge-warn">WARN</span> 다중 허용 정책 — attendances(SELECT/UPDATE/DELETE), workers(SELECT), worker_profiles(SELECT/INSERT/UPDATE)에 역할별 정책 중복. 하나의 통합 정책으로 CASE WHEN 처리 권장</li>
+  <li class="info"><span class="badge badge-info">INFO</span> announcements.created_by_fkey 인덱스 누락</li>
+</ul>
+
+<!-- ================================================================ -->
+<h2 class="page-break">5. 종합 이슈 테이블</h2>
+
+<table>
+  <tr><th>#</th><th>영역</th><th>이슈</th><th>심각도</th><th>유형</th></tr>
+  <tr><td>1</td><td>Manager Web</td><td>센터장 사업장 하드코딩 ('서이천')</td><td><span class="badge badge-critical">CRITICAL</span></td><td>Logic</td></tr>
+  <tr><td>2</td><td>Manager Web</td><td>Dashboard siteId 빈 값 시 전체 노출</td><td><span class="badge badge-critical">CRITICAL</span></td><td>Security</td></tr>
+  <tr><td>3</td><td>Worker App</td><td>GPS 정확도 500m 임계값 부적절</td><td><span class="badge badge-critical">CRITICAL</span></td><td>Logic</td></tr>
+  <tr><td>4</td><td>Worker App</td><td>출근 중복 체크 Race Condition</td><td><span class="badge badge-critical">CRITICAL</span></td><td>Concurrency</td></tr>
+  <tr><td>5</td><td>Supabase</td><td>트리거 함수명 불일치 (update_updated_at_column)</td><td><span class="badge badge-critical">CRITICAL</span></td><td>Schema</td></tr>
+  <tr><td>6</td><td>Supabase</td><td>center_manager → system_admin 권한 에스컬레이션</td><td><span class="badge badge-critical">CRITICAL</span></td><td>Security</td></tr>
+  <tr><td>7</td><td>Manager Web</td><td>Worker ID timestamp 기반 생성 (충돌 가능)</td><td><span class="badge badge-high">HIGH</span></td><td>Data</td></tr>
+  <tr><td>8</td><td>Manager Web</td><td>Repository 에러 무시 (빈 리스트 반환)</td><td><span class="badge badge-high">HIGH</span></td><td>Error</td></tr>
+  <tr><td>9</td><td>Manager Web</td><td>Workers 저장 try-catch 누락</td><td><span class="badge badge-high">HIGH</span></td><td>Error</td></tr>
+  <tr><td>10</td><td>Manager Web</td><td>근태 Hard Delete (감사 이력 없음)</td><td><span class="badge badge-high">HIGH</span></td><td>Audit</td></tr>
+  <tr><td>11</td><td>Manager Web</td><td>급여 확정 서버 권한 미검증</td><td><span class="badge badge-high">HIGH</span></td><td>Security</td></tr>
+  <tr><td>12</td><td>Worker App</td><td>OAuth 상태 루프 가능성</td><td><span class="badge badge-high">HIGH</span></td><td>State</td></tr>
+  <tr><td>13</td><td>Worker App</td><td>주민번호 형식 미검증</td><td><span class="badge badge-high">HIGH</span></td><td>Validation</td></tr>
+  <tr><td>14</td><td>Worker App</td><td>주소 API키 미설정 시 무반응</td><td><span class="badge badge-high">HIGH</span></td><td>UX</td></tr>
+  <tr><td>15</td><td>Worker App</td><td>TextEditingController 미해제 (메모리 누수)</td><td><span class="badge badge-high">HIGH</span></td><td>Memory</td></tr>
+  <tr><td>16</td><td>Worker App</td><td>Auth 세션/Worker 상태 불일치</td><td><span class="badge badge-high">HIGH</span></td><td>Logic</td></tr>
+  <tr><td>17</td><td>Worker App</td><td>사업장/은행 목록 하드코딩</td><td><span class="badge badge-high">HIGH</span></td><td>Config</td></tr>
+  <tr><td>18</td><td>Supabase</td><td>work_hours 음수 미검증</td><td><span class="badge badge-high">HIGH</span></td><td>Logic</td></tr>
+  <tr><td>19</td><td>Supabase</td><td>전화번호 포맷 불일치 → UNIQUE 우회</td><td><span class="badge badge-high">HIGH</span></td><td>Data</td></tr>
+  <tr><td>20</td><td>Supabase</td><td>Leaked Password Protection 미활성</td><td><span class="badge badge-high">HIGH</span></td><td>Security</td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2 class="page-break">6. 우선순위별 조치 계획</h2>
+
+<h3>P0: 즉시 수정 (배포 전 필수)</h3>
+<table class="action-table">
+  <tr><th>조치</th><th>대상</th><th>난이도</th><th>예상 시간</th></tr>
+  <tr><td>센터장 사업장 필터 동적화</td><td>workers_screen.dart</td><td>Low</td><td>30분</td></tr>
+  <tr><td>트리거 함수명 수정</td><td>migration 012</td><td>Low</td><td>10분</td></tr>
+  <tr><td>center_manager role 변경 제한</td><td>RLS 정책 추가</td><td>Medium</td><td>1시간</td></tr>
+  <tr><td>GPS 정확도 50m로 변경</td><td>attendance_provider.dart</td><td>Low</td><td>10분</td></tr>
+  <tr><td>Dashboard siteId 방어로직</td><td>dashboard_repository.dart</td><td>Low</td><td>20분</td></tr>
+  <tr><td>Leaked Password Protection 활성화</td><td>Supabase Dashboard</td><td>Low</td><td>5분</td></tr>
+</table>
+
+<h3>P1: 조기 수정 (1~2주 내)</h3>
+<table class="action-table">
+  <tr><th>조치</th><th>대상</th><th>난이도</th><th>예상 시간</th></tr>
+  <tr><td>전화번호 정규화 트리거</td><td>DB Migration</td><td>Medium</td><td>1시간</td></tr>
+  <tr><td>출근 UNIQUE 제약조건 + 에러 핸들링</td><td>DB + attendance_provider</td><td>Medium</td><td>2시간</td></tr>
+  <tr><td>Repository 에러 처리 통합</td><td>Manager Web 전체</td><td>Medium</td><td>3시간</td></tr>
+  <tr><td>TextEditingController 메모리 누수 수정</td><td>Worker App login/home</td><td>Low</td><td>30분</td></tr>
+  <tr><td>RLS initplan 최적화 (select 래핑)</td><td>11개 RLS 정책</td><td>Low</td><td>1시간</td></tr>
+  <tr><td>calendar_events RLS 강화</td><td>DB Migration</td><td>Medium</td><td>1시간</td></tr>
+  <tr><td>worker attendance UPDATE 제한</td><td>RLS 정책 수정</td><td>Medium</td><td>1시간</td></tr>
+</table>
+
+<h3>P2: 개선 (1개월 내)</h3>
+<table class="action-table">
+  <tr><th>조치</th><th>대상</th><th>난이도</th></tr>
+  <tr><td>사업장/은행 목록 DB 동적 로드</td><td>Worker App</td><td>Medium</td></tr>
+  <tr><td>주민번호 형식 검증</td><td>Worker App</td><td>Low</td></tr>
+  <tr><td>근태 Soft Delete + 감사 로그</td><td>DB + Manager Web</td><td>High</td></tr>
+  <tr><td>calculate-payroll 호출자 권한 검증</td><td>Edge Function</td><td>Medium</td></tr>
+  <tr><td>다중 RLS 정책 통합</td><td>DB Migration</td><td>High</td></tr>
+  <tr><td>Crash Reporting 연동 (Sentry)</td><td>Worker App + Manager Web</td><td>Medium</td></tr>
+  <tr><td>오프라인 캐싱 (Hive/SharedPreferences)</td><td>Worker App</td><td>High</td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2 class="page-break">7. 아키텍처 평가</h2>
+
+<h3>7.1 강점</h3>
+<table>
+  <tr><th>항목</th><th>평가</th></tr>
+  <tr><td>모노레포 구조</td><td>core/supabase_client/ui_components 패키지 분리 우수. 코드 재사용성 높음.</td></tr>
+  <tr><td>Feature-based 구조</td><td>features/auth, features/dashboard 등 기능별 분리 잘 되어있음.</td></tr>
+  <tr><td>Riverpod 상태 관리</td><td>Provider/StateNotifier 패턴 일관성 있게 사용. 의존성 주입 깔끔.</td></tr>
+  <tr><td>RBAC 권한 체계</td><td>system_admin/owner/center_manager/worker 4단계 역할 분리 적절.</td></tr>
+  <tr><td>Freezed 모델</td><td>immutable data class + JSON 직렬화 패턴 적절.</td></tr>
+  <tr><td>Supabase 활용</td><td>Auth, RLS, Triggers, Edge Functions 적극 활용. 서버리스 구조 적합.</td></tr>
+</table>
+
+<h3>7.2 개선 필요</h3>
+<table>
+  <tr><th>항목</th><th>현재</th><th>권장</th></tr>
+  <tr><td>에러 처리</td><td>각 화면마다 다른 패턴</td><td>공통 ErrorWidget + ErrorFormatter 유틸</td></tr>
+  <tr><td>입력 검증</td><td>클라이언트만 + 불완전</td><td>DB 제약조건 + 트리거 + 클라이언트 3중 검증</td></tr>
+  <tr><td>테스트</td><td>테스트 코드 미확인</td><td>Repository 단위 테스트 + Widget 테스트 추가</td></tr>
+  <tr><td>로깅/모니터링</td><td>console.log만</td><td>구조화된 로깅 + Crash Reporting</td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2>8. 결론</h2>
+
+<div class="section-intro">
+  <p><strong>전체 평가: B+ (Good)</strong></p>
+  <p>프로젝트의 아키텍처와 코드 구조는 Flutter 모범 사례를 잘 따르고 있으며, Supabase를 효과적으로 활용하고 있습니다. 주요 기능(출퇴근 GPS 인증, RBAC 권한, 급여 계산, 캘린더, 공지사항)이 안정적으로 구현되어 있습니다.</p>
+  <br>
+  <p>다만 <strong>보안(6건 Critical)</strong>, <strong>에러 처리(14건 High)</strong>, <strong>입력 검증(18건 Medium)</strong> 영역에서 개선이 필요합니다. 특히 P0 이슈(센터장 하드코딩, RLS 권한 에스컬레이션, 트리거 함수명)는 운영 배포 전 반드시 수정해야 합니다.</p>
+  <br>
+  <p>P0 이슈를 수정하면 <strong>A-</strong> 등급으로 상향될 것으로 예상됩니다.</p>
+</div>
+
+<div class="footer">
+  <p>&copy; since 2026- Taekyungholdings All Rights Reserved.</p>
+  <p>Generated by Claude Code AI Reviewer | 2026-02-19</p>
+</div>
+
+</body>
+</html>

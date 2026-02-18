@@ -1,38 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Workflow Manager by TKholdings">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="manager_web">
+  <meta name="apple-mobile-web-app-title" content="Workflow">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>manager_web</title>
+  <title>Workflow</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body { margin: 0; padding: 0; background-color: #1a1a2e; }
+    .loading-container {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      background-color: #1a1a2e; z-index: 999;
+    }
+    .loading-logo {
+      font-size: 32px; font-weight: bold; color: #7c4dff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin-bottom: 24px;
+    }
+    .loading-sub {
+      font-size: 14px; color: rgba(255,255,255,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin-bottom: 32px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(124,77,255,0.2);
+      border-top: 3px solid #7c4dff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg {
+      color: #ff5252; font-size: 14px; max-width: 400px; text-align: center;
+      font-family: monospace; margin-top: 16px; display: none;
+    }
+  </style>
 </head>
 <body>
+  <div id="loading" class="loading-container">
+    <div class="loading-logo">Workflow</div>
+    <div class="loading-sub">by TKholdings</div>
+    <div class="spinner"></div>
+    <div id="error-msg" class="error-msg"></div>
+  </div>
+
+  <script>
+    window.addEventListener('flutter-first-frame', function() {
+      var loading = document.getElementById('loading');
+      if (loading) loading.remove();
+    });
+    window.addEventListener('error', function(e) {
+      var el = document.getElementById('error-msg');
+      if (el) {
+        el.style.display = 'block';
+        var msg = e.message || 'Unknown error';
+        if (e.filename) msg += '\nFile: ' + e.filename + ':' + e.lineno;
+        el.textContent = msg;
+      }
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var el = document.getElementById('error-msg');
+      if (el) {
+        el.style.display = 'block';
+        el.textContent = 'Promise error: ' + (e.reason ? e.reason.toString() : 'Unknown');
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -24,6 +24,7 @@ dependencies:
     path: ../../packages/supabase_client
   ui_components:
     path: ../../packages/ui_components
+  uuid: ^4.5.2
 
 dev_dependencies:
   flutter_test:

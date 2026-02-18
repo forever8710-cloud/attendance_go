@@ -44,12 +44,19 @@ class WorkerAuthRepository {
             return worker;
           }
         }
+
+        // DB에서 worker를 찾지 못하면 로컬 캐시 확인
+        final cached = await _loadWorkerLocal();
+        if (cached != null) return cached;
+
+        // 세션은 있으나 worker 매칭 안 됨 → null 반환 (needsPhoneVerification)
+        return null;
       } catch (_) {
         // DB 조회 실패 시 로컬 캐시 시도
       }
     }
 
-    // 로컬 캐시 확인 (OAuth 로그인 후 매칭된 worker)
+    // 세션 없음 → 로컬 캐시 확인 (OAuth 로그인 후 매칭된 worker)
     return _loadWorkerLocal();
   }
 

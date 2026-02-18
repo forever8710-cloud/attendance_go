@@ -204,6 +204,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      phoneController.dispose();
+      otpController.dispose();
+    });
   }
 }

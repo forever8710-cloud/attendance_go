@@ -51,13 +51,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   final WorkerAuthRepository _repository;
+  bool _isRestoring = false;
 
   /// OAuth 딥링크 콜백 수신 리스너
   void _setupAuthListener() {
     _repository.listenToAuthChanges(() {
-      // OAuth 리디렉트로 돌아온 경우에만 처리
-      if (state.status == AuthStatus.unauthenticated ||
-          state.status == AuthStatus.initial) {
+      // OAuth 리디렉트로 돌아온 경우에만 처리 (재진입 방지)
+      if (!_isRestoring &&
+          (state.status == AuthStatus.unauthenticated ||
+           state.status == AuthStatus.initial)) {
         restoreSession();
       }
     });
@@ -65,6 +67,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// 앱 시작 시 기존 세션 복원
   Future<void> restoreSession() async {
+    if (_isRestoring) return;
+    _isRestoring = true;
     state = state.copyWith(status: AuthStatus.loading);
     try {
       final worker = await _repository.restoreSession();
@@ -81,6 +85,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (_) {
       state = state.copyWith(status: AuthStatus.unauthenticated);
+    } finally {
+      _isRestoring = false;
     }
   }
 

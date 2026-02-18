@@ -114,8 +114,8 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
         ),
       );
 
-      // 4. 위치 정확도 검증 (500m 이상이면 경고)
-      if (position.accuracy > 500) {
+      // 4. 위치 정확도 검증 (100m 이상이면 경고)
+      if (position.accuracy > 100) {
         throw Exception(
           'GPS 정확도가 낮습니다 (${position.accuracy.toInt()}m).\n'
           '실외로 이동하거나 잠시 후 다시 시도해주세요.',
@@ -133,8 +133,23 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   Future<void> checkIn(String workerId) async {
+    // 중복 출근 방지: 이미 출근 상태이면 무시
+    if (state.status == AttendanceStatus.checkedIn && state.todayAttendance != null) {
+      state = state.copyWith(errorMessage: '이미 출근했습니다.');
+      return;
+    }
     state = state.copyWith(status: AttendanceStatus.loading);
     try {
+      // DB에서도 당일 출근 기록 재확인
+      final existing = await _repository.getTodayAttendance(workerId);
+      if (existing != null) {
+        final status = existing.checkOutTime != null
+            ? AttendanceStatus.checkedOut
+            : AttendanceStatus.checkedIn;
+        state = state.copyWith(status: status, todayAttendance: existing,
+            errorMessage: status == AttendanceStatus.checkedIn ? '이미 출근했습니다.' : '이미 퇴근 처리되었습니다.');
+        return;
+      }
       final position = await _getCurrentPosition();
       final attendance = await _repository.checkIn(
         workerId,
@@ -144,6 +159,19 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       state = state.copyWith(
           status: AttendanceStatus.checkedIn, todayAttendance: attendance);
     } catch (e) {
+      // DB unique constraint 위반 (동시 요청) → 기존 기록 복원
+      final msg = e.toString();
+      if (msg.contains('duplicate') || msg.contains('unique') || msg.contains('23505')) {
+        final existing = await _repository.getTodayAttendance(workerId);
+        if (existing != null) {
+          state = state.copyWith(
+            status: AttendanceStatus.checkedIn,
+            todayAttendance: existing,
+            errorMessage: '이미 출근 처리되었습니다.',
+          );
+          return;
+        }
+      }
       state = state.copyWith(
         status: AttendanceStatus.error,
         errorMessage: _friendlyError(e),

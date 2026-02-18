@@ -7,11 +7,13 @@ import '../../../core/providers/reference_data_provider.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/workers_provider.dart';
 import '../data/workers_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class WorkersScreen extends ConsumerStatefulWidget {
-  const WorkersScreen({super.key, required this.role, this.onWorkerTap});
+  const WorkersScreen({super.key, required this.role, this.onWorkerTap, this.userSiteId = ''});
 
   final AppRole role;
+  final String userSiteId;
   final void Function(String id, String name)? onWorkerTap;
 
   @override
@@ -126,7 +128,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     }
 
     final worker = WorkerRow(
-      id: _selectedWorker?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _selectedWorker?.id ?? const Uuid().v4(),
       company: _company,
       employeeId: _employeeIdController.text.isEmpty ? null : _employeeIdController.text,
       name: _nameController.text,
@@ -148,13 +150,24 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       job: _job,
     );
 
-    await ref.read(workersRepositoryProvider).saveWorkerProfile(worker);
-    ref.invalidate(workersProvider);
+    try {
+      await ref.read(workersRepositoryProvider).saveWorkerProfile(worker);
+      ref.invalidate(workersProvider);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${worker.name}님의 정보가 저장되었습니다.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${worker.name}님의 정보가 저장되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('저장 실패: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -544,8 +557,11 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
             child: workers.when(
               data: (list) {
                 var baseList = list;
-                if (widget.role == AppRole.centerManager) {
-                  baseList = list.where((w) => w.site == '서이천').toList();
+                if (widget.role == AppRole.centerManager && widget.userSiteId.isNotEmpty) {
+                  final userSiteName = ref.watch(siteNameByIdProvider)[widget.userSiteId] ?? '';
+                  if (userSiteName.isNotEmpty) {
+                    baseList = list.where((w) => w.site == userSiteName).toList();
+                  }
                 }
                 final filtered = baseList.where((w) {
                   if (_siteFilter != '전체' && w.site != _siteFilter) return false;
