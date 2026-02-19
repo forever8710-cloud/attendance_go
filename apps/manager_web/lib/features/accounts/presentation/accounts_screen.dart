@@ -381,7 +381,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           accounts.when(
             data: (list) {
               final filtered = list.where((a) =>
-                a.name.contains(_searchQuery) || a.phone.contains(_searchQuery),
+                a.name.contains(_searchQuery) || a.phone.contains(_searchQuery) || (a.email?.contains(_searchQuery) ?? false),
               ).toList();
 
               return Card(
@@ -400,7 +400,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       DataColumn(label: Text('이름')),
                       DataColumn(label: Text('직위')),
                       DataColumn(label: Text('전화번호')),
-                      DataColumn(label: Text('이메일')),
+                      DataColumn(label: Text('로그인 아이디')),
                       DataColumn(label: Text('권한')),
                       DataColumn(label: Text('상태')),
                       DataColumn(label: Text('생성일')),

@@ -2,6 +2,7 @@ import 'package:web/web.dart' as web;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/permissions.dart';
+import '../../../core/widgets/privacy_policy_dialog.dart';
 import '../providers/auth_provider.dart';
 import 'password_reset_dialog.dart';
 
@@ -57,15 +58,17 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF161624) : Colors.grey[100],
-      body: Center(
-        child: Card(
-          elevation: 4,
-          child: Container(
-            width: 400,
-            padding: const EdgeInsets.all(40),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+      body: Column(
+        children: [
+          const Spacer(),
+          Card(
+            elevation: 4,
+            child: Container(
+              width: 400,
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 const Icon(Icons.shield, size: 64, color: Colors.indigo),
                 const SizedBox(height: 12),
                 const Text(
@@ -182,6 +185,31 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
             ),
           ),
         ),
+        const Spacer(),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              InkWell(
+                onTap: () => showDialog(context: context, builder: (_) => const PrivacyPolicyDialog()),
+                child: Text(
+                  '개인정보처리방침',
+                  style: TextStyle(fontSize: 12, color: cs.primary, decoration: TextDecoration.underline, decorationColor: cs.primary),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text('|', style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.3))),
+              ),
+              Text(
+                'COPYRIGHT © 2026 TaekyungHoldings. ALL RIGHTS RESERVED.',
+                style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
+            ],
+          ),
+        ),
+        ],
       ),
     );
   }

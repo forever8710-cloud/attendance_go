@@ -22,6 +22,20 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
     _currentMonth = DateTime(now.year, now.month, 1);
   }
 
+  void _prevYear() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year - 1, _currentMonth.month, 1);
+    });
+    ref.read(calendarMonthProvider.notifier).state = _currentMonth;
+  }
+
+  void _nextYear() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year + 1, _currentMonth.month, 1);
+    });
+    ref.read(calendarMonthProvider.notifier).state = _currentMonth;
+  }
+
   void _prevMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
@@ -34,6 +48,115 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
     });
     ref.read(calendarMonthProvider.notifier).state = _currentMonth;
+  }
+
+  void _goToday() {
+    final now = DateTime.now();
+    setState(() {
+      _currentMonth = DateTime(now.year, now.month, 1);
+    });
+    ref.read(calendarMonthProvider.notifier).state = _currentMonth;
+  }
+
+  void _showYearMonthPicker(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    int selectedYear = _currentMonth.year;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 헤더
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  color: Colors.indigo,
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: () => setDialogState(() => selectedYear--),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.chevron_left, size: 20, color: Colors.white),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$selectedYear년',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () => setDialogState(() => selectedYear++),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.chevron_right, size: 20, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 12개월 그리드
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 2.0,
+                    children: List.generate(12, (i) {
+                      final month = i + 1;
+                      final now = DateTime.now();
+                      final isSelected = selectedYear == _currentMonth.year && month == _currentMonth.month;
+                      final isCurrent = selectedYear == now.year && month == now.month;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _currentMonth = DateTime(selectedYear, month, 1);
+                          });
+                          ref.read(calendarMonthProvider.notifier).state = _currentMonth;
+                          Navigator.pop(ctx);
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? cs.primary
+                                : isCurrent
+                                    ? cs.primary.withValues(alpha: 0.1)
+                                    : null,
+                            borderRadius: BorderRadius.circular(6),
+                            border: isCurrent && !isSelected
+                                ? Border.all(color: cs.primary, width: 1.5)
+                                : null,
+                          ),
+                          child: Text(
+                            '$month월',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: isSelected || isCurrent ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? Colors.white : cs.onSurface,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   List<CalendarEvent> _getEventsForDay(DateTime day, List<CalendarEvent> allEvents) {
@@ -99,38 +222,88 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 헤더: < 2026/02 > 일정관리 ──
+        // ── 헤더: << < 2026/02 > >> 오늘 일정관리 ──
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Row(
             children: [
-              InkWell(
+              // << 이전 년도
+              _NavButton(
+                icon: Icons.keyboard_double_arrow_left,
+                tooltip: '이전 년도',
+                onTap: _prevYear,
+                color: cs.onSurface.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 2),
+              // < 이전 월
+              _NavButton(
+                icon: Icons.chevron_left,
+                tooltip: '이전 월',
                 onTap: _prevMonth,
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: Icon(Icons.chevron_left, size: 20, color: cs.onSurface),
-                ),
+                color: cs.onSurface,
               ),
-              const SizedBox(width: 2),
-              Text(
-                '${_currentMonth.year}/${_currentMonth.month.toString().padLeft(2, '0')}',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface,
-                ),
-              ),
-              const SizedBox(width: 2),
+              const SizedBox(width: 4),
+              // 년/월 (클릭하면 년월 선택 팝업)
               InkWell(
-                onTap: _nextMonth,
-                borderRadius: BorderRadius.circular(4),
+                onTap: () => _showYearMonthPicker(context),
+                borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: Icon(Icons.chevron_right, size: 20, color: cs.onSurface),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${_currentMonth.year}/${_currentMonth.month.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(Icons.arrow_drop_down, size: 18, color: cs.onSurface.withValues(alpha: 0.5)),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
+              // > 다음 월
+              _NavButton(
+                icon: Icons.chevron_right,
+                tooltip: '다음 월',
+                onTap: _nextMonth,
+                color: cs.onSurface,
+              ),
+              const SizedBox(width: 2),
+              // >> 다음 년도
+              _NavButton(
+                icon: Icons.keyboard_double_arrow_right,
+                tooltip: '다음 년도',
+                onTap: _nextYear,
+                color: cs.onSurface.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 10),
+              // 오늘 버튼
+              InkWell(
+                onTap: _goToday,
+                borderRadius: BorderRadius.circular(4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '오늘',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: cs.primary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
               Text(
                 '일정관리',
                 style: TextStyle(
@@ -309,6 +482,35 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
     if (result == true) {
       ref.invalidate(calendarEventsProvider);
     }
+  }
+}
+
+/// 네비게이션 버튼 (<<, <, >, >>)
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    required this.color,
+  });
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Icon(icon, size: 20, color: color),
+        ),
+      ),
+    );
   }
 }
 

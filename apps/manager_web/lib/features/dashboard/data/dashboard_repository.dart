@@ -18,12 +18,16 @@ class DashboardRepository {
   Future<DashboardSummary> getTodaySummary(String siteId) async {
     await _loadMappings();
 
-    // 전체 활성 근로자 수
+    // 전체 활성 근로자 수 (센터장은 본인 센터만)
     var workersQuery = _supabase
         .from('workers')
         .select('id, part_id')
         .eq('is_active', true)
         .eq('role', 'worker');
+
+    if (siteId.isNotEmpty) {
+      workersQuery = workersQuery.eq('site_id', siteId);
+    }
 
     final allWorkers = await workersQuery;
     final totalWorkers = allWorkers.length;
@@ -33,11 +37,17 @@ class DashboardRepository {
     final todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
     final tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
 
-    final attendances = await _supabase
+    var attQuery = _supabase
         .from('attendances')
         .select('*, workers!inner(part_id, site_id)')
         .gte('check_in_time', todayStart)
         .lt('check_in_time', tomorrowStart);
+
+    if (siteId.isNotEmpty) {
+      attQuery = attQuery.eq('workers.site_id', siteId);
+    }
+
+    final attendances = await attQuery;
 
     int dayCheckedIn = 0;
     int nightCheckedIn = 0;
@@ -94,12 +104,18 @@ class DashboardRepository {
     final todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
     final tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
 
-    // 전체 활성 근로자 목록
-    final allWorkers = await _supabase
+    // 전체 활성 근로자 목록 (센터장은 본인 센터만)
+    var workersQuery = _supabase
         .from('workers')
         .select('id, name, phone, site_id, part_id, worker_profiles(position, job)')
         .eq('is_active', true)
         .eq('role', 'worker');
+
+    if (siteId.isNotEmpty) {
+      workersQuery = workersQuery.eq('site_id', siteId);
+    }
+
+    final allWorkers = await workersQuery;
 
     // 오늘 출근 기록
     final attendances = await _supabase
@@ -207,12 +223,18 @@ class DashboardRepository {
     final now = DateTime.now();
     final stats = <DailyAttendanceStat>[];
 
-    // 전체 활성 근로자 수
-    final allWorkers = await _supabase
+    // 전체 활성 근로자 수 (센터장은 본인 센터만)
+    var workersQuery = _supabase
         .from('workers')
         .select('id')
         .eq('is_active', true)
         .eq('role', 'worker');
+
+    if (siteId.isNotEmpty) {
+      workersQuery = workersQuery.eq('site_id', siteId);
+    }
+
+    final allWorkers = await workersQuery;
     final totalWorkers = allWorkers.length;
 
     for (int i = days - 1; i >= 0; i--) {
@@ -220,11 +242,17 @@ class DashboardRepository {
       final dayStart = date.toUtc().toIso8601String();
       final dayEnd = DateTime(date.year, date.month, date.day + 1).toUtc().toIso8601String();
 
-      final attendances = await _supabase
+      var attQuery = _supabase
           .from('attendances')
-          .select('*, workers!inner(part_id)')
+          .select('*, workers!inner(part_id, site_id)')
           .gte('check_in_time', dayStart)
           .lt('check_in_time', dayEnd);
+
+      if (siteId.isNotEmpty) {
+        attQuery = attQuery.eq('workers.site_id', siteId);
+      }
+
+      final attendances = await attQuery;
 
       int present = 0;
       int lateCount = 0;

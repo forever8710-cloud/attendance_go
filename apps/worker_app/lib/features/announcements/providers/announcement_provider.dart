@@ -5,9 +5,9 @@ import '../data/announcement_repository.dart';
 final workerAnnouncementRepositoryProvider =
     Provider((ref) => WorkerAnnouncementRepository());
 
-/// Worker App에서 볼 수 있는 활성 공지사항
+/// Worker App에서 볼 수 있는 활성 공지사항 (Realtime 자동 갱신)
 final workerAnnouncementsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) {
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
   final siteId = ref.watch(authProvider).worker?.siteId;
-  return ref.watch(workerAnnouncementRepositoryProvider).getActiveAnnouncements(siteId);
+  return ref.watch(workerAnnouncementRepositoryProvider).streamActiveAnnouncements(siteId);
 });

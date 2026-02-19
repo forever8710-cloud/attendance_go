@@ -16,6 +16,7 @@ import 'features/accounts/presentation/accounts_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
 import 'core/widgets/side_nav_drawer.dart';
+import 'core/widgets/privacy_policy_dialog.dart';
 import 'features/worker_detail/presentation/worker_detail_screen.dart';
 
 void main() async {
@@ -215,11 +216,25 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                     color: cs.surface,
                     border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
                   ),
-                  child: Center(
-                    child: Text(
-                      '© since 2026- Taekyungholdings All Rights Reserved.',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface.withValues(alpha: 0.85)),
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () => showDialog(context: context, builder: (_) => const PrivacyPolicyDialog()),
+                        child: Text(
+                          '개인정보처리방침',
+                          style: TextStyle(fontSize: 12, color: cs.primary, decoration: TextDecoration.underline, decorationColor: cs.primary),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('|', style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.3))),
+                      ),
+                      Text(
+                        'COPYRIGHT © 2026 TaekyungHoldings. ALL RIGHTS RESERVED.',
+                        style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+                      ),
+                    ],
                   ),
                 ),
               ],

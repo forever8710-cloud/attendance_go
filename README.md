@@ -1,6 +1,6 @@
-# attendance_go
+# WorkFlow (attendance_go)
 
-A new Flutter project.
+물류센터 근태관리 시스템 — Flutter 모노레포 + Supabase 백엔드
 
 ## Getting Started
 
