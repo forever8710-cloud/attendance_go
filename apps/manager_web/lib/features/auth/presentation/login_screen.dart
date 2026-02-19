@@ -195,16 +195,16 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
                 onTap: () => showDialog(context: context, builder: (_) => const PrivacyPolicyDialog()),
                 child: Text(
                   '개인정보처리방침',
-                  style: TextStyle(fontSize: 12, color: cs.primary, decoration: TextDecoration.underline, decorationColor: cs.primary),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.primary, decoration: TextDecoration.underline, decorationColor: cs.primary),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('|', style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.3))),
+                child: Text('|', style: TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.3))),
               ),
               Text(
                 'COPYRIGHT © 2026 TaekyungHoldings. ALL RIGHTS RESERVED.',
-                style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface.withValues(alpha: 0.6)),
               ),
             ],
           ),
