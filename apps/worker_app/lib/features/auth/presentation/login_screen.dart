@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,13 +100,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const CircularProgressIndicator(),
               ],
 
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: isLoading ? null : () => ref.read(authProvider.notifier).demoLogin(),
-                child: const Text('데모 로그인 (테스트용)'),
-              ),
+              if (kDebugMode) ...[
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: isLoading ? null : () => ref.read(authProvider.notifier).demoLogin(),
+                  child: const Text('데모 로그인 (테스트용)'),
+                ),
+              ],
             ],
           ),
         ),

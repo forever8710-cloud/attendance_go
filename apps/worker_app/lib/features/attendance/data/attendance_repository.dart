@@ -82,6 +82,28 @@ class AttendanceRepository {
     return Attendance.fromJson(row);
   }
 
+  /// 근로자의 소속 사업장 좌표/반경 조회
+  Future<Map<String, dynamic>?> getWorkerSite(String workerId) async {
+    final workerRows = await _supabase
+        .from('workers')
+        .select('site_id')
+        .eq('id', workerId)
+        .limit(1);
+
+    if (workerRows.isEmpty) return null;
+    final siteId = workerRows.first['site_id'] as String?;
+    if (siteId == null || siteId.isEmpty) return null;
+
+    final siteRows = await _supabase
+        .from('sites')
+        .select('latitude, longitude, radius, name')
+        .eq('id', siteId)
+        .limit(1);
+
+    if (siteRows.isEmpty) return null;
+    return siteRows.first;
+  }
+
   Future<List<Attendance>> getMonthlyAttendances(String workerId, int year, int month) async {
     final start = DateTime(year, month, 1).toUtc().toIso8601String();
     final end = DateTime(year, month + 1, 1).toUtc().toIso8601String();

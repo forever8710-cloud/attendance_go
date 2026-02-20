@@ -165,6 +165,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String bank,
     required String accountNumber,
   }) async {
+    if (state.worker == null) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: '근로자 정보를 찾을 수 없습니다. 다시 로그인해주세요.',
+      );
+      return;
+    }
     state = state.copyWith(status: AuthStatus.loading);
     try {
       await _repository.saveProfile(

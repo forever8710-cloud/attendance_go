@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -151,6 +152,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
         return;
       }
       final position = await _getCurrentPosition();
+      await _validateSiteProximity(position, workerId);
       final attendance = await _repository.checkIn(
         workerId,
         position.latitude,
@@ -184,6 +186,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     state = state.copyWith(status: AttendanceStatus.loading);
     try {
       final position = await _getCurrentPosition();
+      await _validateSiteProximity(position, state.todayAttendance!.workerId);
       final attendance = await _repository.checkOut(
         state.todayAttendance!.id,
         position.latitude,
@@ -205,6 +208,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
     state = state.copyWith(status: AttendanceStatus.loading);
     try {
       final position = await _getCurrentPosition();
+      await _validateSiteProximity(position, state.todayAttendance!.workerId);
       final attendance = await _repository.earlyLeaveCheckOut(
         state.todayAttendance!.id,
         position.latitude,
@@ -220,6 +224,45 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       );
     }
   }
+
+  /// 사업장 반경 검증 (Haversine 공식)
+  Future<void> _validateSiteProximity(Position position, String workerId) async {
+    final site = await _repository.getWorkerSite(workerId);
+    if (site == null) return; // 사이트 미배정이면 검증 스킵
+
+    final siteLat = double.tryParse(site['latitude'].toString()) ?? 0;
+    final siteLng = double.tryParse(site['longitude'].toString()) ?? 0;
+    final radius = (site['radius'] as int?) ?? 100;
+    final siteName = site['name'] as String? ?? '사업장';
+
+    if (siteLat == 0 && siteLng == 0) return; // 좌표 미설정이면 스킵
+
+    final distance = _haversineDistance(
+      position.latitude, position.longitude, siteLat, siteLng,
+    );
+
+    if (distance > radius) {
+      throw Exception(
+        '$siteName 반경 ${radius}m 밖에 있습니다.\n'
+        '현재 거리: ${distance.toInt()}m\n'
+        '사업장 근처에서 다시 시도해주세요.',
+      );
+    }
+  }
+
+  /// Haversine 공식으로 두 좌표 간 거리(m) 계산
+  double _haversineDistance(double lat1, double lng1, double lat2, double lng2) {
+    const R = 6371000.0; // 지구 반지름 (m)
+    final dLat = _toRadians(lat2 - lat1);
+    final dLng = _toRadians(lng2 - lng1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
+        math.sin(dLng / 2) * math.sin(dLng / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return R * c;
+  }
+
+  double _toRadians(double degrees) => degrees * math.pi / 180;
 
   /// 에러 메시지를 사용자 친화적으로 변환
   String _friendlyError(Object e) {
