@@ -36,7 +36,15 @@ class AccountsRepository {
 
     return (rows as List).map((row) {
       final profiles = row['worker_profiles'];
-      final profile = (profiles is List && profiles.isNotEmpty) ? profiles.first : null;
+      // worker_profiles has UNIQUE on worker_id → PostgREST returns object, not array
+      final Map<String, dynamic>? profile;
+      if (profiles is Map<String, dynamic>) {
+        profile = profiles;
+      } else if (profiles is List && profiles.isNotEmpty) {
+        profile = profiles.first as Map<String, dynamic>;
+      } else {
+        profile = null;
+      }
 
       return AccountRow(
         id: row['id'] as String,
