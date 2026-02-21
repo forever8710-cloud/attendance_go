@@ -19,7 +19,7 @@ const _allDestinations = [
   _MenuDestination(index: 0, icon: Icons.access_time, label: '출퇴근 현황'),
   _MenuDestination(index: 1, icon: Icons.people, label: '근로자 관리'),
   _MenuDestination(index: 2, icon: Icons.list_alt, label: '근태 기록', isSubMenu: true),
-  _MenuDestination(index: 3, icon: Icons.payments, label: '급여 관리', isSubMenu: true),
+  _MenuDestination(index: 3, icon: Icons.payments, label: '급여 관리 (준비중)', isSubMenu: true),
   _MenuDestination(index: 4, icon: Icons.settings, label: '설정'),
   _MenuDestination(index: 5, icon: Icons.admin_panel_settings, label: '관리자 계정관리'),
 ];

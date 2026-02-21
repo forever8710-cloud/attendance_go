@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_client/supabase_client.dart';
 import '../../../core/utils/permissions.dart';
 import '../providers/accounts_provider.dart';
+
+/// 사이트 목록 provider
+final _sitesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final rows = await SupabaseService.instance
+      .from('sites')
+      .select('id, name')
+      .order('name');
+  return (rows as List).cast<Map<String, dynamic>>();
+});
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -20,10 +30,13 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _role = 'worker';
+  final _personalEmailController = TextEditingController();
+  String _role = 'center_manager';
   String? _position;
+  String? _siteId;
   bool _isActive = true;
   bool _isSaving = false;
+  bool _isSendingEmail = false;
 
   @override
   void dispose() {
@@ -31,6 +44,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _personalEmailController.dispose();
     super.dispose();
   }
 
@@ -41,8 +55,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       _nameController.text = account.name;
       _phoneController.text = account.phone;
       _emailController.text = account.email ?? '';
+      _personalEmailController.text = account.personalEmail ?? '';
       _role = account.role;
       _position = account.position;
+      _siteId = account.siteId;
       _isActive = account.isActive;
     });
   }
@@ -55,8 +71,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       _phoneController.clear();
       _emailController.clear();
       _passwordController.clear();
-      _role = 'worker';
+      _personalEmailController.clear();
+      _role = 'center_manager';
       _position = null;
+      _siteId = null;
       _isActive = true;
     });
   }
@@ -90,21 +108,38 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     try {
       if (_isNewAccount) {
         // Edge Function으로 Auth 유저 + DB 레코드 생성
+        final createdName = _nameController.text;
+        final createdLoginEmail = _emailController.text;
+        final createdPassword = _passwordController.text;
+        final createdPersonalEmail = _personalEmailController.text.trim();
+
         await ref.read(accountsRepositoryProvider).createAccount(
-          email: _emailController.text,
-          password: _passwordController.text,
-          name: _nameController.text,
+          email: createdLoginEmail,
+          password: createdPassword,
+          name: createdName,
           phone: _phoneController.text,
           role: _role,
+          siteId: _siteId,
           position: _position,
+          personalEmail: createdPersonalEmail.isEmpty ? null : createdPersonalEmail,
         );
         ref.invalidate(accountsProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${_nameController.text}님의 계정이 생성되었습니다.')),
+            SnackBar(content: Text('$createdName님의 계정이 생성되었습니다.')),
           );
           _clearForm();
           setState(() => _isNewAccount = false);
+
+          // 개인 이메일이 있으면 가입정보 전송 다이얼로그
+          if (createdPersonalEmail.isNotEmpty) {
+            _showSendEmailDialog(
+              toEmail: createdPersonalEmail,
+              name: createdName,
+              loginEmail: createdLoginEmail,
+              password: createdPassword,
+            );
+          }
         }
       } else {
         // 기존 계정 수정
@@ -115,8 +150,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           email: _emailController.text.isEmpty ? null : _emailController.text,
           role: _role,
           position: _position,
+          siteId: _siteId,
           isActive: _isActive,
           createdAt: _selectedAccount?.createdAt ?? DateTime.now(),
+          personalEmail: _personalEmailController.text.trim().isEmpty ? null : _personalEmailController.text.trim(),
         );
         await ref.read(accountsRepositoryProvider).saveAccount(account);
         ref.invalidate(accountsProvider);
@@ -135,6 +172,199 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  /// 계정 삭제 확인 다이얼로그
+  void _showDeleteDialog(AccountRow account) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red[700]),
+            const SizedBox(width: 8),
+            const Text('계정 삭제', style: TextStyle(fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                children: [
+                  TextSpan(
+                    text: account.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const TextSpan(text: '님의 계정을 완전히 삭제하시겠습니까?'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red[200]!),
+              ),
+              child: const Text(
+                '삭제된 계정은 복구할 수 없으며,\n관련된 모든 데이터가 함께 삭제됩니다.',
+                style: TextStyle(fontSize: 13, color: Colors.red, height: 1.5),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('취소'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                await ref.read(accountsRepositoryProvider).deleteAccount(account.id);
+                ref.invalidate(accountsProvider);
+                if (mounted) {
+                  setState(() {
+                    _selectedAccount = null;
+                    _isNewAccount = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${account.name}님의 계정이 삭제되었습니다.')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('삭제 실패: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.delete_forever, size: 16),
+            label: const Text('삭제'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red[700]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 기존 계정에 가입정보 메일 전송 (비밀번호 미포함)
+  Future<void> _sendWelcomeEmail() async {
+    final personalEmail = _personalEmailController.text.trim();
+    if (personalEmail.isEmpty || _selectedAccount == null) return;
+
+    setState(() => _isSendingEmail = true);
+    try {
+      await ref.read(accountsRepositoryProvider).sendWelcomeEmail(
+        toEmail: personalEmail,
+        name: _selectedAccount!.name,
+        loginEmail: _selectedAccount!.email!,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('가입정보가 $personalEmail로 전송되었습니다.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('메일 전송 실패: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSendingEmail = false);
+    }
+  }
+
+  /// 신규 계정 생성 후 가입정보 전송 다이얼로그
+  void _showSendEmailDialog({
+    required String toEmail,
+    required String name,
+    required String loginEmail,
+    required String password,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.email, color: Colors.indigo),
+            SizedBox(width: 8),
+            Text('가입정보 메일 전송', style: TextStyle(fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$name님의 가입정보를 아래 이메일로 전송하시겠습니까?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('수신: $toEmail', style: const TextStyle(fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text('내용: 로그인 아이디, 초기 비밀번호, 접속 주소', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('건너뛰기'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              setState(() => _isSendingEmail = true);
+              try {
+                await ref.read(accountsRepositoryProvider).sendWelcomeEmail(
+                  toEmail: toEmail,
+                  name: name,
+                  loginEmail: loginEmail,
+                  password: password,
+                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('가입정보가 $toEmail로 전송되었습니다.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('메일 전송 실패: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _isSendingEmail = false);
+              }
+            },
+            icon: const Icon(Icons.send, size: 16),
+            label: const Text('전송'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -185,21 +415,17 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   const Divider(height: 24),
 
                   if (_selectedAccount != null || _isNewAccount) ...[
-                    // 1행: ID (읽기전용), 이름, 전화번호, 이메일
+                    // 1행: 로그인 아이디, 이름, 전화번호
                     Row(
                       children: [
-                        if (_selectedAccount != null) ...[
-                          SizedBox(width: 80, child: _buildReadonlyField('ID', _selectedAccount!.id)),
-                          const SizedBox(width: 12),
-                        ],
+                        Expanded(child: _buildFormField(_isNewAccount ? '로그인 아이디(이메일) *' : '로그인 아이디(이메일)', _emailController)),
+                        const SizedBox(width: 12),
                         Expanded(child: _buildFormField('이름 *', _nameController)),
                         const SizedBox(width: 12),
                         Expanded(child: _buildFormField('전화번호 *', _phoneController)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildFormField(_isNewAccount ? '이메일 *' : '이메일', _emailController)),
                       ],
                     ),
-                    // 신규 등록 시: 비밀번호 필드
+                    // 신규 등록 시: 비밀번호 + 개인 이메일 필드
                     if (_isNewAccount) ...[
                       const SizedBox(height: 12),
                       Row(
@@ -221,16 +447,57 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 300,
+                            child: TextField(
+                              controller: _personalEmailController,
+                              style: const TextStyle(fontSize: 13),
+                              decoration: const InputDecoration(
+                                labelText: '개인 이메일 (가입정보 수신용)',
+                                labelStyle: TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                isDense: true,
+                                helperText: '가입정보를 이 이메일로 전송합니다',
+                                helperStyle: TextStyle(fontSize: 11),
+                                prefixIcon: Icon(Icons.email_outlined, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    // 기존 계정: 개인 이메일 필드
+                    if (!_isNewAccount && _selectedAccount != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 300,
+                            child: TextField(
+                              controller: _personalEmailController,
+                              style: const TextStyle(fontSize: 13),
+                              decoration: const InputDecoration(
+                                labelText: '개인 이메일 (가입정보 수신용)',
+                                labelStyle: TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                isDense: true,
+                                prefixIcon: Icon(Icons.email_outlined, size: 18),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
                     const SizedBox(height: 12),
 
-                    // 2행: 직위, 역할, 상태, 생성일
+                    // 2행: 직위, 소속 센터, 권한, 상태, 생성일
                     Row(
                       children: [
                         SizedBox(
-                          width: 160,
+                          width: 140,
                           child: DropdownButtonFormField<String>(
                             initialValue: _position,
                             style: const TextStyle(fontSize: 13, color: Colors.black87),
@@ -242,33 +509,50 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                               isDense: true,
                             ),
                             items: const [
-                              DropdownMenuItem(value: '과장', child: Text('과장')),
-                              DropdownMenuItem(value: '부장', child: Text('부장')),
-                              DropdownMenuItem(value: '센터장', child: Text('센터장')),
+                              DropdownMenuItem(value: '시스템관리자', child: Text('시스템관리자')),
                               DropdownMenuItem(value: '대표이사', child: Text('대표이사')),
+                              DropdownMenuItem(value: '센터장', child: Text('센터장')),
+                              DropdownMenuItem(value: '부장', child: Text('부장')),
+                              DropdownMenuItem(value: '과장', child: Text('과장')),
                             ],
-                            onChanged: (v) => setState(() => _position = v),
+                            onChanged: (v) => setState(() {
+                              _position = v;
+                              // 직위에 따라 역할 자동 설정
+                              if (v == '시스템관리자') {
+                                _role = 'system_admin';
+                              } else if (v == '대표이사') {
+                                _role = 'owner';
+                              } else {
+                                _role = 'center_manager';
+                              }
+                            }),
                           ),
                         ),
                         const SizedBox(width: 12),
                         SizedBox(
-                          width: 200,
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _role,
-                            style: const TextStyle(fontSize: 13, color: Colors.black87),
-                            decoration: const InputDecoration(
-                              labelText: '권한',
-                              labelStyle: TextStyle(fontSize: 12),
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              isDense: true,
+                          width: 180,
+                          child: ref.watch(_sitesProvider).when(
+                            data: (sites) => DropdownButtonFormField<String>(
+                              initialValue: _siteId,
+                              style: const TextStyle(fontSize: 13, color: Colors.black87),
+                              decoration: const InputDecoration(
+                                labelText: '소속 센터',
+                                labelStyle: TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                isDense: true,
+                              ),
+                              items: [
+                                const DropdownMenuItem<String>(value: null, child: Text('미지정')),
+                                ...sites.map((s) => DropdownMenuItem<String>(
+                                  value: s['id'] as String,
+                                  child: Text(s['name'] as String),
+                                )),
+                              ],
+                              onChanged: (v) => setState(() => _siteId = v),
                             ),
-                            items: const [
-                              DropdownMenuItem(value: 'worker', child: Text('근로자')),
-                              DropdownMenuItem(value: 'center_manager', child: Text('센터장 (소속 센터)')),
-                              DropdownMenuItem(value: 'owner', child: Text('대표이사 (전체 조회)')),
-                            ],
-                            onChanged: (v) => setState(() => _role = v ?? 'worker'),
+                            loading: () => const SizedBox(width: 180, height: 40, child: LinearProgressIndicator()),
+                            error: (_, __) => const Text('센터 로드 실패'),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -303,6 +587,20 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (_selectedAccount != null) ...[
+                          // 가입정보 메일 전송 버튼
+                          if (_personalEmailController.text.trim().isNotEmpty && _selectedAccount!.email != null)
+                            OutlinedButton.icon(
+                              onPressed: _isSendingEmail ? null : () => _sendWelcomeEmail(),
+                              icon: _isSendingEmail
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : const Icon(Icons.forward_to_inbox, size: 16),
+                              label: const Text('가입정보 메일 전송', style: TextStyle(fontSize: 13)),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.indigo,
+                              ),
+                            ),
+                          if (_personalEmailController.text.trim().isNotEmpty && _selectedAccount!.email != null)
+                            const SizedBox(width: 12),
                           OutlinedButton.icon(
                             onPressed: () async {
                               await ref.read(accountsRepositoryProvider).toggleAccountStatus(_selectedAccount!.id);
@@ -317,6 +615,16 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                             label: Text(_selectedAccount!.isActive ? '비활성화' : '활성화', style: const TextStyle(fontSize: 13)),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _selectedAccount!.isActive ? Colors.red : Colors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: () => _showDeleteDialog(_selectedAccount!),
+                            icon: const Icon(Icons.delete_forever, size: 16),
+                            label: const Text('삭제', style: TextStyle(fontSize: 13)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red[700],
+                              side: BorderSide(color: Colors.red[300]!),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -399,9 +707,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       DataColumn(label: Text('No.')),
                       DataColumn(label: Text('이름')),
                       DataColumn(label: Text('직위')),
+                      DataColumn(label: Text('소속 센터')),
                       DataColumn(label: Text('전화번호')),
                       DataColumn(label: Text('로그인 아이디')),
-                      DataColumn(label: Text('권한')),
+                      DataColumn(label: Text('개인 이메일')),
                       DataColumn(label: Text('상태')),
                       DataColumn(label: Text('생성일')),
                     ],
@@ -423,9 +732,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                           DataCell(Text('${i + 1}')),
                           DataCell(Text(a.name, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null))),
                           DataCell(Text(a.position ?? '-', style: const TextStyle(fontSize: 13))),
+                          DataCell(Text(a.siteName ?? '-', style: const TextStyle(fontSize: 13))),
                           DataCell(Text(a.phone)),
                           DataCell(Text(a.email ?? '-')),
-                          DataCell(_buildRoleBadge(a.role)),
+                          DataCell(Text(a.personalEmail ?? '-', style: const TextStyle(fontSize: 13))),
                           DataCell(_buildStatusBadge(a.isActive)),
                           DataCell(Text(a.createdAt != null ? DateFormat('yyyy-MM-dd').format(a.createdAt!) : '-')),
                         ],
