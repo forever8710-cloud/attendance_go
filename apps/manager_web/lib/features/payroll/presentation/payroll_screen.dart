@@ -52,7 +52,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonHideUnderline(
@@ -110,7 +110,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
 
               if (_payrollData != null)
                 Text('▶ 급여대장 (${ref.read(selectedYearMonthProvider)})',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
               if (_payrollData != null) const SizedBox(height: 12),
             ],
           ),
@@ -224,15 +224,15 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
     final rowCount = data.length + 1;
 
     final columns = [
-      const TableColumnDef(label: 'No.', width: 55),
-      const TableColumnDef(label: '성명', width: 85),
-      const TableColumnDef(label: '파트', width: 105),
-      const TableColumnDef(label: '출근일수', width: 85, numeric: true),
-      const TableColumnDef(label: '총 근무시간', width: 100, numeric: true),
-      const TableColumnDef(label: '시급', width: 90, numeric: true),
-      const TableColumnDef(label: '기본급', width: 105, numeric: true),
-      const TableColumnDef(label: '총 급여', width: 125, numeric: true),
-      const TableColumnDef(label: '상태', width: 80),
+      const TableColumnDef(label: 'No.', width: 45),
+      const TableColumnDef(label: '성명', width: 75),
+      const TableColumnDef(label: '파트', width: 95),
+      const TableColumnDef(label: '출근일수', width: 75, numeric: true),
+      const TableColumnDef(label: '총 근무시간', width: 90, numeric: true),
+      const TableColumnDef(label: '시급', width: 80, numeric: true),
+      const TableColumnDef(label: '기본급', width: 95, numeric: true),
+      const TableColumnDef(label: '총 급여', width: 110, numeric: true),
+      const TableColumnDef(label: '상태', width: 75),
     ];
 
     return StickyHeaderTable.wrapWithCard(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/utils/company_constants.dart';
 import '../../../core/providers/reference_data_provider.dart';
+import '../../../core/widgets/modern_date_picker.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/workers_provider.dart';
 import '../data/workers_repository.dart';
@@ -178,11 +179,11 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     final workers = ref.watch(workersProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── 상단: 인사기록카드 (최대 45% 높이, 스크롤 가능) ──
+          // ── 상단: 인사기록카드 ──
           ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.45,
@@ -195,7 +196,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                   child: Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
@@ -224,9 +225,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         ),
                     ],
                   ),
-                  const Divider(height: 24),
-
-                  if (_selectedWorker != null || _isNewWorker) ...[
+                    const Divider(height: 24),
+                    if (_selectedWorker != null || _isNewWorker) ...[
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -465,18 +465,18 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                           ),
                         ],
                       ),
-                  ] else ...[
-                    Center(
-                      child: Padding(
+                    ] else ...[
+                      Padding(
                         padding: const EdgeInsets.all(32),
-                        child: Text(
-                          '아래 목록에서 근로자를 선택하거나\n신규 등록 버튼을 클릭하세요.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+                        child: Center(
+                          child: Text(
+                            '아래 목록에서 근로자를 선택하거나\n신규 등록 버튼을 클릭하세요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 14),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
                 ],
               ),
             ),
@@ -498,6 +498,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                     const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
                     const SizedBox(width: 8),
                     const Text('근로자 목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    const Spacer(),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -521,8 +522,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         _buildWorkerFilterDropdown('재직상태', _statusFilter, ['전체', '정규직', '계약직', '일용직', '파견', '육아휴직'],
                             (v) => setState(() => _statusFilter = v!)),
                         SizedBox(
-                          width: 180,
-                          height: 38,
+                          width: 200,
+                          height: 36,
                           child: TextField(
                             onChanged: (v) => setState(() => _searchQuery = v),
                             decoration: InputDecoration(
@@ -575,16 +576,16 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                 }).toList();
 
                 final columns = [
-                  const TableColumnDef(label: 'No.', width: 55),
-                  const TableColumnDef(label: '성명', width: 85),
-                  const TableColumnDef(label: '소속회사', width: 100),
-                  const TableColumnDef(label: '사번', width: 95),
-                  const TableColumnDef(label: '전화번호', width: 125),
-                  const TableColumnDef(label: '직무', width: 105),
-                  const TableColumnDef(label: '직위', width: 75),
-                  const TableColumnDef(label: '사업장', width: 85),
-                  const TableColumnDef(label: '재직상태', width: 90),
-                  const TableColumnDef(label: '입사일', width: 105),
+                  const TableColumnDef(label: 'No.', width: 45),
+                  const TableColumnDef(label: '성명', width: 75),
+                  const TableColumnDef(label: '소속회사', width: 85),
+                  const TableColumnDef(label: '사번', width: 85),
+                  const TableColumnDef(label: '전화번호', width: 115),
+                  const TableColumnDef(label: '직무', width: 95),
+                  const TableColumnDef(label: '직위', width: 65),
+                  const TableColumnDef(label: '사업장', width: 75),
+                  const TableColumnDef(label: '재직상태', width: 80),
+                  const TableColumnDef(label: '입사일', width: 95),
                 ];
 
                 return StickyHeaderTable.wrapWithCard(
@@ -675,11 +676,12 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   Widget _buildDatePicker(String label, DateTime? value, ValueChanged<DateTime?> onChanged) {
     return InkWell(
       onTap: () async {
-        final picked = await showDatePicker(
+        final picked = await showModernDatePicker(
           context: context,
           initialDate: value ?? DateTime.now(),
           firstDate: DateTime(1990),
           lastDate: DateTime(2100),
+          title: label,
         );
         if (picked != null) onChanged(picked);
       },
@@ -730,7 +732,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

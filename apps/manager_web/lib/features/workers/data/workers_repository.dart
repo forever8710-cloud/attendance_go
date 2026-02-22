@@ -130,10 +130,11 @@ class WorkersRepository {
     try {
       await _loadMappings();
 
-      // workers LEFT JOIN worker_profiles
+      // workers LEFT JOIN worker_profiles (근로자만 조회)
       final response = await _supabase
           .from('workers')
-          .select('*, worker_profiles(*)');
+          .select('*, worker_profiles(*)')
+          .eq('role', 'worker');
 
       return (response as List).map((row) {
         final profile = (row['worker_profiles'] is List && (row['worker_profiles'] as List).isNotEmpty)

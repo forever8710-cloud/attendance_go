@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/permissions.dart';
+import '../../../core/widgets/modern_date_picker.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../data/attendance_records_repository.dart';
 import '../providers/attendance_records_provider.dart';
@@ -65,11 +66,11 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                           '${DateFormat('MM/dd').format(dateRange.start)} ~ ${DateFormat('MM/dd').format(dateRange.end)}',
                         ),
                         onPressed: () async {
-                          final range = await showDateRangePicker(
+                          final range = await showModernDateRangePicker(
                             context: context,
+                            initialRange: dateRange,
                             firstDate: DateTime(2024),
                             lastDate: DateTime.now(),
-                            initialDateRange: dateRange,
                           );
                           if (range != null) {
                             ref.read(attendanceDateRangeProvider.notifier).state = range;
@@ -81,8 +82,8 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                       _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '지각', '조퇴', '미출근'],
                           (v) => setState(() => _statusFilter = v!)),
                       SizedBox(
-                        width: 180,
-                        height: 38,
+                        width: 200,
+                        height: 36,
                         child: TextField(
                           onChanged: (v) => setState(() => _nameQuery = v),
                           decoration: InputDecoration(
@@ -132,17 +133,17 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                 }).toList();
 
                 final columns = [
-                  const TableColumnDef(label: 'No.', width: 55),
-                  const TableColumnDef(label: '날짜', width: 105),
-                  const TableColumnDef(label: '성명', width: 85),
-                  const TableColumnDef(label: '직위', width: 75),
-                  const TableColumnDef(label: '직무', width: 110),
-                  const TableColumnDef(label: '사업장', width: 85),
-                  const TableColumnDef(label: '출근', width: 75),
-                  const TableColumnDef(label: '퇴근', width: 75),
-                  const TableColumnDef(label: '근무시간', width: 90),
-                  const TableColumnDef(label: '상태', width: 80),
-                  if (hasEditPermission) const TableColumnDef(label: '관리', width: 90),
+                  const TableColumnDef(label: 'No.', width: 45),
+                  const TableColumnDef(label: '날짜', width: 95),
+                  const TableColumnDef(label: '성명', width: 75),
+                  const TableColumnDef(label: '직위', width: 65),
+                  const TableColumnDef(label: '직무', width: 95),
+                  const TableColumnDef(label: '사업장', width: 75),
+                  const TableColumnDef(label: '출근', width: 65),
+                  const TableColumnDef(label: '퇴근', width: 65),
+                  const TableColumnDef(label: '근무시간', width: 80),
+                  const TableColumnDef(label: '상태', width: 75),
+                  if (hasEditPermission) const TableColumnDef(label: '관리', width: 80),
                 ];
 
                 return Column(
@@ -277,7 +278,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

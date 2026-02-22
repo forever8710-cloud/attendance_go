@@ -41,12 +41,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
           Align(
             alignment: Alignment.centerLeft,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
+              constraints: const BoxConstraints(maxWidth: 900),
               child: Card(
                 elevation: 0,
                 color: Theme.of(context).colorScheme.surface,
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -173,7 +173,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
           color: isSelected ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.4),
+            color: isSelected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),

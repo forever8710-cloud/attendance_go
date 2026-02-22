@@ -112,14 +112,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Toolbar
+              // 테이블 헤더 + 필터/검색
               Row(
                 children: [
+                  const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  if (_selectedStatus != null) ...[
+                    const SizedBox(width: 8),
+                    Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
+                  ],
+                  const SizedBox(width: 24),
                   _buildCenterDropdown(),
                   const SizedBox(width: 12),
                   SizedBox(
-                    width: 250,
-                    height: 40,
+                    width: 200,
+                    height: 36,
                     child: TextField(
                       onChanged: (v) => setState(() => _searchQuery = v),
                       decoration: InputDecoration(
@@ -132,18 +138,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // 테이블 헤더
-              Row(
-                children: [
-                  const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                  if (_selectedStatus != null) ...[
-                    const SizedBox(width: 8),
-                    Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
-                  ],
                 ],
               ),
               const SizedBox(height: 12),
@@ -217,16 +211,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 }
 
                 final columns = [
-                  TableColumnDef(label: 'No.', width: 55, onSort: () => onSort(0), sortAscending: _sortColumnIndex == 0 ? _isAscending : null),
-                  TableColumnDef(label: '사업장', width: 85, onSort: () => onSort(1), sortAscending: _sortColumnIndex == 1 ? _isAscending : null),
-                  TableColumnDef(label: '성명', width: 85, onSort: () => onSort(2), sortAscending: _sortColumnIndex == 2 ? _isAscending : null),
-                  TableColumnDef(label: '직위', width: 75, onSort: () => onSort(3), sortAscending: _sortColumnIndex == 3 ? _isAscending : null),
-                  TableColumnDef(label: '직무', width: 110, onSort: () => onSort(4), sortAscending: _sortColumnIndex == 4 ? _isAscending : null),
-                  TableColumnDef(label: '출근', width: 75, onSort: () => onSort(5), sortAscending: _sortColumnIndex == 5 ? _isAscending : null),
-                  TableColumnDef(label: '퇴근', width: 75, onSort: () => onSort(6), sortAscending: _sortColumnIndex == 6 ? _isAscending : null),
-                  TableColumnDef(label: '근무시간', width: 90, onSort: () => onSort(7), sortAscending: _sortColumnIndex == 7 ? _isAscending : null),
-                  TableColumnDef(label: '상태', width: 80, onSort: () => onSort(8), sortAscending: _sortColumnIndex == 8 ? _isAscending : null),
-                  TableColumnDef(label: '비고', width: 130, onSort: () => onSort(9), sortAscending: _sortColumnIndex == 9 ? _isAscending : null),
+                  TableColumnDef(label: 'No.', width: 45, onSort: () => onSort(0), sortAscending: _sortColumnIndex == 0 ? _isAscending : null),
+                  TableColumnDef(label: '사업장', width: 75, onSort: () => onSort(1), sortAscending: _sortColumnIndex == 1 ? _isAscending : null),
+                  TableColumnDef(label: '성명', width: 75, onSort: () => onSort(2), sortAscending: _sortColumnIndex == 2 ? _isAscending : null),
+                  TableColumnDef(label: '직위', width: 65, onSort: () => onSort(3), sortAscending: _sortColumnIndex == 3 ? _isAscending : null),
+                  TableColumnDef(label: '직무', width: 95, onSort: () => onSort(4), sortAscending: _sortColumnIndex == 4 ? _isAscending : null),
+                  TableColumnDef(label: '출근', width: 65, onSort: () => onSort(5), sortAscending: _sortColumnIndex == 5 ? _isAscending : null),
+                  TableColumnDef(label: '퇴근', width: 65, onSort: () => onSort(6), sortAscending: _sortColumnIndex == 6 ? _isAscending : null),
+                  TableColumnDef(label: '근무시간', width: 80, onSort: () => onSort(7), sortAscending: _sortColumnIndex == 7 ? _isAscending : null),
+                  TableColumnDef(label: '상태', width: 75, onSort: () => onSort(8), sortAscending: _sortColumnIndex == 8 ? _isAscending : null),
+                  TableColumnDef(label: '비고', width: 110, onSort: () => onSort(9), sortAscending: _sortColumnIndex == 9 ? _isAscending : null),
                 ];
 
                 return StickyHeaderTable.wrapWithCard(
@@ -343,7 +337,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: cs.surface,
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// 테이블 컬럼 정의
@@ -24,8 +23,8 @@ class TableColumnDef {
 
 /// 고정 헤더 + 스크롤 바디 테이블 위젯
 ///
-/// 부모가 반드시 bounded height + bounded width를 제공해야 함.
 /// [wrapWithCard]로 감싸면 Card + 너비 자동 조정까지 처리.
+/// 데이터가 적으면 콘텐츠에 맞춰 축소, 많으면 스크롤.
 class StickyHeaderTable extends StatelessWidget {
   final List<TableColumnDef> columns;
   final int rowCount;
@@ -48,6 +47,7 @@ class StickyHeaderTable extends StatelessWidget {
 
   /// Card로 감싼 StickyHeaderTable을 반환 (너비를 컬럼에 맞게 자동 조정)
   /// 부모가 bounded height를 제공해야 함 (Expanded 등)
+  /// 데이터 행에 맞춰 Card가 축소되고, 넘칠 때만 스크롤.
   static Widget wrapWithCard({
     required List<TableColumnDef> columns,
     required int rowCount,
@@ -62,36 +62,35 @@ class StickyHeaderTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cs = Theme.of(context).colorScheme;
-        // 헤더(46) + 행당(43) + 테두리(2) → 데이터에 맞는 높이, 최대 constraints
-        final contentHeight = 46.0 + rowCount * 43.0 + 2.0;
-        final effectiveHeight = min(contentHeight, constraints.maxHeight);
         return Align(
           alignment: Alignment.topLeft,
           child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            height: effectiveHeight,
-            child: Card(
-              elevation: 0,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: StickyHeaderTable(
-                columns: columns,
-                rowCount: rowCount,
-                cellBuilder: cellBuilder,
-                onRowTap: onRowTap,
-                isRowSelected: isRowSelected,
-                rowColorBuilder: rowColorBuilder,
-                emptyMessage: emptyMessage,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: tableWidth,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                child: Card(
+                  elevation: 0,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: StickyHeaderTable(
+                    columns: columns,
+                    rowCount: rowCount,
+                    cellBuilder: cellBuilder,
+                    onRowTap: onRowTap,
+                    isRowSelected: isRowSelected,
+                    rowColorBuilder: rowColorBuilder,
+                    emptyMessage: emptyMessage,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
         );
       },
     );
@@ -103,6 +102,7 @@ class StickyHeaderTable extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         // ── 고정 헤더 ──
         Container(
@@ -157,18 +157,17 @@ class StickyHeaderTable extends StatelessWidget {
         ),
 
         // ── 스크롤 바디 ──
-        Expanded(
+        Flexible(
           child: rowCount == 0
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                      emptyMessage ?? '데이터가 없습니다.',
-                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
-                    ),
+              ? Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    emptyMessage ?? '데이터가 없습니다.',
+                    style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                   ),
                 )
               : ListView.builder(
+                  shrinkWrap: true,
                   itemCount: rowCount,
                   itemBuilder: (context, rowIndex) {
                     final selected =

@@ -64,7 +64,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                         child: Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Padding(
@@ -191,7 +191,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                   children: [
                     const Text(
                       '▶ 월별 근태 현황',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
                     ),
                     const SizedBox(width: 16),
                     _buildMonthSelector(context, ref, yearMonth),
@@ -317,7 +317,7 @@ class WorkerDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(

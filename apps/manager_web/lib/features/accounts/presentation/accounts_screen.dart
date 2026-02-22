@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_client/supabase_client.dart';
 import '../../../core/utils/permissions.dart';
+import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/accounts_provider.dart';
 
 /// 사이트 목록 provider
@@ -370,21 +371,26 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   @override
   Widget build(BuildContext context) {
     final accounts = ref.watch(accountsProvider);
+    final cs = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 상단 영역: 계정 정보 카드 + 검색 (스크롤 가능) ──
+        Flexible(
+          flex: 0,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // ── 상단: 계정 정보 카드 ──
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              side: BorderSide(color: Colors.grey[300]!),
+              side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
@@ -412,9 +418,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       ),
                     ],
                   ),
-                  const Divider(height: 24),
-
-                  if (_selectedAccount != null || _isNewAccount) ...[
+                    const Divider(height: 24),
+                    if (_selectedAccount != null || _isNewAccount) ...[
                     // 1행: 로그인 아이디, 이름, 전화번호
                     Row(
                       children: [
@@ -638,120 +643,109 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                         ),
                       ],
                     ),
-                  ] else ...[
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text(
-                          '아래 목록에서 계정을 선택하거나\n신규 등록 버튼을 클릭하세요.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
+                    ] else ...[
+                      Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: Text(
+                            '아래 목록에서 관리자 계정을 선택하거나\n신규 등록 버튼을 클릭하세요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.4), fontSize: 14),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
                 ],
               ),
             ),
           ),
 
-          // ── 중간: 구분선 ──
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Row(
-              children: [
-                const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
-                const SizedBox(width: 8),
-                const Text('관리자 계정목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                const SizedBox(width: 16),
-                Expanded(child: Divider(color: Colors.grey[300])),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 220,
-                  height: 36,
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    decoration: InputDecoration(
-                      hintText: '이름, 전화번호 검색...',
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                      contentPadding: EdgeInsets.zero,
+              // ── 중간: 구분선 ──
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
+                    const SizedBox(width: 8),
+                    const Text('관리자 계정목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    const SizedBox(width: 16),
+                    Expanded(child: Divider(color: cs.outlineVariant.withValues(alpha: 0.3))),
+                    const SizedBox(width: 16),
+                    SizedBox(
+                      width: 200,
+                      height: 36,
+                      child: TextField(
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                        decoration: InputDecoration(
+                          hintText: '이름, 전화번호 검색...',
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
+              ),
               ],
+              ),
             ),
           ),
+        ),
 
-          // ── 하단: 계정 리스트 ──
-          accounts.when(
-            data: (list) {
-              final filtered = list.where((a) =>
-                a.name.contains(_searchQuery) || a.phone.contains(_searchQuery) || (a.email?.contains(_searchQuery) ?? false),
-              ).toList();
+        // ── 하단: 계정 리스트 (StickyHeaderTable) ──
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
+            child: accounts.when(
+              data: (list) {
+                final filtered = list.where((a) =>
+                  a.name.contains(_searchQuery) || a.phone.contains(_searchQuery) || (a.email?.contains(_searchQuery) ?? false),
+                ).toList();
 
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.grey[200]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 28,
-                    showCheckboxColumn: false,
-                    columns: const [
-                      DataColumn(label: Text('No.')),
-                      DataColumn(label: Text('이름')),
-                      DataColumn(label: Text('직위')),
-                      DataColumn(label: Text('소속 센터')),
-                      DataColumn(label: Text('전화번호')),
-                      DataColumn(label: Text('로그인 아이디')),
-                      DataColumn(label: Text('개인 이메일')),
-                      DataColumn(label: Text('상태')),
-                      DataColumn(label: Text('생성일')),
-                    ],
-                    rows: filtered.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final a = entry.value;
-                      final isSelected = _selectedAccount?.id == a.id;
+                final columns = [
+                  const TableColumnDef(label: 'No.', width: 45),
+                  const TableColumnDef(label: '이름', width: 75),
+                  const TableColumnDef(label: '직위', width: 80),
+                  const TableColumnDef(label: '소속 센터', width: 80),
+                  const TableColumnDef(label: '전화번호', width: 110),
+                  const TableColumnDef(label: '로그인 아이디', width: 155),
+                  const TableColumnDef(label: '개인 이메일', width: 160),
+                  const TableColumnDef(label: '상태', width: 70),
+                  const TableColumnDef(label: '생성일', width: 90),
+                ];
 
-                      return DataRow(
-                        selected: isSelected,
-                        color: WidgetStateProperty.resolveWith((states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return Colors.indigo.withValues(alpha: 0.1);
-                          }
-                          return null;
-                        }),
-                        onSelectChanged: (_) => _loadAccount(a),
-                        cells: [
-                          DataCell(Text('${i + 1}')),
-                          DataCell(Text(a.name, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null))),
-                          DataCell(Text(a.position ?? '-', style: const TextStyle(fontSize: 13))),
-                          DataCell(Text(a.siteName ?? '-', style: const TextStyle(fontSize: 13))),
-                          DataCell(Text(a.phone)),
-                          DataCell(Text(a.email ?? '-')),
-                          DataCell(Text(a.personalEmail ?? '-', style: const TextStyle(fontSize: 13))),
-                          DataCell(_buildStatusBadge(a.isActive)),
-                          DataCell(Text(a.createdAt != null ? DateFormat('yyyy-MM-dd').format(a.createdAt!) : '-')),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('오류: $e'),
-          ),
-        ],
+                return StickyHeaderTable.wrapWithCard(
+                  columns: columns,
+                  rowCount: filtered.length,
+                  isRowSelected: (i) => _selectedAccount?.id == filtered[i].id,
+                  onRowTap: (i) => _loadAccount(filtered[i]),
+                  cellBuilder: (colIndex, rowIndex) {
+                    final a = filtered[rowIndex];
+                    final isSelected = _selectedAccount?.id == a.id;
+                    return switch (colIndex) {
+                      0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
+                      1 => Text(a.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),
+                      2 => Text(a.position ?? '-', style: const TextStyle(fontSize: 13)),
+                      3 => Text(a.siteName ?? '-', style: const TextStyle(fontSize: 13)),
+                      4 => Text(a.phone, style: const TextStyle(fontSize: 13)),
+                      5 => Text(a.email ?? '-', style: const TextStyle(fontSize: 13)),
+                      6 => Text(a.personalEmail ?? '-', style: const TextStyle(fontSize: 13)),
+                      7 => _buildStatusBadge(a.isActive),
+                      8 => Text(a.createdAt != null ? DateFormat('yyyy-MM-dd').format(a.createdAt!) : '-', style: const TextStyle(fontSize: 13)),
+                      _ => const SizedBox(),
+                    };
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('오류: $e'),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
