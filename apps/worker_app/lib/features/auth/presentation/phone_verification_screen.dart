@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import 'registration_form_screen.dart';
 
 /// OAuth(카카오/구글) 로그인 후 전화번호로 근로자 매칭하는 화면
 class PhoneVerificationScreen extends ConsumerStatefulWidget {
@@ -143,6 +144,37 @@ class _PhoneVerificationScreenState
                           ],
                         ),
                       ),
+                      // 등록되지 않은 전화번호 에러 시 가입 요청 버튼 표시
+                      if (authState.errorMessage!.contains('등록되지 않은')) ...[
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => RegistrationFormScreen(
+                                    phone: _phoneController.text,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.person_add_rounded, size: 20),
+                            label: const Text(
+                              '가입 요청하기',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: BorderSide(color: AppColors.primary),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
 
                     const SizedBox(height: 24),
@@ -163,8 +195,8 @@ class _PhoneVerificationScreenState
                           Expanded(
                             child: Text(
                               '전화번호는 관리자가 사전에 등록한 번호와\n'
-                              '일치해야 합니다. 번호를 모르시면 관리자에게\n'
-                              '문의해주세요.',
+                              '일치해야 합니다. 등록되지 않은 경우\n'
+                              '"가입 요청하기"를 눌러주세요.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.primary,

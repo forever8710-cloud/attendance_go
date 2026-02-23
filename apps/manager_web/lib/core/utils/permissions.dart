@@ -46,12 +46,12 @@ String roleDisplayName(AppRole role) {
 }
 
 /// 메뉴별 접근 권한
-/// index: 0=홈, 1=근로자관리, 2=근태기록, 3=급여관리, 4=설정
+/// index: 0=출퇴근현황, 1=근태현황, 2=근로자등록, 3=급여관리, 4=설정, 5=계정관리
 bool canAccessMenu(AppRole role, int menuIndex) {
   return switch (menuIndex) {
-    0 => true,                                          // 홈: 모두
-    1 => role != AppRole.worker,                        // 근로자관리: center_manager 이상
-    2 => role != AppRole.worker,                        // 근태기록: center_manager 이상
+    0 => true,                                          // 출퇴근현황: 모두
+    1 => role != AppRole.worker,                        // 근태현황: center_manager 이상
+    2 => role != AppRole.worker,                        // 근로자등록: center_manager 이상
     3 => role != AppRole.worker,                        // 급여관리: center_manager 이상 (조회만 가능 여부는 별도)
     4 => role != AppRole.worker,                        // 설정: 센터장 이상
     5 => role == AppRole.systemAdmin,                   // 계정관리: system_admin만

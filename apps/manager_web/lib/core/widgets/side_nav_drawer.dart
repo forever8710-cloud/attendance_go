@@ -15,11 +15,11 @@ class _MenuDestination {
   final bool isSubMenu;
 }
 
-// 메뉴 순서: 홈, 근로자관리, (하위)근태기록, (하위)급여관리, 설정
+// 메뉴 순서: 홈, 근태현황, 근로자등록, 급여관리, 설정, 계정관리
 const _allDestinations = [
   _MenuDestination(index: 0, icon: Icons.access_time, label: '출퇴근 현황'),
-  _MenuDestination(index: 1, icon: Icons.people, label: '근로자 관리'),
-  _MenuDestination(index: 2, icon: Icons.list_alt, label: '근태 기록'),
+  _MenuDestination(index: 1, icon: Icons.list_alt, label: '근태 현황'),
+  _MenuDestination(index: 2, icon: Icons.person_add, label: '근로자 등록'),
   _MenuDestination(index: 3, icon: Icons.payments, label: '급여 관리 (준비중)'),
   _MenuDestination(index: 4, icon: Icons.settings, label: '설정'),
   _MenuDestination(index: 5, icon: Icons.admin_panel_settings, label: '관리자 계정관리'),
@@ -31,11 +31,13 @@ class SideNavDrawer extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.role,
+    this.pendingRegistrationCount = 0,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final AppRole role;
+  final int pendingRegistrationCount;
 
   @override
   Widget build(BuildContext context) {
@@ -52,18 +54,21 @@ class SideNavDrawer extends StatelessWidget {
       color: cs.surface,
       child: Column(
         children: [
-          // 헤더: Workflow 로고
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          // 헤더: Workflow 로고 (112px 높이)
+          Container(
+            height: 112,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
+            ),
             child: Row(
               children: [
-                const THBrandIcon(size: 40),
-                const SizedBox(width: 8),
-                Text('Workflow', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                const THBrandIcon(size: 44),
+                const SizedBox(width: 10),
+                Text('Workflow', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cs.onSurface)),
               ],
             ),
           ),
-          Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           // 메뉴 리스트
           Expanded(
             child: ListView.builder(
@@ -72,6 +77,8 @@ class SideNavDrawer extends StatelessWidget {
                 final dest = visibleDestinations[idx];
                 final isSelected = selectedIndex == dest.index;
 
+                final badgeCount = dest.index == 2 ? pendingRegistrationCount : 0;
+
                 return _buildMenuItem(
                   context: context,
                   icon: dest.icon,
@@ -79,6 +86,7 @@ class SideNavDrawer extends StatelessWidget {
                   isSelected: isSelected,
                   isSubMenu: dest.isSubMenu,
                   onTap: () => onDestinationSelected(dest.index),
+                  badgeCount: badgeCount,
                 );
               },
             ),
@@ -95,6 +103,7 @@ class SideNavDrawer extends StatelessWidget {
     required bool isSelected,
     required bool isSubMenu,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) {
     final cs = Theme.of(context).colorScheme;
     final leftPadding = isSubMenu ? 40.0 : 16.0;
@@ -124,6 +133,22 @@ class SideNavDrawer extends StatelessWidget {
                   ),
                 ),
               ),
+              if (badgeCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

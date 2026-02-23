@@ -230,8 +230,10 @@ class WorkersRepository {
         .where((e) => e.value == worker.site)
         .map((e) => e.key)
         .firstOrNull;
+    // part 매핑: job 값 우선, 없으면 part 값 사용
+    final partLookup = worker.job ?? worker.part;
     final partId = _partNames.entries
-        .where((e) => e.value == worker.part)
+        .where((e) => e.value == partLookup)
         .map((e) => e.key)
         .firstOrNull;
 
@@ -265,6 +267,50 @@ class WorkersRepository {
       'bank': worker.bank,
       'account_number': worker.accountNumber,
     }, onConflict: 'worker_id');
+  }
+
+  /// 신규 근로자 생성 (workers INSERT + worker_profiles INSERT)
+  Future<void> createWorkerWithProfile(WorkerRow worker) async {
+    await _loadMappings();
+    final siteId = _siteNames.entries
+        .where((e) => e.value == worker.site)
+        .map((e) => e.key)
+        .firstOrNull;
+    final partId = _partNames.entries
+        .where((e) => e.value == (worker.job ?? worker.part))
+        .map((e) => e.key)
+        .firstOrNull;
+
+    // 1) workers 테이블 INSERT
+    final insertedRows = await _supabase.from('workers').insert({
+      'name': worker.name,
+      'phone': worker.phone,
+      'site_id': siteId,
+      'part_id': partId,
+      'role': 'worker',
+      'is_active': true,
+    }).select('id');
+
+    final workerId = (insertedRows as List).first['id'] as String;
+
+    // 2) worker_profiles 테이블 INSERT
+    await _supabase.from('worker_profiles').insert({
+      'worker_id': workerId,
+      'company': worker.company,
+      'employee_id': worker.employeeId,
+      'ssn': worker.ssn,
+      'gender': worker.gender,
+      'address': worker.address,
+      'detail_address': worker.detailAddress,
+      'email': worker.email,
+      'emergency_contact': worker.emergencyContact,
+      'employment_status': worker.employmentStatus,
+      'join_date': worker.joinDate?.toIso8601String().split('T').first,
+      'leave_date': worker.leaveDate?.toIso8601String().split('T').first,
+      'position': worker.position,
+      'title': worker.role,
+      'job': worker.job,
+    });
   }
 
   Future<void> deactivateWorker(String id) async {

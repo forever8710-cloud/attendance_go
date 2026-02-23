@@ -268,7 +268,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
           1 => widget.onWorkerTap != null
               ? GestureDetector(
                   onTap: () => widget.onWorkerTap!(r.workerId, r.name),
-                  child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
+                  child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
                 )
               : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
           2 => Text(r.part, style: const TextStyle(fontSize: 13)),

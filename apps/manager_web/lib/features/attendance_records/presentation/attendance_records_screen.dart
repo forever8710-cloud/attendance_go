@@ -6,6 +6,7 @@ import '../../../core/widgets/modern_date_picker.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../data/attendance_records_repository.dart';
 import '../providers/attendance_records_provider.dart';
+import '../utils/attendance_excel_export.dart';
 import 'widgets/attendance_edit_dialog.dart';
 import 'widgets/attendance_delete_dialog.dart';
 
@@ -27,6 +28,32 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
   String _jobFilter = '전체';
   String _statusFilter = '전체';
   String _nameQuery = '';
+  String _datePreset = '오늘';
+
+  void _applyDatePreset(String preset) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTimeRange range;
+
+    switch (preset) {
+      case '오늘':
+        range = DateTimeRange(start: today, end: today);
+      case '이번주':
+        final weekday = today.weekday; // 1=Mon, 7=Sun
+        final monday = today.subtract(Duration(days: weekday - 1));
+        range = DateTimeRange(start: monday, end: today);
+      case '이번달':
+        final monthStart = DateTime(now.year, now.month, 1);
+        range = DateTimeRange(start: monthStart, end: today);
+      case '전체기간':
+        range = DateTimeRange(start: DateTime(2024, 1, 1), end: today);
+      default:
+        return;
+    }
+
+    setState(() => _datePreset = preset);
+    ref.read(attendanceDateRangeProvider.notifier).state = range;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +70,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('근태 기록', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const Text('근태 현황', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
 
               // Filters
@@ -73,10 +100,24 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             lastDate: DateTime.now(),
                           );
                           if (range != null) {
+                            setState(() => _datePreset = '');
                             ref.read(attendanceDateRangeProvider.notifier).state = range;
                           }
                         },
                       ),
+                      // 날짜 프리셋 칩
+                      ...['오늘', '이번주', '이번달', '전체기간'].map((preset) {
+                        final isSelected = _datePreset == preset;
+                        return ChoiceChip(
+                          label: Text(preset, style: TextStyle(fontSize: 13, color: isSelected ? Colors.white : null)),
+                          selected: isSelected,
+                          onSelected: (_) => _applyDatePreset(preset),
+                          selectedColor: const Color(0xFF2B2D42),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: isSelected ? Colors.transparent : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                          visualDensity: VisualDensity.compact,
+                        );
+                      }),
                       _buildFilterDropdown('직무', _jobFilter, ['전체', '사무', '지게차', '피커', '검수', '지게차(야간)', '피커(야간)'],
                           (v) => setState(() => _jobFilter = v!)),
                       _buildFilterDropdown('상태', _statusFilter, ['전체', '출근', '지각', '조퇴', '미출근'],
@@ -106,6 +147,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             _jobFilter = '전체';
                             _statusFilter = '전체';
                             _nameQuery = '';
+                            _datePreset = '오늘';
                           });
                         },
                         child: const Text('초기화'),
@@ -149,7 +191,25 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('총 ${filtered.length}건', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
+                    Row(
+                      children: [
+                        Text('총 ${filtered.length}건', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
+                        const Spacer(),
+                        if (filtered.isNotEmpty)
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              final label = '${DateFormat('yyyyMMdd').format(dateRange.start)}_${DateFormat('yyyyMMdd').format(dateRange.end)}';
+                              AttendanceExcelExport.exportToExcel(filtered, label);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('엑셀 파일이 다운로드되었습니다.')),
+                              );
+                            },
+                            icon: const Icon(Icons.download, size: 16),
+                            label: const Text('엑셀 내보내기'),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     Expanded(
                       child: StickyHeaderTable.wrapWithCard(
@@ -164,7 +224,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             2 => widget.onWorkerTap != null
                                 ? GestureDetector(
                                     onTap: () => widget.onWorkerTap!(r.workerId, r.workerName),
-                                    child: Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
+                                    child: Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
                                   )
                                 : Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             3 => Text(r.position, style: const TextStyle(fontSize: 13)),

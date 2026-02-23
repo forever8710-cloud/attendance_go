@@ -668,11 +668,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     const Icon(Icons.list_alt, size: 18, color: Color(0xFF8D99AE)),
                     const SizedBox(width: 8),
                     const Text('관리자 계정목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
-                    const SizedBox(width: 16),
-                    Expanded(child: Divider(color: cs.outlineVariant.withValues(alpha: 0.3))),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 24),
                     SizedBox(
-                      width: 200,
+                      width: 220,
                       height: 36,
                       child: TextField(
                         onChanged: (v) => setState(() => _searchQuery = v),
@@ -799,15 +797,19 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
   }
 
   Widget _buildStatusBadge(bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: (isActive ? Colors.green : Colors.grey).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text(
-        isActive ? '활성' : '비활성',
-        style: TextStyle(color: isActive ? Colors.green : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+    final color = isActive ? Colors.green : Colors.grey;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Text(
+          isActive ? '활성' : '비활성',
+          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

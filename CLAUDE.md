@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 기술 요구사항(TRD)           : @docs/workflow_proposal_md/02_TRD_Workflow.md
 - 사용자 흐름 다이어그램       : @docs/workflow_proposal_md/03_UserFlow_Workflow.md
 - 프롬프트 설계 가이드         : @docs/workflow_proposal_md/04_PromptDesign_Workflow.md
+- 관리자 웹, 근로자 앱 디자인가이드 : @.claude/skills/design-guideline.md
 
 ## Build & Run Commands
 

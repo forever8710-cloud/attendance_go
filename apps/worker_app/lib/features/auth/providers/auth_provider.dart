@@ -9,6 +9,7 @@ enum AuthStatus {
   authenticated,
   unauthenticated,
   needsPhoneVerification,
+  pendingApproval,
   needsConsent,
   needsPermission,
   needsProfileCompletion,
@@ -86,8 +87,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
           worker: worker,
         );
       } else if (_repository.hasActiveSession) {
-        // OAuth 세션은 있으나 worker 매칭이 안 된 상태 → 전화번호 확인 필요
-        state = state.copyWith(status: AuthStatus.needsPhoneVerification);
+        // OAuth 세션은 있으나 worker 매칭이 안 된 상태
+        // → 가입 요청이 pending인지 확인
+        final hasPending = await _repository.checkPendingRegistration();
+        if (hasPending) {
+          state = state.copyWith(status: AuthStatus.pendingApproval);
+        } else {
+          state = state.copyWith(status: AuthStatus.needsPhoneVerification);
+        }
       } else {
         state = state.copyWith(status: AuthStatus.unauthenticated);
       }
@@ -162,6 +169,56 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.needsPhoneVerification,
         errorMessage: e.toString().replaceAll('Exception: ', ''),
       );
+    }
+  }
+
+  /// 가입 요청 제출
+  Future<void> submitRegistration({
+    required String name,
+    required String phone,
+    required String company,
+    String? address,
+    String? detailAddress,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _repository.submitRegistration(
+        name: name,
+        phone: phone,
+        company: company,
+        address: address,
+        detailAddress: detailAddress,
+      );
+      state = state.copyWith(status: AuthStatus.pendingApproval);
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.needsPhoneVerification,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
+    }
+  }
+
+  /// 승인 상태 새로고침
+  Future<void> refreshApprovalStatus() async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final worker = await _repository.restoreSession();
+      if (worker != null) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          worker: worker,
+        );
+      } else {
+        final hasPending = await _repository.checkPendingRegistration();
+        if (hasPending) {
+          state = state.copyWith(status: AuthStatus.pendingApproval);
+        } else {
+          // 거절됨 → 다시 전화번호 확인 화면으로
+          state = state.copyWith(status: AuthStatus.needsPhoneVerification);
+        }
+      }
+    } catch (_) {
+      state = state.copyWith(status: AuthStatus.pendingApproval);
     }
   }
 

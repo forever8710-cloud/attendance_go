@@ -115,7 +115,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // 테이블 헤더 + 필터/검색
               Row(
                 children: [
-                  const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
+                  const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2B2D42))),
                   if (_selectedStatus != null) ...[
                     const SizedBox(width: 8),
                     Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
@@ -235,7 +235,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       2 => widget.onWorkerTap != null
                           ? GestureDetector(
                               onTap: () => widget.onWorkerTap!(e.id ?? '', e.name),
-                              child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
+                              child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
                             )
                           : Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       3 => Text(e.position, style: const TextStyle(fontSize: 13)),
@@ -298,7 +298,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            Text(title, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.55), fontSize: 12)),
+            Text(title, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w600)),
             Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isSelected ? color : cs.onSurface)),
           ],
         ),

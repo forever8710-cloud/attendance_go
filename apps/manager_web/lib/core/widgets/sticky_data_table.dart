@@ -107,9 +107,9 @@ class StickyHeaderTable extends StatelessWidget {
         // ── 고정 헤더 ──
         Container(
           decoration: BoxDecoration(
-            color: isDark ? cs.primary.withValues(alpha: 0.12) : const Color(0xFFF8F9FA),
+            color: isDark ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest.withValues(alpha: 0.5),
             border: Border(
-              bottom: BorderSide(color: cs.primary.withValues(alpha: 0.3), width: 1.5),
+              bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4), width: 1),
             ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -120,7 +120,7 @@ class StickyHeaderTable extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: isDark ? cs.primary.withValues(alpha: 0.9) : const Color(0xFF2B2D42),
+                  color: isDark ? cs.primary.withValues(alpha: 0.9) : cs.onSurface.withValues(alpha: 0.9),
                 ),
               );
 
@@ -138,7 +138,7 @@ class StickyHeaderTable extends StatelessWidget {
                               ? Icons.arrow_upward
                               : Icons.arrow_downward,
                           size: 14,
-                          color: cs.primary,
+                          color: isDark ? cs.primary : cs.onSurface.withValues(alpha: 0.5),
                         ),
                       ],
                     ],

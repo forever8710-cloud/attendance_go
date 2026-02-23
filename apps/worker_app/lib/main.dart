@@ -11,6 +11,7 @@ import 'features/auth/presentation/phone_verification_screen.dart';
 import 'features/auth/presentation/consent_screen.dart';
 import 'features/auth/presentation/permission_screen.dart';
 import 'features/auth/presentation/profile_completion_screen.dart';
+import 'features/auth/presentation/pending_approval_screen.dart';
 
 void main() async {
   try {
@@ -99,6 +100,8 @@ class WorkerApp extends ConsumerWidget {
         return const MainScaffold();
       case AuthStatus.needsPhoneVerification:
         return const PhoneVerificationScreen();
+      case AuthStatus.pendingApproval:
+        return const PendingApprovalScreen();
       case AuthStatus.needsConsent:
         return const ConsentScreen();
       case AuthStatus.needsPermission:

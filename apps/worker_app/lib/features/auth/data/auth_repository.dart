@@ -203,6 +203,58 @@ class WorkerAuthRepository {
     return worker;
   }
 
+  // ─── 가입 요청 ───
+
+  /// auth.uid()로 pending 상태의 registration_requests가 있는지 확인
+  Future<bool> checkPendingRegistration() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return false;
+    try {
+      final rows = await _supabase
+          .from('registration_requests')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .eq('status', 'pending')
+          .limit(1);
+      return rows.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 가입 요청 제출
+  Future<void> submitRegistration({
+    required String name,
+    required String phone,
+    required String company,
+    String? address,
+    String? detailAddress,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('로그인 세션이 없습니다.');
+
+    // 이미 pending 요청이 있는지 확인
+    final existing = await _supabase
+        .from('registration_requests')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .eq('status', 'pending')
+        .limit(1);
+
+    if (existing.isNotEmpty) {
+      throw Exception('이미 가입 요청이 접수되어 있습니다.');
+    }
+
+    await _supabase.from('registration_requests').insert({
+      'auth_user_id': user.id,
+      'name': name,
+      'phone': phone,
+      'company': company,
+      'address': address,
+      'detail_address': detailAddress,
+    });
+  }
+
   // ─── 프로필 ───
 
   Future<bool> isProfileComplete(String workerId) async {

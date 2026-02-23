@@ -7,7 +7,10 @@ import '../../../core/providers/reference_data_provider.dart';
 import '../../../core/widgets/modern_date_picker.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/workers_provider.dart';
+import '../providers/registration_provider.dart';
 import '../data/workers_repository.dart';
+import '../data/registration_repository.dart';
+import 'widgets/approval_form_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 class WorkersScreen extends ConsumerStatefulWidget {
@@ -62,10 +65,14 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     super.dispose();
   }
 
+  // 드롭다운 rebuild를 위한 키
+  int _formKey = 0;
+
   void _loadWorkerData(WorkerRow worker) {
     setState(() {
       _selectedWorker = worker;
       _isNewWorker = false;
+      _formKey++; // 드롭다운 강제 재빌드
       _company = worker.company;
       _employeeIdController.text = worker.employeeId ?? '';
       _nameController.text = worker.name;
@@ -79,8 +86,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       _employmentStatus = worker.employmentStatus;
       _position = worker.position;
       _role = worker.role;
-      _job = worker.job;
-      _site = worker.site;
+      _job = worker.job ?? (worker.part.isNotEmpty ? worker.part : null);
+      _site = worker.site.isNotEmpty ? worker.site : null;
       _joinDate = worker.joinDate;
       _leaveDate = worker.leaveDate;
     });
@@ -90,6 +97,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     setState(() {
       _selectedWorker = null;
       _isNewWorker = true;
+      _formKey++; // 드롭다운 강제 재빌드
       _company = null;
       _employeeIdController.clear();
       _nameController.clear();
@@ -134,8 +142,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       employeeId: _employeeIdController.text.isEmpty ? null : _employeeIdController.text,
       name: _nameController.text,
       phone: _phoneController.text,
-      part: _job ?? '미정',
-      site: _site ?? '서이천',
+      part: _job ?? _selectedWorker?.part ?? '',
+      site: _site ?? _selectedWorker?.site ?? '',
       isActive: _employmentStatus != '퇴사',
       ssn: _ssnController.text.isEmpty ? null : _ssnController.text,
       gender: _gender,
@@ -152,13 +160,27 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     );
 
     try {
-      await ref.read(workersRepositoryProvider).saveWorkerProfile(worker);
+      final repo = ref.read(workersRepositoryProvider);
+      if (_isNewWorker) {
+        await repo.createWorkerWithProfile(worker);
+      } else {
+        await repo.saveWorkerProfile(worker);
+      }
       ref.invalidate(workersProvider);
 
       if (mounted) {
+        final action = _isNewWorker ? '등록' : '수정';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${worker.name}님의 정보가 저장되었습니다.')),
+          SnackBar(
+            content: Text('${worker.name}님의 정보가 ${action}되었습니다.'),
+            backgroundColor: Colors.green,
+          ),
         );
+        // 수정 후 폼에 최신 데이터 유지
+        if (_isNewWorker) {
+          _clearForm();
+          setState(() => _isNewWorker = false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -227,7 +249,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                   ),
                     const Divider(height: 24),
                     if (_selectedWorker != null || _isNewWorker) ...[
-                    Row(
+                    KeyedSubtree(
+                      key: ValueKey('form_$_formKey'),
+                      child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 좌측: 사진 영역 (단독)
@@ -442,6 +466,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         ),
                       ],
                     ),
+                    ), // KeyedSubtree 닫기
                     const SizedBox(height: 16),
 
                     // 저장/퇴사 버튼 (편집 권한이 있을 때만)
@@ -486,6 +511,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
               ),
             ),
           ),
+
+          // ── 등록 대기 요청 섹션 ──
+          _buildPendingRequestsSection(),
 
           // ── 중간: 필터 바 ──
           Padding(
@@ -601,7 +629,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                       1 => widget.onWorkerTap != null
                           ? GestureDetector(
                               onTap: () => widget.onWorkerTap!(w.id, w.name),
-                              child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
+                              child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
                             )
                           : Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
                       2 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
@@ -822,6 +850,204 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildPendingRequestsSection() {
+    final requestsAsync = ref.watch(pendingRequestsProvider);
+
+    return requestsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (requests) {
+        if (requests.isEmpty) return const SizedBox.shrink();
+
+        final cs = Theme.of(context).colorScheme;
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.person_add_rounded, size: 18, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Text(
+                    '등록 대기 요청 (${requests.length}건)',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...requests.map((req) => Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  child: _buildPendingRequestCard(req, cs),
+                ),
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPendingRequestCard(RegistrationRequest req, ColorScheme cs) {
+    final companyName = CompanyConstants.companyName(req.company);
+    final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(req.createdAt.toLocal());
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
+        ),
+        color: Colors.orange.withValues(alpha: 0.04),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
+            children: [
+              // 아바타
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.orange.withValues(alpha: 0.15),
+                child: Text(
+                  req.name.isNotEmpty ? req.name[0] : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.orange),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // 정보
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(req.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text('대기', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${req.phone} | $companyName | $dateStr',
+                      style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
+                    ),
+                    if (req.address != null && req.address!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          '${req.address ?? ''} ${req.detailAddress ?? ''}',
+                          style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // 버튼
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: () => _showRejectDialog(req),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: const Text('거부', style: TextStyle(fontSize: 13)),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () => _openApprovalForm(req),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF2B2D42),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: const Text('승인', style: TextStyle(fontSize: 13)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openApprovalForm(RegistrationRequest request) {
+    showDialog(
+      context: context,
+      builder: (_) => ApprovalFormDialog(request: request),
+    ).then((_) {
+      ref.invalidate(pendingRequestsProvider);
+      ref.invalidate(pendingCountProvider);
+      ref.invalidate(workersProvider);
+    });
+  }
+
+  void _showRejectDialog(RegistrationRequest request) {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('가입 요청 거부'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${request.name}님의 가입 요청을 거부하시겠습니까?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: '거부 사유',
+                hintText: '거부 사유를 입력해주세요',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) return;
+              try {
+                await ref.read(registrationRepositoryProvider).rejectRequest(request.id, reason);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                ref.invalidate(pendingRequestsProvider);
+                ref.invalidate(pendingCountProvider);
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('거부 처리 실패: $e')),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('거부'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -19,6 +19,8 @@ import 'features/settings/providers/settings_provider.dart';
 import 'core/widgets/side_nav_drawer.dart';
 import 'core/widgets/privacy_policy_dialog.dart';
 import 'features/worker_detail/presentation/worker_detail_screen.dart';
+import 'features/workers/providers/registration_provider.dart';
+import 'features/workers/presentation/widgets/pending_requests_dialog.dart';
 
 void main() async {
   try {
@@ -40,7 +42,7 @@ void main() async {
     debugPrint('STACK: $st');
     runApp(MaterialApp(
       home: Scaffold(
-        backgroundColor: const Color(0xFF1a1a2e),
+        backgroundColor: Colors.grey[100],
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -173,15 +175,16 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
               _detailWorkerName = null;
             }),
             role: role,
+            pendingRegistrationCount: ref.watch(pendingCountProvider).valueOrNull ?? 0,
           ),
           VerticalDivider(width: 1, thickness: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           Expanded(
             child: Column(
               children: [
-                // Top header
+                // Top header (사이드 네비 로고와 동일 높이)
                 Container(
-                  height: 56,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  height: 112,
+                  padding: const EdgeInsets.only(left: 28, right: 20),
                   decoration: BoxDecoration(
                     color: cs.surface,
                     border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
@@ -190,20 +193,23 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                     children: [
                       Text(
                         DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(DateTime.now()),
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: cs.onSurface),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cs.onSurface),
                       ),
+                      const SizedBox(width: 16),
+                      // 가입 요청 알림 — 클릭 시 근로자 등록 탭으로 이동
+                      _buildRegistrationAlert(context),
                       const Spacer(),
                       // 역할 배지
                       _buildRoleBadge(role),
                       const SizedBox(width: 12),
-                      Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6))),
+                      Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 16, color: cs.onSurface.withValues(alpha: 0.6))),
                       const SizedBox(width: 16),
-                      Text(authState.worker?.name ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: cs.onSurface)),
-                      const SizedBox(width: 8),
-                      CircleAvatar(radius: 15, backgroundColor: cs.primaryContainer, child: Icon(Icons.person, size: 18, color: cs.onPrimaryContainer)),
-                      const SizedBox(width: 8),
+                      Text(authState.worker?.name ?? '', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                      const SizedBox(width: 10),
+                      CircleAvatar(radius: 18, backgroundColor: cs.primaryContainer, child: Icon(Icons.person, size: 22, color: cs.onPrimaryContainer)),
+                      const SizedBox(width: 10),
                       IconButton(
-                        icon: Icon(Icons.logout, size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
+                        icon: Icon(Icons.logout, size: 24, color: cs.onSurface.withValues(alpha: 0.7)),
                         tooltip: '로그아웃',
                         onPressed: () => ref.read(authProvider.notifier).signOut(),
                       ),
@@ -253,6 +259,51 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     );
   }
 
+  Widget _buildRegistrationAlert(BuildContext context) {
+    final countAsync = ref.watch(pendingCountProvider);
+    final count = countAsync.valueOrNull ?? 0;
+
+    if (count == 0) return const SizedBox.shrink();
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          // 근로자 등록 탭(index 2)으로 이동
+          setState(() {
+            _selectedIndex = 2;
+            _detailWorkerId = null;
+            _detailWorkerName = null;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.person_add_rounded, size: 16, color: Colors.orange),
+              const SizedBox(width: 6),
+              Text(
+                '근로자 등록 요청 $count건',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRoleBadge(AppRole role) {
     final (color, bgColor) = switch (role) {
       AppRole.systemAdmin => (Colors.white, Colors.red[700]!),
@@ -262,14 +313,14 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
         roleDisplayName(role),
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -294,8 +345,8 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
 
     return switch (_selectedIndex) {
       0 => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
-      1 => WorkersScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
-      2 => AttendanceRecordsScreen(role: role, onWorkerTap: _openWorkerDetail),
+      1 => AttendanceRecordsScreen(role: role, onWorkerTap: _openWorkerDetail),
+      2 => WorkersScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
       3 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
       4 => const SettingsScreen(),
       5 => const AccountsScreen(),
