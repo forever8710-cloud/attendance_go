@@ -186,10 +186,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     width: double.infinity,
                     height: 48,
                     child: FilledButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (!otpSent) {
-                          ref.read(authProvider.notifier).sendOtp(phoneController.text);
-                          setSheetState(() => otpSent = true);
+                          if (phoneController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('전화번호를 입력해주세요.')),
+                            );
+                            return;
+                          }
+                          try {
+                            await ref.read(authProvider.notifier).sendOtp(phoneController.text);
+                            setSheetState(() => otpSent = true);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('인증번호 발송 실패: ${e.toString().replaceAll('Exception: ', '')}')),
+                              );
+                            }
+                          }
                         } else {
                           ref.read(authProvider.notifier).verifyOtp(
                             phoneController.text,

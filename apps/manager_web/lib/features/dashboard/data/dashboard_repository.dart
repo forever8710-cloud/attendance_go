@@ -3,16 +3,24 @@ import 'package:supabase_client/supabase_client.dart';
 class DashboardRepository {
   final SupabaseService _supabase = SupabaseService.instance;
 
+  /// 근태 판정 시간 경계값
+  static const int kLateHour = 9;         // 지각 기준: 09:00 이후 출근
+  static const int kEarlyLeaveHour = 16;  // 조퇴 기준: 16:00 이전 퇴근
+
   /// site_id → name 매핑 캐시
   Map<String, String> _siteNames = {};
   Map<String, String> _partNames = {};
 
   Future<void> _loadMappings() async {
     if (_siteNames.isNotEmpty) return;
-    final sites = await _supabase.from('sites').select('id, name');
-    _siteNames = {for (final s in sites) s['id'] as String: s['name'] as String};
-    final parts = await _supabase.from('parts').select('id, name');
-    _partNames = {for (final p in parts) p['id'] as String: p['name'] as String};
+    try {
+      final sites = await _supabase.from('sites').select('id, name');
+      _siteNames = {for (final s in sites) s['id'] as String: s['name'] as String};
+      final parts = await _supabase.from('parts').select('id, name');
+      _partNames = {for (final p in parts) p['id'] as String: p['name'] as String};
+    } catch (_) {
+      // 매핑 로드 실패 시 빈 매핑으로 유지
+    }
   }
 
   Future<DashboardSummary> getTodaySummary(String siteId) async {
@@ -72,13 +80,13 @@ class DashboardRepository {
         checkedOut++;
         final checkOutTime = DateTime.parse(att['check_out_time'] as String).toLocal();
         // 16시 전 퇴근 = 조퇴
-        if (!isNight && checkOutTime.hour < 16) {
+        if (!isNight && checkOutTime.hour < kEarlyLeaveHour) {
           earlyLeave++;
         }
       }
 
       // 9시 이후 출근 = 지각 (야간 제외)
-      if (!isNight && checkInTime.hour >= 9 && checkInTime.minute > 0) {
+      if (!isNight && checkInTime.hour >= kLateHour && checkInTime.minute > 0) {
         late++;
       }
     }
@@ -170,7 +178,7 @@ class DashboardRepository {
           }
 
           // 조퇴 판단: 16시 전 퇴근
-          if (!isNight && coTime.hour < 16) {
+          if (!isNight && coTime.hour < kEarlyLeaveHour) {
             status = '조퇴';
             note = '조퇴';
           } else {
@@ -181,7 +189,7 @@ class DashboardRepository {
         }
 
         // 지각 판단: 09:00 이후 출근 (야간 제외)
-        if (!isNight && ciTime.hour >= 9 && ciTime.minute > 0 && status == '출근') {
+        if (!isNight && ciTime.hour >= kLateHour && ciTime.minute > 0 && status == '출근') {
           status = '지각';
           note = '지각';
         }
@@ -270,13 +278,13 @@ class DashboardRepository {
 
         present++;
 
-        if (!isNight && checkInTime.hour >= 9 && checkInTime.minute > 0) {
+        if (!isNight && checkInTime.hour >= kLateHour && checkInTime.minute > 0) {
           lateCount++;
         }
 
         if (att['check_out_time'] != null) {
           final checkOutTime = DateTime.parse(att['check_out_time'] as String).toLocal();
-          if (!isNight && checkOutTime.hour < 16) {
+          if (!isNight && checkOutTime.hour < kEarlyLeaveHour) {
             earlyLeaveCount++;
           }
         }

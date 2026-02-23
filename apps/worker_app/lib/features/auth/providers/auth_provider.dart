@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/auth_repository.dart';
@@ -52,10 +53,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   final WorkerAuthRepository _repository;
   bool _isRestoring = false;
+  StreamSubscription? _authSubscription;
 
   /// OAuth 딥링크 콜백 수신 리스너
   void _setupAuthListener() {
-    _repository.listenToAuthChanges(() {
+    _authSubscription = _repository.listenToAuthChanges(() {
       // OAuth 리디렉트로 돌아온 경우에만 처리 (재진입 방지)
       if (!_isRestoring &&
           (state.status == AuthStatus.unauthenticated ||
@@ -63,6 +65,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         restoreSession();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   /// 앱 시작 시 기존 세션 복원
@@ -97,6 +105,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(status: AuthStatus.unauthenticated);
     } catch (e) {
       state = state.copyWith(status: AuthStatus.error, errorMessage: e.toString());
+      rethrow;
     }
   }
 

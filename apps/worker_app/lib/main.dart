@@ -13,14 +13,34 @@ import 'features/auth/presentation/permission_screen.dart';
 import 'features/auth/presentation/profile_completion_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('ko');
-  await dotenv.load();
-  await SupabaseService.instance.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-  runApp(const ProviderScope(child: WorkerApp()));
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await initializeDateFormatting('ko');
+    await dotenv.load();
+
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    if (supabaseUrl == null || supabaseAnonKey == null) {
+      throw Exception('.env 파일에 SUPABASE_URL 또는 SUPABASE_ANON_KEY가 설정되지 않았습니다.');
+    }
+
+    await SupabaseService.instance.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+    runApp(const ProviderScope(child: WorkerApp()));
+  } catch (e) {
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text('앱 초기화 오류:\n$e', style: const TextStyle(color: Colors.red, fontSize: 14), textAlign: TextAlign.center),
+          ),
+        ),
+      ),
+    ));
+  }
 }
 
 class WorkerApp extends ConsumerWidget {

@@ -119,10 +119,14 @@ class WorkersRepository {
 
   Future<void> _loadMappings() async {
     if (_siteNames.isNotEmpty) return;
-    final sites = await _supabase.from('sites').select('id, name');
-    _siteNames = {for (final s in sites) s['id'] as String: s['name'] as String};
-    final parts = await _supabase.from('parts').select('id, name');
-    _partNames = {for (final p in parts) p['id'] as String: p['name'] as String};
+    try {
+      final sites = await _supabase.from('sites').select('id, name');
+      _siteNames = {for (final s in sites) s['id'] as String: s['name'] as String};
+      final parts = await _supabase.from('parts').select('id, name');
+      _partNames = {for (final p in parts) p['id'] as String: p['name'] as String};
+    } catch (_) {
+      // 매핑 로드 실패 시 빈 매핑으로 유지 — 이름 대신 빈 문자열 표시됨
+    }
   }
 
   /// Supabase에서 workers + worker_profiles 조회

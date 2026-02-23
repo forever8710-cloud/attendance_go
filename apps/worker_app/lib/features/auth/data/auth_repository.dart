@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:core/core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -51,7 +53,8 @@ class WorkerAuthRepository {
 
         // 세션은 있으나 worker 매칭 안 됨 → null 반환 (needsPhoneVerification)
         return null;
-      } catch (_) {
+      } catch (e) {
+        debugPrint('restoreSession error: $e');
         // DB 조회 실패 시 로컬 캐시 시도
       }
     }
@@ -148,8 +151,8 @@ class WorkerAuthRepository {
 
   // ─── Auth 상태 변경 리스너 ───
 
-  void listenToAuthChanges(void Function() onSignedIn) {
-    _supabase.auth.onAuthStateChange.listen((data) {
+  StreamSubscription listenToAuthChanges(void Function() onSignedIn) {
+    return _supabase.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.signedIn) {
         onSignedIn();
       }
@@ -235,12 +238,20 @@ class WorkerAuthRepository {
     }, onConflict: 'worker_id');
   }
 
-  // ─── 데모 로그인 (테스트용) ───
+  // ─── 데모 로그인 (테스트용, 디버그 빌드 전용) ───
 
   Future<void> demoSignIn() async {
+    if (!kDebugMode) {
+      throw Exception('데모 로그인은 디버그 모드에서만 사용 가능합니다.');
+    }
+    final email = dotenv.env['DEMO_EMAIL'];
+    final password = dotenv.env['DEMO_PASSWORD'];
+    if (email == null || password == null) {
+      throw Exception('.env에 DEMO_EMAIL/DEMO_PASSWORD가 설정되지 않았습니다.');
+    }
     await _supabase.auth.signInWithPassword(
-      email: 'ys.kim@botrens.com',
-      password: 'demo1234!',
+      email: email,
+      password: password,
     );
   }
 

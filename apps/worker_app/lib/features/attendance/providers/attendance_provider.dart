@@ -115,8 +115,8 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
         ),
       );
 
-      // 4. 위치 정확도 검증 (100m 이상이면 경고)
-      if (position.accuracy > 100) {
+      // 4. 위치 정확도 검증 (50m 이상이면 경고)
+      if (position.accuracy > 50) {
         throw Exception(
           'GPS 정확도가 낮습니다 (${position.accuracy.toInt()}m).\n'
           '실외로 이동하거나 잠시 후 다시 시도해주세요.',
@@ -228,7 +228,12 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   /// 사업장 반경 검증 (Haversine 공식)
   Future<void> _validateSiteProximity(Position position, String workerId) async {
     final site = await _repository.getWorkerSite(workerId);
-    if (site == null) return; // 사이트 미배정이면 검증 스킵
+    if (site == null) {
+      throw Exception(
+        '배정된 사업장이 없습니다.\n'
+        '관리자에게 사업장 배정을 요청해주세요.',
+      );
+    }
 
     final siteLat = double.tryParse(site['latitude'].toString()) ?? 0;
     final siteLng = double.tryParse(site['longitude'].toString()) ?? 0;

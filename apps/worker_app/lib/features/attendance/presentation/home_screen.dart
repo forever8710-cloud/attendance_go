@@ -3,29 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_client/supabase_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/action_button.dart';
 import '../../../core/widgets/status_card.dart';
 import '../../../core/navigation/nav_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../announcements/providers/announcement_provider.dart';
+import '../../profile/providers/profile_provider.dart';
 import '../providers/attendance_provider.dart';
-
-/// 사이트명을 가져오는 프로바이더
-final _siteNameProvider = FutureProvider.family<String, String?>((ref, siteId) async {
-  if (siteId == null || siteId.isEmpty) return '';
-  try {
-    final row = await SupabaseService.instance
-        .from('sites')
-        .select('name')
-        .eq('id', siteId)
-        .single();
-    return row['name'] as String? ?? '';
-  } catch (_) {
-    return '';
-  }
-});
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -51,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authProvider);
     final attState = ref.watch(attendanceProvider);
     final worker = authState.worker;
-    final siteNameAsync = ref.watch(_siteNameProvider(worker?.siteId));
+    final siteNameAsync = ref.watch(workerSiteNameProvider);
     final siteName = siteNameAsync.valueOrNull ?? '';
     final timeFormat = DateFormat('HH:mm');
     final dateFormat = DateFormat('MM월 dd일 (E)', 'ko');

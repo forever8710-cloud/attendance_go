@@ -5,9 +5,11 @@ class AttendanceRepository {
   final SupabaseService _supabase = SupabaseService.instance;
 
   Future<Attendance?> getTodayAttendance(String workerId) async {
+    // KST 기준 "오늘"의 시작/끝을 UTC로 변환 (KST = UTC+9)
     final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
-    final tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
+    final localToday = DateTime(now.year, now.month, now.day); // 로컬 자정
+    final todayStart = localToday.toUtc().toIso8601String();
+    final tomorrowStart = localToday.add(const Duration(days: 1)).toUtc().toIso8601String();
 
     final rows = await _supabase
         .from('attendances')
@@ -105,6 +107,7 @@ class AttendanceRepository {
   }
 
   Future<List<Attendance>> getMonthlyAttendances(String workerId, int year, int month) async {
+    // 로컬 시간 기준 월의 시작/끝을 UTC로 변환
     final start = DateTime(year, month, 1).toUtc().toIso8601String();
     final end = DateTime(year, month + 1, 1).toUtc().toIso8601String();
 
