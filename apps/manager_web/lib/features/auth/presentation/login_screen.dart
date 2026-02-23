@@ -1,6 +1,7 @@
 import 'package:web/web.dart' as web;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ui_components/ui_components.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/widgets/privacy_policy_dialog.dart';
 import '../providers/auth_provider.dart';
@@ -69,7 +70,7 @@ class _ManagerLoginScreenState extends ConsumerState<ManagerLoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                const Icon(Icons.shield, size: 64, color: Colors.indigo),
+                const THBrandIcon(size: 64),
                 const SizedBox(height: 12),
                 const Text(
                   'Workflow',

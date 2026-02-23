@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_client/supabase_client.dart';
@@ -94,16 +95,18 @@ class _ManagerAppState extends ConsumerState<ManagerApp> {
       debugShowCheckedModeBanner: false,
       title: 'Workflow by TKholdings',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8D99AE)),
+        textTheme: GoogleFonts.notoSansKrTextTheme(),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
+          seedColor: const Color(0xFF8D99AE),
           brightness: Brightness.dark,
           surface: const Color(0xFF1E1E2E),
           onSurface: const Color(0xFFE0E0E8),
         ),
+        textTheme: GoogleFonts.notoSansKrTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
         scaffoldBackgroundColor: const Color(0xFF161624),
         cardColor: const Color(0xFF252538),
         dividerColor: const Color(0xFF3A3A50),
@@ -253,7 +256,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
   Widget _buildRoleBadge(AppRole role) {
     final (color, bgColor) = switch (role) {
       AppRole.systemAdmin => (Colors.white, Colors.red[700]!),
-      AppRole.owner => (Colors.white, Colors.indigo[700]!),
+      AppRole.owner => (Colors.white, const Color(0xFF2B2D42)),
       AppRole.centerManager => (Colors.white, Colors.teal[700]!),
       AppRole.worker => (Colors.white, Colors.grey[600]!),
     };

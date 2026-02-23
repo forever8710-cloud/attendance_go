@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ui_components/ui_components.dart';
 import '../utils/permissions.dart';
 
 class _MenuDestination {
@@ -56,7 +57,7 @@ class SideNavDrawer extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             child: Row(
               children: [
-                Icon(Icons.shield, size: 40, color: cs.primary),
+                const THBrandIcon(size: 40),
                 const SizedBox(width: 8),
                 Text('Workflow', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface)),
               ],

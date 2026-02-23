@@ -29,7 +29,7 @@ class CalendarEvent {
     try {
       return Color(int.parse(color.replaceFirst('#', '0xFF')));
     } catch (_) {
-      return Colors.indigo;
+      return const Color(0xFF8D99AE);
     }
   }
 }

@@ -82,8 +82,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   label: Text('필터: $_selectedStatus', style: const TextStyle(fontSize: 13)),
                   deleteIcon: const Icon(Icons.close, size: 16),
                   onDeleted: () => setState(() => _selectedStatus = null),
-                  backgroundColor: Colors.indigo.withValues(alpha: 0.1),
-                  side: BorderSide(color: Colors.indigo.withValues(alpha: 0.3)),
+                  backgroundColor: const Color(0xFF8D99AE).withValues(alpha: 0.1),
+                  side: BorderSide(color: const Color(0xFF8D99AE).withValues(alpha: 0.3)),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -101,7 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _buildSummaryCard('전체 직원', '${s.totalWorkers}명', Icons.people, Colors.blue, null),
                     _buildSummaryCard('주간출근', '${s.dayCheckedIn}명', Icons.wb_sunny, Colors.green, '주간출근'),
                     _buildSummaryCard('야간출근', '${s.nightCheckedIn}명', Icons.nightlight_round, Colors.deepPurple, '야간출근'),
-                    _buildSummaryCard('퇴근 완료', '${s.checkedOut}명', Icons.logout, Colors.indigo, '퇴근'),
+                    _buildSummaryCard('퇴근 완료', '${s.checkedOut}명', Icons.logout, const Color(0xFF8D99AE), '퇴근'),
                     _buildSummaryCard('지각', '${s.late}명', Icons.warning, Colors.orange, '지각'),
                     _buildSummaryCard('조퇴', '${s.earlyLeave ?? 0}명', Icons.exit_to_app, Colors.purple, '조퇴'),
                     _buildSummaryCard('미출근', '${s.absent}명', Icons.person_off, Colors.red, '미출근'),
@@ -115,7 +115,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // 테이블 헤더 + 필터/검색
               Row(
                 children: [
-                  const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
                   if (_selectedStatus != null) ...[
                     const SizedBox(width: 8),
                     Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
@@ -235,7 +235,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       2 => widget.onWorkerTap != null
                           ? GestureDetector(
                               onTap: () => widget.onWorkerTap!(e.id ?? '', e.name),
-                              child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                              child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
                             )
                           : Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       3 => Text(e.position, style: const TextStyle(fontSize: 13)),
@@ -310,7 +310,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final color = switch (status) {
       '지각' => Colors.orange,
       '출근' => Colors.green,
-      '퇴근' => Colors.indigo,
+      '퇴근' => const Color(0xFF8D99AE),
       '조퇴' => Colors.purple,
       '미출근' => Colors.red,
       _ => Colors.grey,

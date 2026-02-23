@@ -76,7 +76,7 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
                 // 헤더
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  color: Colors.indigo,
+                  color: const Color(0xFF8D99AE),
                   child: Row(
                     children: [
                       InkWell(
@@ -596,7 +596,7 @@ class _DayEventsPopupState extends ConsumerState<_DayEventsPopup> {
             // 헤더 바 (ECOUNT 스타일 인디고)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.indigo,
+              color: const Color(0xFF8D99AE),
               child: Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 16, color: Colors.white),
@@ -902,7 +902,7 @@ class _EventFormDialogState extends ConsumerState<_EventFormDialog> {
             // 헤더 바 (ECOUNT 스타일)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.indigo,
+              color: const Color(0xFF8D99AE),
               child: Row(
                 children: [
                   Text(

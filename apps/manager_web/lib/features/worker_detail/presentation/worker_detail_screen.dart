@@ -95,7 +95,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.badge, color: Colors.indigo, size: 20),
+                                const Icon(Icons.badge, color: Color(0xFF8D99AE), size: 20),
                                 const SizedBox(width: 8),
                                 const Text('인사기록카드', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                 const Spacer(),
@@ -191,7 +191,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                   children: [
                     const Text(
                       '▶ 월별 근태 현황',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE)),
                     ),
                     const SizedBox(width: 16),
                     _buildMonthSelector(context, ref, yearMonth),
@@ -358,7 +358,7 @@ class WorkerDetailScreen extends ConsumerWidget {
     final color = switch (status) {
       '지각' => Colors.orange,
       '출근' => Colors.green,
-      '퇴근' => Colors.indigo,
+      '퇴근' => const Color(0xFF8D99AE),
       '조퇴' => Colors.purple,
       '미출근' => Colors.red,
       '휴일' => Colors.grey,

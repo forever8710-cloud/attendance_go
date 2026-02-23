@@ -91,7 +91,7 @@ class _ModernDateRangeDialogState extends State<_ModernDateRangeDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
               decoration: BoxDecoration(
-                color: Colors.indigo[600],
+                color: const Color(0xFF8D99AE),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Column(
@@ -211,7 +211,7 @@ class _ModernDateRangeDialogState extends State<_ModernDateRangeDialog> {
                         ? () => Navigator.pop(context, DateTimeRange(start: _start!, end: _end!))
                         : null,
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.indigo[600],
+                      backgroundColor: const Color(0xFF8D99AE),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     child: const Text('적용'),
@@ -236,9 +236,9 @@ class _ModernDateRangeDialogState extends State<_ModernDateRangeDialog> {
         _end!.day == end.day;
 
     return ActionChip(
-      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.indigo[700])),
-      backgroundColor: isSelected ? Colors.indigo[600] : Colors.indigo[50],
-      side: BorderSide(color: isSelected ? Colors.indigo[600]! : Colors.indigo[200]!),
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : const Color(0xFF2B2D42))),
+      backgroundColor: isSelected ? const Color(0xFF8D99AE) : const Color(0xFFF8F9FA),
+      side: BorderSide(color: isSelected ? const Color(0xFF8D99AE) : const Color(0xFFD1D5DE)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.symmetric(horizontal: 4),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -293,14 +293,14 @@ class _ModernDateRangeDialogState extends State<_ModernDateRangeDialog> {
     FontWeight fontWeight = FontWeight.normal;
 
     if (isEdge) {
-      bgColor = Colors.indigo[600];
+      bgColor = const Color(0xFF8D99AE);
       textColor = Colors.white;
       fontWeight = FontWeight.w600;
     } else if (isInRange) {
-      bgColor = Colors.indigo[50];
-      textColor = Colors.indigo[800]!;
+      bgColor = const Color(0xFFF8F9FA);
+      textColor = const Color(0xFF2B2D42);
     } else if (isToday) {
-      textColor = Colors.indigo[700]!;
+      textColor = const Color(0xFF2B2D42);
       fontWeight = FontWeight.w700;
     } else if (isDisabled) {
       textColor = Colors.grey[350]!;
@@ -315,14 +315,14 @@ class _ModernDateRangeDialogState extends State<_ModernDateRangeDialog> {
     // 범위 배경 (좌우 연결)
     BoxDecoration? rangeBg;
     if (isInRange && !isEdge) {
-      rangeBg = BoxDecoration(color: Colors.indigo[50]);
+      rangeBg = BoxDecoration(color: const Color(0xFFF8F9FA));
     } else if (isStart && _end != null) {
       rangeBg = BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.transparent, Colors.indigo[50]!], begin: Alignment.centerLeft, end: Alignment.centerRight),
+        gradient: LinearGradient(colors: [Colors.transparent, const Color(0xFFF8F9FA)], begin: Alignment.centerLeft, end: Alignment.centerRight),
       );
     } else if (isEnd && _start != null) {
       rangeBg = BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.indigo[50]!, Colors.transparent], begin: Alignment.centerLeft, end: Alignment.centerRight),
+        gradient: LinearGradient(colors: [const Color(0xFFF8F9FA), Colors.transparent], begin: Alignment.centerLeft, end: Alignment.centerRight),
       );
     }
 
@@ -338,7 +338,7 @@ class _ModernDateRangeDialogState extends State<_ModernDateRangeDialog> {
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
-              border: isToday && !isEdge ? Border.all(color: Colors.indigo[400]!, width: 1.5) : null,
+              border: isToday && !isEdge ? Border.all(color: const Color(0xFFB0B8C8), width: 1.5) : null,
             ),
             alignment: Alignment.center,
             child: Text(
@@ -429,7 +429,7 @@ class _ModernDateDialogState extends State<_ModernDateDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
               decoration: BoxDecoration(
-                color: Colors.indigo[600],
+                color: const Color(0xFF8D99AE),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
@@ -517,7 +517,7 @@ class _ModernDateDialogState extends State<_ModernDateDialog> {
                   FilledButton(
                     onPressed: _selected != null ? () => Navigator.pop(context, _selected) : null,
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.indigo[600],
+                      backgroundColor: const Color(0xFF8D99AE),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     child: const Text('확인'),
@@ -571,11 +571,11 @@ class _ModernDateDialogState extends State<_ModernDateDialog> {
     FontWeight fontWeight = FontWeight.normal;
 
     if (isSelected) {
-      bgColor = Colors.indigo[600];
+      bgColor = const Color(0xFF8D99AE);
       textColor = Colors.white;
       fontWeight = FontWeight.w600;
     } else if (isToday) {
-      textColor = Colors.indigo[700]!;
+      textColor = const Color(0xFF2B2D42);
       fontWeight = FontWeight.w700;
     } else if (isDisabled) {
       textColor = Colors.grey[350]!;
@@ -598,7 +598,7 @@ class _ModernDateDialogState extends State<_ModernDateDialog> {
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
-              border: isToday && !isSelected ? Border.all(color: Colors.indigo[400]!, width: 1.5) : null,
+              border: isToday && !isSelected ? Border.all(color: const Color(0xFFB0B8C8), width: 1.5) : null,
             ),
             alignment: Alignment.center,
             child: Text(

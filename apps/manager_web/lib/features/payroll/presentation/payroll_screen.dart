@@ -110,7 +110,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
 
               if (_payrollData != null)
                 Text('▶ 급여대장 (${ref.read(selectedYearMonthProvider)})',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
               if (_payrollData != null) const SizedBox(height: 12),
             ],
           ),
@@ -268,7 +268,7 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
           1 => widget.onWorkerTap != null
               ? GestureDetector(
                   onTap: () => widget.onWorkerTap!(r.workerId, r.name),
-                  child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                  child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
                 )
               : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
           2 => Text(r.part, style: const TextStyle(fontSize: 13)),

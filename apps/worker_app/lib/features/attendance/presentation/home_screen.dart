@@ -72,7 +72,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         Text(
                           '${worker?.name ?? ''}님',
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.notoSansKr(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -472,7 +472,7 @@ class _StatusBanner extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -495,7 +495,7 @@ class _StatusBanner extends StatelessWidget {
               children: [
                 Text(
                   checkInTime!,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -516,7 +516,7 @@ class _StatusBanner extends StatelessWidget {
               children: [
                 Text(
                   '${workHours!.toStringAsFixed(1)}h',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -696,7 +696,7 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.indigo.withValues(alpha: 0.12)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,10 +707,10 @@ class _AnnouncementCardState extends State<_AnnouncementCard> {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: Colors.indigo.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.campaign, color: Colors.indigo, size: 16),
+                    child: const Icon(Icons.campaign, color: AppColors.primary, size: 16),
                   ),
                   const SizedBox(width: 10),
                   Expanded(

@@ -417,7 +417,7 @@ class _ProfileCompletionScreenState
                             final addr = results[i];
                             return ListTile(
                               leading: const Icon(Icons.location_on,
-                                  color: Colors.indigo),
+                                  color: AppColors.primary),
                               title: Text(
                                 addr.roadAddr,
                                 style: const TextStyle(fontSize: 14),

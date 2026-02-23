@@ -26,7 +26,7 @@ class PayrollScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Text(
                 '급여조회',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -53,7 +53,7 @@ class PayrollScreen extends ConsumerWidget {
                     ),
                     Text(
                       monthFormat.format(month),
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.notoSansKr(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -183,7 +183,7 @@ class PayrollScreen extends ConsumerWidget {
                               const SizedBox(height: 8),
                               Text(
                                 '${currencyFormat.format(payroll.totalSalary)}원',
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.notoSansKr(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -273,7 +273,7 @@ class _PayrollCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${amount}원',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.notoSansKr(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -302,7 +302,7 @@ class _InfoRow extends StatelessWidget {
           Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.notoSansKr(
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: AppColors.textPrimary,

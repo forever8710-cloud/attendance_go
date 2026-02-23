@@ -39,7 +39,7 @@ class AttendanceHistoryScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Text(
                 '근태기록',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -66,7 +66,7 @@ class AttendanceHistoryScreen extends ConsumerWidget {
                     ),
                     Text(
                       monthFormat.format(month),
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.notoSansKr(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -195,7 +195,7 @@ class AttendanceHistoryScreen extends ConsumerWidget {
                                     r.workHours != null
                                         ? '${r.workHours!.toStringAsFixed(1)}h'
                                         : '-',
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.notoSansKr(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
                                       color: AppColors.primary,

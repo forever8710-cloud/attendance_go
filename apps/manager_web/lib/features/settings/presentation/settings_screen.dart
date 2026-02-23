@@ -345,11 +345,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: isActive
-                            ? Colors.indigo.withValues(alpha: 0.1)
+                            ? const Color(0xFF8D99AE).withValues(alpha: 0.1)
                             : Colors.grey.withValues(alpha: 0.1),
                         child: Icon(
                           Icons.campaign,
-                          color: isActive ? Colors.indigo : Colors.grey,
+                          color: isActive ? const Color(0xFF8D99AE) : Colors.grey,
                           size: 20,
                         ),
                       ),

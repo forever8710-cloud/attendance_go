@@ -92,21 +92,21 @@ class AttendanceTrendChart extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: Colors.indigo,
+                      color: const Color(0xFF8D99AE),
                       barWidth: 3,
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, bar, index) =>
                             FlDotCirclePainter(
                           radius: 4,
-                          color: Colors.indigo,
+                          color: const Color(0xFF8D99AE),
                           strokeWidth: 2,
                           strokeColor: Colors.white,
                         ),
                       ),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Colors.indigo.withValues(alpha: 0.08),
+                        color: const Color(0xFF8D99AE).withValues(alpha: 0.08),
                       ),
                     ),
                   ],

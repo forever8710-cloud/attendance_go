@@ -164,7 +164,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                             2 => widget.onWorkerTap != null
                                 ? GestureDetector(
                                     onTap: () => widget.onWorkerTap!(r.workerId, r.workerName),
-                                    child: Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                                    child: Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
                                   )
                                 : Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             3 => Text(r.position, style: const TextStyle(fontSize: 13)),
@@ -202,7 +202,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.all(4),
-            child: Icon(Icons.edit_outlined, size: 18, color: Colors.indigo[600]),
+            child: Icon(Icons.edit_outlined, size: 18, color: const Color(0xFF8D99AE)),
           ),
         ),
         const SizedBox(width: 4),
@@ -295,7 +295,7 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
     final color = switch (status) {
       '지각' => Colors.orange,
       '출근' => Colors.green,
-      '퇴근' => Colors.indigo,
+      '퇴근' => const Color(0xFF8D99AE),
       '조퇴' => Colors.purple,
       '미출근' => Colors.red,
       _ => Colors.grey,

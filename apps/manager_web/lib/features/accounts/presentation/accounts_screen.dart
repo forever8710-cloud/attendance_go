@@ -298,7 +298,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.email, color: Colors.indigo),
+            Icon(Icons.email, color: const Color(0xFF8D99AE)),
             SizedBox(width: 8),
             Text('가입정보 메일 전송', style: TextStyle(fontSize: 16)),
           ],
@@ -401,7 +401,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   // 카드 헤더: 타이틀 + 신규 버튼
                   Row(
                     children: [
-                      const Icon(Icons.manage_accounts, color: Colors.indigo, size: 20),
+                      const Icon(Icons.manage_accounts, color: Color(0xFF8D99AE), size: 20),
                       const SizedBox(width: 8),
                       Text(
                         _isNewAccount ? '신규 관리자 계정 생성' : (_selectedAccount != null ? '${_selectedAccount!.name} - 관리자 계정정보' : '관리자 계정정보'),
@@ -601,7 +601,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                   : const Icon(Icons.forward_to_inbox, size: 16),
                               label: const Text('가입정보 메일 전송', style: TextStyle(fontSize: 13)),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.indigo,
+                                foregroundColor: const Color(0xFF8D99AE),
                               ),
                             ),
                           if (_personalEmailController.text.trim().isNotEmpty && _selectedAccount!.email != null)
@@ -665,9 +665,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Row(
                   children: [
-                    const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
+                    const Icon(Icons.list_alt, size: 18, color: Color(0xFF8D99AE)),
                     const SizedBox(width: 8),
-                    const Text('관리자 계정목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    const Text('관리자 계정목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
                     const SizedBox(width: 16),
                     Expanded(child: Divider(color: cs.outlineVariant.withValues(alpha: 0.3))),
                     const SizedBox(width: 16),
@@ -727,7 +727,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     final isSelected = _selectedAccount?.id == a.id;
                     return switch (colIndex) {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-                      1 => Text(a.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),
+                      1 => Text(a.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
                       2 => Text(a.position ?? '-', style: const TextStyle(fontSize: 13)),
                       3 => Text(a.siteName ?? '-', style: const TextStyle(fontSize: 13)),
                       4 => Text(a.phone, style: const TextStyle(fontSize: 13)),
@@ -784,7 +784,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final appRole = roleFromString(role);
     final (color, label) = switch (appRole) {
       AppRole.systemAdmin => (Colors.red, '시스템관리자'),
-      AppRole.owner => (Colors.indigo, '대표이사'),
+      AppRole.owner => (const Color(0xFF8D99AE), '대표이사'),
       AppRole.centerManager => (Colors.teal, '센터장'),
       AppRole.worker => (Colors.blue, '근로자'),
     };

@@ -207,7 +207,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                   // 카드 헤더: 타이틀 + 신규등록 버튼
                   Row(
                     children: [
-                      const Icon(Icons.badge, color: Colors.indigo, size: 20),
+                      const Icon(Icons.badge, color: Color(0xFF8D99AE), size: 20),
                       const SizedBox(width: 8),
                       Text(
                         _isNewWorker ? '신규 근로자 등록' : (_selectedWorker != null ? '${_selectedWorker!.name} - 인사기록카드' : '인사기록카드'),
@@ -495,9 +495,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.list_alt, size: 18, color: Colors.indigo),
+                    const Icon(Icons.list_alt, size: 18, color: Color(0xFF8D99AE)),
                     const SizedBox(width: 8),
-                    const Text('근로자 목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    const Text('근로자 목록', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
                     const Spacer(),
                   ],
                 ),
@@ -601,9 +601,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                       1 => widget.onWorkerTap != null
                           ? GestureDetector(
                               onTap: () => widget.onWorkerTap!(w.id, w.name),
-                              child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo, decoration: TextDecoration.underline)),
+                              child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE), decoration: TextDecoration.underline)),
                             )
-                          : Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.indigo : null)),
+                          : Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
                       2 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
                       3 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
                       4 => Text(w.phone, style: const TextStyle(fontSize: 13)),
@@ -773,7 +773,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
             return AlertDialog(
               title: const Row(
                 children: [
-                  Icon(Icons.location_on, color: Colors.indigo),
+                  Icon(Icons.location_on, color: const Color(0xFF8D99AE)),
                   SizedBox(width: 8),
                   Text('주소 검색'),
                 ],
@@ -802,7 +802,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                               itemBuilder: (context, i) {
                                 return ListTile(
                                   dense: true,
-                                  leading: const Icon(Icons.location_on_outlined, size: 20, color: Colors.indigo),
+                                  leading: const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFF8D99AE)),
                                   title: Text(results[i], style: const TextStyle(fontSize: 13)),
                                   onTap: () {
                                     _addressController.text = results[i];

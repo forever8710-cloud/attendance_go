@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Primary gradient
-  static const primary = Color(0xFF4F46E5); // Indigo 600
-  static const primaryDark = Color(0xFF3730A3); // Indigo 800
+  // Primary brand
+  static const primary = Color(0xFF8D99AE); // Lavender Grey
+  static const primaryDark = Color(0xFF2B2D42); // Space Indigo
 
   // Action colors
   static const checkIn = Color(0xFF059669); // Emerald 600
@@ -15,20 +15,20 @@ class AppColors {
   static const earlyLeaveLight = Color(0xFFFB923C);
 
   // Surface
-  static const surface = Color(0xFFF8FAFC);
+  static const surface = Color(0xFFF8F9FA);
   static const card = Colors.white;
   static const disabled = Color(0xFFE2E8F0);
   static const disabledText = Color(0xFF94A3B8);
 
   // Text
-  static const textPrimary = Color(0xFF1E293B);
+  static const textPrimary = Color(0xFF2B2D42);
   static const textSecondary = Color(0xFF64748B);
   static const textHint = Color(0xFF94A3B8);
 }
 
 class AppTheme {
   static ThemeData get light {
-    final baseTextTheme = GoogleFonts.poppinsTextTheme();
+    final baseTextTheme = GoogleFonts.notoSansKrTextTheme();
 
     return ThemeData(
       useMaterial3: true,
@@ -68,7 +68,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: GoogleFonts.notoSansKr(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
@@ -94,22 +94,22 @@ class AppTheme {
     );
   }
 
-  /// Poppins ExtraBold for brand text "WorkFlow"
-  static TextStyle get brandTitle => GoogleFonts.poppins(
+  /// Noto Sans KR ExtraBold for brand text "WorkFlow"
+  static TextStyle get brandTitle => GoogleFonts.notoSansKr(
         fontSize: 32,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
         color: AppColors.primary,
       );
 
-  /// Poppins bold numbers (for time display, stats)
-  static TextStyle get numberLarge => GoogleFonts.poppins(
+  /// Noto Sans KR bold numbers (for time display, stats)
+  static TextStyle get numberLarge => GoogleFonts.notoSansKr(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get numberMedium => GoogleFonts.poppins(
+  static TextStyle get numberMedium => GoogleFonts.notoSansKr(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,

@@ -27,7 +27,7 @@ class MyPageScreen extends ConsumerWidget {
               // 헤더
               Text(
                 '마이페이지',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -56,7 +56,7 @@ class MyPageScreen extends ConsumerWidget {
                         worker?.name.isNotEmpty == true
                             ? worker!.name.substring(0, 1)
                             : '?',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.notoSansKr(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,

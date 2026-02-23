@@ -50,7 +50,7 @@ class StatusCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -101,7 +101,7 @@ class SummaryStatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.notoSansKr(
                 color: color,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,

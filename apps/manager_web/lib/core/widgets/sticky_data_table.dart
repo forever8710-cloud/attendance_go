@@ -107,7 +107,7 @@ class StickyHeaderTable extends StatelessWidget {
         // ── 고정 헤더 ──
         Container(
           decoration: BoxDecoration(
-            color: isDark ? cs.primary.withValues(alpha: 0.12) : const Color(0xFFE8EAF6),
+            color: isDark ? cs.primary.withValues(alpha: 0.12) : const Color(0xFFF8F9FA),
             border: Border(
               bottom: BorderSide(color: cs.primary.withValues(alpha: 0.3), width: 1.5),
             ),
@@ -120,7 +120,7 @@ class StickyHeaderTable extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: isDark ? cs.primary.withValues(alpha: 0.9) : Colors.indigo[900],
+                  color: isDark ? cs.primary.withValues(alpha: 0.9) : const Color(0xFF2B2D42),
                 ),
               );
 
