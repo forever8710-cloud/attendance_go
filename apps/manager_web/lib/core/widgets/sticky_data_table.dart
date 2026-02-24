@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// 셀 좌우 내부 패딩 (4mm ≈ 8px each side)
+const double _cellHPad = 8.0;
+
 /// 테이블 컬럼 정의
 class TableColumnDef {
   final String label;
@@ -16,9 +19,9 @@ class TableColumnDef {
     this.sortAscending,
   });
 
-  /// 컬럼 리스트의 전체 너비 (좌우 패딩 + Card 보더 포함)
+  /// 컬럼 리스트의 전체 너비 (셀 패딩 + 좌우 패딩 + Card 보더 포함)
   static double totalWidth(List<TableColumnDef> columns) =>
-      columns.fold<double>(0, (sum, col) => sum + col.width) + 34;
+      columns.fold<double>(0, (sum, col) => sum + col.width + _cellHPad * 2) + 34;
 }
 
 /// 고정 헤더 + 스크롤 바디 테이블 위젯
@@ -147,10 +150,13 @@ class StickyHeaderTable extends StatelessWidget {
               }
 
               return SizedBox(
-                width: col.width,
-                child: col.numeric
-                    ? Align(alignment: Alignment.centerRight, child: label)
-                    : label,
+                width: col.width + _cellHPad * 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: _cellHPad),
+                  child: col.numeric
+                      ? Align(alignment: Alignment.centerRight, child: label)
+                      : label,
+                ),
               );
             }).toList(),
           ),
@@ -203,14 +209,17 @@ class StickyHeaderTable extends StatelessWidget {
                           children: List.generate(
                             columns.length,
                             (colIndex) => SizedBox(
-                              width: columns[colIndex].width,
-                              child: columns[colIndex].numeric
-                                  ? Align(
-                                      alignment: Alignment.centerRight,
-                                      child: cellBuilder(
-                                          colIndex, rowIndex),
-                                    )
-                                  : cellBuilder(colIndex, rowIndex),
+                              width: columns[colIndex].width + _cellHPad * 2,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: _cellHPad),
+                                child: columns[colIndex].numeric
+                                    ? Align(
+                                        alignment: Alignment.centerRight,
+                                        child: cellBuilder(
+                                            colIndex, rowIndex),
+                                      )
+                                    : cellBuilder(colIndex, rowIndex),
+                              ),
                             ),
                           ),
                         ),

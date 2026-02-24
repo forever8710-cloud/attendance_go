@@ -21,6 +21,7 @@ dependencies:
   shared_preferences: ^2.3.4
   url_launcher: ^6.2.5
   http: ^1.2.1
+  flutter_tts: ^4.2.0
   core:
     path: ../../packages/core
   supabase_client:

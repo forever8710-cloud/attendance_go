@@ -29,6 +29,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   String _siteFilter = '전체';
   String _jobFilter = '전체';
   String _statusFilter = '전체';
+  String _tempZoneFilter = '전체';
   WorkerRow? _selectedWorker;
   bool _isNewWorker = false;
 
@@ -49,6 +50,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   String? _role;
   String? _job;
   String? _site;
+  String? _temperatureZone;
   DateTime? _joinDate;
   DateTime? _leaveDate;
 
@@ -88,6 +90,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       _role = worker.role;
       _job = worker.job ?? (worker.part.isNotEmpty ? worker.part : null);
       _site = worker.site.isNotEmpty ? worker.site : null;
+      _temperatureZone = worker.temperatureZone;
       _joinDate = worker.joinDate;
       _leaveDate = worker.leaveDate;
     });
@@ -113,6 +116,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       _role = null;
       _job = null;
       _site = null;
+      _temperatureZone = null;
       _joinDate = null;
       _leaveDate = null;
     });
@@ -157,6 +161,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       position: _position,
       role: _role,
       job: _job,
+      temperatureZone: _temperatureZone,
     );
 
     try {
@@ -423,7 +428,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                 children: [
                                   Expanded(child: _buildDropdown('직위', ['사원', '대리', '과장', '부장', '대표'], _position, (v) => setState(() => _position = v))),
                                   const SizedBox(width: 12),
-                                  Expanded(child: _buildDropdown('직책', ['', '조장', '파트장'], _role, (v) => setState(() => _role = v))),
+                                  Expanded(child: _buildDropdown('직책', ['', '반장', '조장', '파트장'], _role, (v) => setState(() => _role = v))),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildDropdown('직무', ref.watch(partNamesProvider), _job, (v) => setState(() => _job = v))),
                                   const SizedBox(width: 12),
@@ -436,6 +441,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                       _updateAutoEmployeeId();
                                     },
                                   )),
+                                  const SizedBox(width: 12),
+                                  SizedBox(width: 100, child: _buildDropdown('상/저온', ['상온', '저온'], _temperatureZone ?? '상온', (v) => setState(() => _temperatureZone = v))),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -547,6 +554,8 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                             (v) => setState(() => _siteFilter = v!)),
                         _buildWorkerFilterDropdown('직무', _jobFilter, ['전체', ...ref.watch(partNamesProvider)],
                             (v) => setState(() => _jobFilter = v!)),
+                        _buildWorkerFilterDropdown('상/저온', _tempZoneFilter, ['전체', '상온', '저온'],
+                            (v) => setState(() => _tempZoneFilter = v!)),
                         _buildWorkerFilterDropdown('재직상태', _statusFilter, ['전체', '정규직', '계약직', '일용직', '파견', '육아휴직'],
                             (v) => setState(() => _statusFilter = v!)),
                         SizedBox(
@@ -568,6 +577,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                           onPressed: () => setState(() {
                             _siteFilter = '전체';
                             _jobFilter = '전체';
+                            _tempZoneFilter = '전체';
                             _statusFilter = '전체';
                             _searchQuery = '';
                           }),
@@ -595,6 +605,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                 final filtered = baseList.where((w) {
                   if (_siteFilter != '전체' && w.site != _siteFilter) return false;
                   if (_jobFilter != '전체' && (w.job ?? w.part) != _jobFilter) return false;
+                  if (_tempZoneFilter != '전체' && (w.temperatureZone ?? '상온') != _tempZoneFilter) return false;
                   if (_statusFilter != '전체') {
                     final status = w.employmentStatus ?? (w.isActive ? '재직' : '퇴사');
                     if (status != _statusFilter) return false;
@@ -610,8 +621,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                   const TableColumnDef(label: '사번', width: 85),
                   const TableColumnDef(label: '전화번호', width: 115),
                   const TableColumnDef(label: '직무', width: 95),
-                  const TableColumnDef(label: '직위', width: 65),
+                  const TableColumnDef(label: '직책', width: 55),
                   const TableColumnDef(label: '사업장', width: 75),
+                  const TableColumnDef(label: '상/저온', width: 60),
                   const TableColumnDef(label: '재직상태', width: 80),
                   const TableColumnDef(label: '입사일', width: 95),
                 ];
@@ -626,20 +638,24 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                     final isSelected = _selectedWorker?.id == w.id;
                     return switch (colIndex) {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-                      1 => widget.onWorkerTap != null
-                          ? GestureDetector(
-                              onTap: () => widget.onWorkerTap!(w.id, w.name),
-                              child: Text(w.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
-                            )
-                          : Text(w.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
+                      1 => Tooltip(
+                          message: w.name,
+                          child: widget.onWorkerTap != null
+                              ? GestureDetector(
+                                  onTap: () => widget.onWorkerTap!(w.id, w.name),
+                                  child: Text(w.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
+                                )
+                              : Text(w.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
+                        ),
                       2 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
                       3 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
                       4 => Text(w.phone, style: const TextStyle(fontSize: 13)),
                       5 => Text(w.job ?? w.part, style: const TextStyle(fontSize: 13)),
-                      6 => Text(w.position ?? '-', style: const TextStyle(fontSize: 13)),
+                      6 => Text(w.role ?? '-', style: const TextStyle(fontSize: 13)),
                       7 => Text(w.site, style: const TextStyle(fontSize: 13)),
-                      8 => _buildStatusChip(w.employmentStatus ?? (w.isActive ? '재직' : '퇴사')),
-                      9 => Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-', style: const TextStyle(fontSize: 13)),
+                      8 => Text(w.temperatureZone ?? '상온', style: TextStyle(fontSize: 13, color: (w.temperatureZone == '저온') ? Colors.blue[700] : null)),
+                      9 => _buildStatusChip(w.employmentStatus ?? (w.isActive ? '재직' : '퇴사')),
+                      10 => Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-', style: const TextStyle(fontSize: 13)),
                       _ => const SizedBox(),
                     };
                   },

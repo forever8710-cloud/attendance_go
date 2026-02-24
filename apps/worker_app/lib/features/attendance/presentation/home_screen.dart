@@ -66,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Text(
                           '안녕하세요,',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -109,7 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 4),
               Text(
                 dateFormat.format(now),
-                style: const TextStyle(fontSize: 13, color: AppColors.textHint),
+                style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.w600),
               ),
 
               const SizedBox(height: 20),
@@ -287,7 +287,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(width: 12),
                   _QuickAccessCard(
                     icon: Icons.account_balance_wallet_rounded,
-                    label: '급여조회',
+                    label: '급여조회 (준비중)',
                     color: AppColors.checkIn,
                     onTap: () => ref.read(navIndexProvider.notifier).state = 2,
                   ),

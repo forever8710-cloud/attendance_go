@@ -265,12 +265,15 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
 
         return switch (colIndex) {
           0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-          1 => widget.onWorkerTap != null
-              ? GestureDetector(
-                  onTap: () => widget.onWorkerTap!(r.workerId, r.name),
-                  child: Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
-                )
-              : Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          1 => Tooltip(
+              message: r.name,
+              child: widget.onWorkerTap != null
+                  ? GestureDetector(
+                      onTap: () => widget.onWorkerTap!(r.workerId, r.name),
+                      child: Text(r.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
+                    )
+                  : Text(r.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+            ),
           2 => Text(r.part, style: const TextStyle(fontSize: 13)),
           3 => Text('${r.workDays}', style: const TextStyle(fontSize: 13)),
           4 => Text(r.totalHours.toStringAsFixed(1), style: const TextStyle(fontSize: 13)),

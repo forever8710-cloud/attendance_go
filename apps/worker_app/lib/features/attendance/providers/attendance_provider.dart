@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../core/services/tts_service.dart';
 import '../data/attendance_repository.dart';
 
 enum AttendanceStatus { idle, loading, checkedIn, checkedOut, error }
@@ -160,6 +161,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       );
       state = state.copyWith(
           status: AttendanceStatus.checkedIn, todayAttendance: attendance);
+      TtsService.speak('출근완료');
     } catch (e) {
       // DB unique constraint 위반 (동시 요청) → 기존 기록 복원
       final msg = e.toString();
@@ -194,6 +196,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       );
       state = state.copyWith(
           status: AttendanceStatus.checkedOut, todayAttendance: attendance);
+      TtsService.speak('퇴근완료');
     } catch (e) {
       // 퇴근 실패 시 이전 상태(checkedIn)로 복원
       state = state.copyWith(
@@ -217,6 +220,7 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
       );
       state = state.copyWith(
           status: AttendanceStatus.checkedOut, todayAttendance: attendance);
+      TtsService.speak('퇴근완료');
     } catch (e) {
       state = state.copyWith(
         status: AttendanceStatus.checkedIn,

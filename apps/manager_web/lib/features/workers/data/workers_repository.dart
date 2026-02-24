@@ -28,10 +28,12 @@ class WorkerRow {
     this.photoUrl,
     this.bank,
     this.accountNumber,
+    this.temperatureZone,
   });
 
   final String id, name, phone, part, site;
   bool isActive;
+  final String? temperatureZone; // 상온/저온
 
   // 소속 회사
   final String? company; // 회사코드: 'BT' 또는 'TK'
@@ -80,6 +82,7 @@ class WorkerRow {
     String? photoUrl,
     String? bank,
     String? accountNumber,
+    String? temperatureZone,
   }) {
     return WorkerRow(
       id: id ?? this.id,
@@ -106,6 +109,7 @@ class WorkerRow {
       photoUrl: photoUrl ?? this.photoUrl,
       bank: bank ?? this.bank,
       accountNumber: accountNumber ?? this.accountNumber,
+      temperatureZone: temperatureZone ?? this.temperatureZone,
     );
   }
 }
@@ -168,11 +172,12 @@ class WorkersRepository {
           joinDate: profile?['join_date'] != null ? DateTime.tryParse(profile!['join_date']) : null,
           leaveDate: profile?['leave_date'] != null ? DateTime.tryParse(profile!['leave_date']) : null,
           position: profile?['position'] as String?,
-          role: profile?['title'] as String?,
+          role: profile?['title'] as String? ?? row['position'] as String?,
           job: profile?['job'] as String?,
           photoUrl: profile?['photo_url'] as String?,
           bank: profile?['bank'] as String?,
           accountNumber: profile?['account_number'] as String?,
+          temperatureZone: row['temperature_zone'] as String?,
         );
       }).toList();
     } catch (e) {
@@ -243,6 +248,8 @@ class WorkersRepository {
       'site_id': siteId,
       'part_id': partId,
       'is_active': worker.isActive,
+      'temperature_zone': worker.temperatureZone ?? '상온',
+      'position': worker.role,
     }).eq('id', worker.id);
 
     // worker_profiles upsert
@@ -289,6 +296,8 @@ class WorkersRepository {
       'part_id': partId,
       'role': 'worker',
       'is_active': true,
+      'temperature_zone': worker.temperatureZone ?? '상온',
+      'position': worker.role,
     }).select('id');
 
     final workerId = (insertedRows as List).first['id'] as String;

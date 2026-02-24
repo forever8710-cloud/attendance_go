@@ -221,12 +221,15 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
                           return switch (colIndex) {
                             0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
                             1 => Text(DateFormat('yyyy-MM-dd').format(r.date), style: const TextStyle(fontSize: 13)),
-                            2 => widget.onWorkerTap != null
-                                ? GestureDetector(
-                                    onTap: () => widget.onWorkerTap!(r.workerId, r.workerName),
-                                    child: Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
-                                  )
-                                : Text(r.workerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            2 => Tooltip(
+                                message: r.workerName,
+                                child: widget.onWorkerTap != null
+                                    ? GestureDetector(
+                                        onTap: () => widget.onWorkerTap!(r.workerId, r.workerName),
+                                        child: Text(r.workerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
+                                      )
+                                    : Text(r.workerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                              ),
                             3 => Text(r.position, style: const TextStyle(fontSize: 13)),
                             4 => Text(r.job, style: const TextStyle(fontSize: 13)),
                             5 => Text(r.site, style: const TextStyle(fontSize: 13)),

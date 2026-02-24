@@ -76,18 +76,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 필터 Chip (상태 필터 적용 시)
-              if (_selectedStatus != null) ...[
-                Chip(
-                  label: Text('필터: $_selectedStatus', style: const TextStyle(fontSize: 13)),
-                  deleteIcon: const Icon(Icons.close, size: 16),
-                  onDeleted: () => setState(() => _selectedStatus = null),
-                  backgroundColor: const Color(0xFF8D99AE).withValues(alpha: 0.1),
-                  side: BorderSide(color: const Color(0xFF8D99AE).withValues(alpha: 0.3)),
-                ),
-                const SizedBox(height: 12),
-              ],
-
               // Calendar
               const DashboardCalendar(),
               const SizedBox(height: 20),
@@ -116,10 +104,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Row(
                 children: [
                   const Text('▶ 오늘의 출퇴근 현황', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2B2D42))),
-                  if (_selectedStatus != null) ...[
-                    const SizedBox(width: 8),
-                    Text('($_selectedStatus)', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
-                  ],
                   const SizedBox(width: 24),
                   _buildCenterDropdown(),
                   const SizedBox(width: 12),
@@ -130,14 +114,48 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       onChanged: (v) => setState(() => _searchQuery = v),
                       decoration: InputDecoration(
                         hintText: '이름/사업장 검색...',
-                        prefixIcon: const Icon(Icons.search, size: 18),
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        prefixIcon: const Icon(Icons.search, size: 16),
+                        filled: false,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFBDBDBD)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFBDBDBD)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF8D99AE), width: 1.5),
+                        ),
                         contentPadding: EdgeInsets.zero,
                       ),
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
+                  if (_selectedStatus != null) ...[
+                    const SizedBox(width: 12),
+                    Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFBDBDBD)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('필터: $_selectedStatus', style: const TextStyle(fontSize: 13)),
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: () => setState(() => _selectedStatus = null),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),
@@ -186,13 +204,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       case 0: compare = 0; break;
                       case 1: compare = a.site.compareTo(b.site); break;
                       case 2: compare = a.name.compareTo(b.name); break;
-                      case 3: compare = a.position.compareTo(b.position); break;
-                      case 4: compare = a.job.compareTo(b.job); break;
-                      case 5: compare = a.checkIn.compareTo(b.checkIn); break;
-                      case 6: compare = a.checkOut.compareTo(b.checkOut); break;
-                      case 7: compare = a.workHours.compareTo(b.workHours); break;
-                      case 8: compare = a.status.compareTo(b.status); break;
-                      case 9: compare = a.note.compareTo(b.note); break;
+                      case 3: compare = a.job.compareTo(b.job); break;
+                      case 4: compare = a.checkIn.compareTo(b.checkIn); break;
+                      case 5: compare = a.checkOut.compareTo(b.checkOut); break;
+                      case 6: compare = a.workHours.compareTo(b.workHours); break;
+                      case 7: compare = a.status.compareTo(b.status); break;
+                      case 8: compare = a.note.compareTo(b.note); break;
                       default: compare = 0;
                     }
                     return _isAscending ? compare : -compare;
@@ -214,13 +231,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   TableColumnDef(label: 'No.', width: 45, onSort: () => onSort(0), sortAscending: _sortColumnIndex == 0 ? _isAscending : null),
                   TableColumnDef(label: '사업장', width: 75, onSort: () => onSort(1), sortAscending: _sortColumnIndex == 1 ? _isAscending : null),
                   TableColumnDef(label: '성명', width: 75, onSort: () => onSort(2), sortAscending: _sortColumnIndex == 2 ? _isAscending : null),
-                  TableColumnDef(label: '직위', width: 65, onSort: () => onSort(3), sortAscending: _sortColumnIndex == 3 ? _isAscending : null),
-                  TableColumnDef(label: '직무', width: 95, onSort: () => onSort(4), sortAscending: _sortColumnIndex == 4 ? _isAscending : null),
-                  TableColumnDef(label: '출근', width: 65, onSort: () => onSort(5), sortAscending: _sortColumnIndex == 5 ? _isAscending : null),
-                  TableColumnDef(label: '퇴근', width: 65, onSort: () => onSort(6), sortAscending: _sortColumnIndex == 6 ? _isAscending : null),
-                  TableColumnDef(label: '근무시간', width: 80, onSort: () => onSort(7), sortAscending: _sortColumnIndex == 7 ? _isAscending : null),
-                  TableColumnDef(label: '상태', width: 75, onSort: () => onSort(8), sortAscending: _sortColumnIndex == 8 ? _isAscending : null),
-                  TableColumnDef(label: '비고', width: 110, onSort: () => onSort(9), sortAscending: _sortColumnIndex == 9 ? _isAscending : null),
+                  TableColumnDef(label: '직무', width: 95, onSort: () => onSort(3), sortAscending: _sortColumnIndex == 3 ? _isAscending : null),
+                  TableColumnDef(label: '출근', width: 65, onSort: () => onSort(4), sortAscending: _sortColumnIndex == 4 ? _isAscending : null),
+                  TableColumnDef(label: '퇴근', width: 65, onSort: () => onSort(5), sortAscending: _sortColumnIndex == 5 ? _isAscending : null),
+                  TableColumnDef(label: '근무시간', width: 80, onSort: () => onSort(6), sortAscending: _sortColumnIndex == 6 ? _isAscending : null),
+                  TableColumnDef(label: '상태', width: 75, onSort: () => onSort(7), sortAscending: _sortColumnIndex == 7 ? _isAscending : null),
+                  TableColumnDef(label: '비고', width: 110, onSort: () => onSort(8), sortAscending: _sortColumnIndex == 8 ? _isAscending : null),
                 ];
 
                 return StickyHeaderTable.wrapWithCard(
@@ -232,19 +248,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     return switch (colIndex) {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
                       1 => Text(e.site, style: const TextStyle(fontSize: 13)),
-                      2 => widget.onWorkerTap != null
-                          ? GestureDetector(
-                              onTap: () => widget.onWorkerTap!(e.id ?? '', e.name),
-                              child: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
-                            )
-                          : Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      3 => Text(e.position, style: const TextStyle(fontSize: 13)),
-                      4 => Text(e.job, style: const TextStyle(fontSize: 13)),
-                      5 => Text(e.checkIn, style: const TextStyle(fontSize: 13)),
-                      6 => Text(e.checkOut, style: const TextStyle(fontSize: 13)),
-                      7 => Text(e.workHours, style: const TextStyle(fontSize: 13)),
-                      8 => _buildStatusBadge(e.status),
-                      9 => Text(e.note, style: const TextStyle(fontSize: 13)),
+                      2 => Tooltip(
+                          message: e.name,
+                          child: widget.onWorkerTap != null
+                              ? GestureDetector(
+                                  onTap: () => widget.onWorkerTap!(e.id ?? '', e.name),
+                                  child: Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.deepPurple, decoration: TextDecoration.underline, decorationColor: Colors.deepPurple)),
+                                )
+                              : Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        ),
+                      3 => Text(e.job, style: const TextStyle(fontSize: 13)),
+                      4 => Text(e.checkIn, style: const TextStyle(fontSize: 13)),
+                      5 => Text(e.checkOut, style: const TextStyle(fontSize: 13)),
+                      6 => Text(e.workHours, style: const TextStyle(fontSize: 13)),
+                      7 => _buildStatusBadge(e.status),
+                      8 => Text(e.note, style: const TextStyle(fontSize: 13)),
                       _ => const SizedBox(),
                     };
                   },
@@ -334,17 +352,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final centers = _getAvailableCenters(sites);
 
     return Container(
+      height: 36,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(color: const Color(0xFFBDBDBD)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCenter,
+          isDense: true,
           items: centers
-              .map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 14))))
+              .map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 13))))
               .toList(),
           onChanged: centers.length > 1 ? (v) => setState(() => _selectedCenter = v!) : null,
         ),

@@ -13,7 +13,7 @@ class MainScaffold extends ConsumerWidget {
   static const _tabs = [
     _TabItem(icon: Icons.home_rounded, label: '홈'),
     _TabItem(icon: Icons.calendar_month_rounded, label: '근태기록'),
-    _TabItem(icon: Icons.account_balance_wallet_rounded, label: '급여조회'),
+    _TabItem(icon: Icons.account_balance_wallet_rounded, label: '급여조회 (준비중)'),
     _TabItem(icon: Icons.person_rounded, label: '마이페이지'),
   ];
 

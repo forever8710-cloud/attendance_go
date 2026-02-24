@@ -5,11 +5,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel, PostgresChangeEvent;
 import 'core/utils/permissions.dart';
+import 'core/services/web_tts_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/password_reset_dialog.dart';
 import 'features/dashboard/presentation/dashboard_screen.dart';
+import 'features/dashboard/providers/dashboard_provider.dart';
 import 'features/workers/presentation/workers_screen.dart';
 import 'features/attendance_records/presentation/attendance_records_screen.dart';
 import 'features/payroll/presentation/payroll_screen.dart';
@@ -133,6 +136,72 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
   int _selectedIndex = 0;
   String? _detailWorkerId;
   String? _detailWorkerName;
+  RealtimeChannel? _realtimeChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupRealtime();
+  }
+
+  @override
+  void dispose() {
+    _realtimeChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  void _setupRealtime() {
+    _realtimeChannel = SupabaseService.instance
+        .channel('dashboard-attendance')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'attendances',
+          callback: _onAttendanceInsert,
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'attendances',
+          callback: _onAttendanceUpdate,
+        )
+        .subscribe();
+  }
+
+  /// 새 출근 기록 감지 → TTS "XXX 출근완료" + 대시보드 새로고침
+  void _onAttendanceInsert(dynamic payload) async {
+    if (!mounted) return;
+    // 대시보드 데이터 리프레시
+    ref.read(dashboardRefreshProvider.notifier).state++;
+
+    // TTS 알림
+    final ttsEnabled = ref.read(ttsEnabledProvider);
+    if (!ttsEnabled) return;
+
+    try {
+      final newRecord = (payload as dynamic).newRecord as Map<String, dynamic>?;
+      final workerId = newRecord?['worker_id'] as String?;
+      if (workerId == null) return;
+
+      final worker = await SupabaseService.instance
+          .from('workers')
+          .select('name')
+          .eq('id', workerId)
+          .maybeSingle();
+      if (!mounted) return;
+
+      final name = worker?['name'] as String?;
+      if (name != null && name.isNotEmpty) {
+        WebTtsService.speak('$name 출근완료');
+      }
+    } catch (_) {}
+  }
+
+  /// 퇴근/수정 감지 → 대시보드 새로고침 (TTS 없음)
+  void _onAttendanceUpdate(dynamic payload) {
+    if (!mounted) return;
+    ref.read(dashboardRefreshProvider.notifier).state++;
+  }
 
   void _openWorkerDetail(String id, String name) {
     setState(() {
@@ -199,6 +268,9 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                       // 가입 요청 알림 — 클릭 시 근로자 등록 탭으로 이동
                       _buildRegistrationAlert(context),
                       const Spacer(),
+                      // TTS 음성 알림 토글
+                      _buildTtsToggle(),
+                      const SizedBox(width: 8),
                       // 역할 배지
                       _buildRoleBadge(role),
                       const SizedBox(width: 12),
@@ -295,6 +367,52 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTtsToggle() {
+    final ttsEnabled = ref.watch(ttsEnabledProvider);
+    final cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: ttsEnabled ? '출근 음성 알림 끄기' : '출근 음성 알림 켜기',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => ref.read(ttsEnabledProvider.notifier).state = !ttsEnabled,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: ttsEnabled
+                ? Colors.green.withValues(alpha: 0.1)
+                : cs.onSurface.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: ttsEnabled
+                  ? Colors.green.withValues(alpha: 0.4)
+                  : cs.outlineVariant.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                ttsEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                size: 18,
+                color: ttsEnabled ? Colors.green[700] : cs.onSurface.withValues(alpha: 0.4),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                ttsEnabled ? '알림 ON' : '알림 OFF',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ttsEnabled ? Colors.green[700] : cs.onSurface.withValues(alpha: 0.4),
                 ),
               ),
             ],
