@@ -145,9 +145,13 @@ class WorkersRepository {
           .eq('role', 'worker');
 
       return (response as List).map((row) {
-        final profile = (row['worker_profiles'] is List && (row['worker_profiles'] as List).isNotEmpty)
-            ? (row['worker_profiles'] as List).first
-            : null;
+        // PostgREST returns 1:1 relations (UNIQUE FK) as object, not array
+        final wpRaw = row['worker_profiles'];
+        final profile = wpRaw is Map<String, dynamic>
+            ? wpRaw
+            : (wpRaw is List && (wpRaw as List).isNotEmpty)
+                ? wpRaw.first as Map<String, dynamic>
+                : null;
 
         final siteId = row['site_id'] as String?;
         final partId = row['part_id'] as String?;

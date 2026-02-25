@@ -41,8 +41,11 @@ class AttendanceRecordsRepository {
       final siteName = workerSiteId != null ? (_siteNames[workerSiteId] ?? '') : '';
       final partName = partId != null ? (_partNames[partId] ?? '') : '';
 
+      // PostgREST returns 1:1 relations (UNIQUE FK) as object, not array
       final profiles = worker['worker_profiles'];
-      final profile = (profiles is List && profiles.isNotEmpty) ? profiles.first : null;
+      final profile = profiles is Map<String, dynamic>
+          ? profiles
+          : (profiles is List && profiles.isNotEmpty) ? profiles.first : null;
       final position = (profile?['position'] as String?) ?? '';
       final job = (profile?['job'] as String?) ?? partName;
 
