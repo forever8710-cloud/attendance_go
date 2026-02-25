@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/company_constants.dart';
 import '../../../core/utils/permissions.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../providers/dashboard_provider.dart';
-import 'widgets/dashboard_calendar.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({
@@ -27,6 +27,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String? _selectedStatus;
   int? _sortColumnIndex;
   bool _isAscending = true;
+  bool _showManagerOnly = false;
 
   @override
   void initState() {
@@ -67,19 +68,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── 상단 고정 영역 (스크롤 안 됨) ──
-        Padding(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final topContent = Padding(
           padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Calendar
-              const DashboardCalendar(),
-              const SizedBox(height: 20),
-
               // Summary cards (클릭 가능)
               summary.when(
                 data: (s) => Wrap(
@@ -156,20 +151,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ],
+                  // 센터장 필터 버튼 (system_admin / owner만)
+                  if (canAccessAllSites(widget.role)) ...[
+                    const SizedBox(width: 12),
+                    _buildManagerFilterButton(),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),
             ],
           ),
-        ),
+        );
 
-        // ── 하단: 테이블 (남은 공간 전체 사용, 헤더 고정) ──
-        Expanded(
-          child: Padding(
+        // ── 하단: 테이블 ──
+        final tableContent = Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
             child: attendances.when(
               data: (rows) {
                 var filtered = rows.where((r) {
+                  // 센터장 필터: 토글 ON이면 센터장만, OFF이면 일반 근로자만
+                  if (_showManagerOnly) {
+                    if (r.workerRole != 'center_manager') return false;
+                  } else {
+                    if (r.workerRole == 'center_manager') return false;
+                  }
                   final centerMatch = _selectedCenter == '전체' || r.site == _selectedCenter;
                   final searchMatch = r.name.contains(_searchQuery) || r.site.contains(_searchQuery);
                   return centerMatch && searchMatch;
@@ -202,14 +207,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     int compare;
                     switch (_sortColumnIndex) {
                       case 0: compare = 0; break;
-                      case 1: compare = a.site.compareTo(b.site); break;
-                      case 2: compare = a.name.compareTo(b.name); break;
-                      case 3: compare = a.job.compareTo(b.job); break;
-                      case 4: compare = a.checkIn.compareTo(b.checkIn); break;
-                      case 5: compare = a.checkOut.compareTo(b.checkOut); break;
-                      case 6: compare = a.workHours.compareTo(b.workHours); break;
-                      case 7: compare = a.status.compareTo(b.status); break;
-                      case 8: compare = a.note.compareTo(b.note); break;
+                      case 1: compare = a.name.compareTo(b.name); break;
+                      case 2: compare = a.status.compareTo(b.status); break;
+                      case 3: compare = a.checkIn.compareTo(b.checkIn); break;
+                      case 4: compare = a.checkOut.compareTo(b.checkOut); break;
+                      case 5: compare = a.site.compareTo(b.site); break;
+                      case 6: compare = (a.company ?? '').compareTo(b.company ?? ''); break;
+                      case 7: compare = a.phone.compareTo(b.phone); break;
+                      case 8: compare = a.job.compareTo(b.job); break;
+                      case 9: compare = (a.temperatureZone ?? '').compareTo(b.temperatureZone ?? ''); break;
+                      case 10: compare = (a.joinDate ?? '').compareTo(b.joinDate ?? ''); break;
+                      case 11: compare = a.note.compareTo(b.note); break;
                       default: compare = 0;
                     }
                     return _isAscending ? compare : -compare;
@@ -229,14 +237,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                 final columns = [
                   TableColumnDef(label: 'No.', width: 45, onSort: () => onSort(0), sortAscending: _sortColumnIndex == 0 ? _isAscending : null),
-                  TableColumnDef(label: '사업장', width: 75, onSort: () => onSort(1), sortAscending: _sortColumnIndex == 1 ? _isAscending : null),
-                  TableColumnDef(label: '성명', width: 75, onSort: () => onSort(2), sortAscending: _sortColumnIndex == 2 ? _isAscending : null),
-                  TableColumnDef(label: '직무', width: 95, onSort: () => onSort(3), sortAscending: _sortColumnIndex == 3 ? _isAscending : null),
-                  TableColumnDef(label: '출근', width: 65, onSort: () => onSort(4), sortAscending: _sortColumnIndex == 4 ? _isAscending : null),
-                  TableColumnDef(label: '퇴근', width: 65, onSort: () => onSort(5), sortAscending: _sortColumnIndex == 5 ? _isAscending : null),
-                  TableColumnDef(label: '근무시간', width: 80, onSort: () => onSort(6), sortAscending: _sortColumnIndex == 6 ? _isAscending : null),
-                  TableColumnDef(label: '상태', width: 75, onSort: () => onSort(7), sortAscending: _sortColumnIndex == 7 ? _isAscending : null),
-                  TableColumnDef(label: '비고', width: 110, onSort: () => onSort(8), sortAscending: _sortColumnIndex == 8 ? _isAscending : null),
+                  TableColumnDef(label: '성명', width: 75, onSort: () => onSort(1), sortAscending: _sortColumnIndex == 1 ? _isAscending : null),
+                  TableColumnDef(label: '상태', width: 75, onSort: () => onSort(2), sortAscending: _sortColumnIndex == 2 ? _isAscending : null),
+                  TableColumnDef(label: '출근', width: 65, onSort: () => onSort(3), sortAscending: _sortColumnIndex == 3 ? _isAscending : null),
+                  TableColumnDef(label: '퇴근', width: 65, onSort: () => onSort(4), sortAscending: _sortColumnIndex == 4 ? _isAscending : null),
+                  TableColumnDef(label: '사업장', width: 75, onSort: () => onSort(5), sortAscending: _sortColumnIndex == 5 ? _isAscending : null),
+                  TableColumnDef(label: '소속회사', width: 85, onSort: () => onSort(6), sortAscending: _sortColumnIndex == 6 ? _isAscending : null),
+                  TableColumnDef(label: '전화번호', width: 115, onSort: () => onSort(7), sortAscending: _sortColumnIndex == 7 ? _isAscending : null),
+                  TableColumnDef(label: '직무', width: 95, onSort: () => onSort(8), sortAscending: _sortColumnIndex == 8 ? _isAscending : null),
+                  TableColumnDef(label: '상/저온', width: 60, onSort: () => onSort(9), sortAscending: _sortColumnIndex == 9 ? _isAscending : null),
+                  TableColumnDef(label: '입사일', width: 95, onSort: () => onSort(10), sortAscending: _sortColumnIndex == 10 ? _isAscending : null),
+                  TableColumnDef(label: '비고', width: 110, onSort: () => onSort(11), sortAscending: _sortColumnIndex == 11 ? _isAscending : null),
                 ];
 
                 return StickyHeaderTable.wrapWithCard(
@@ -247,8 +258,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     final e = filtered[rowIndex];
                     return switch (colIndex) {
                       0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-                      1 => Text(e.site, style: const TextStyle(fontSize: 13)),
-                      2 => Tooltip(
+                      1 => Tooltip(
                           message: e.name,
                           child: widget.onWorkerTap != null
                               ? GestureDetector(
@@ -257,12 +267,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 )
                               : Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                         ),
-                      3 => Text(e.job, style: const TextStyle(fontSize: 13)),
-                      4 => Text(e.checkIn, style: const TextStyle(fontSize: 13)),
-                      5 => Text(e.checkOut, style: const TextStyle(fontSize: 13)),
-                      6 => Text(e.workHours, style: const TextStyle(fontSize: 13)),
-                      7 => _buildStatusBadge(e.status),
-                      8 => Text(e.note, style: const TextStyle(fontSize: 13)),
+                      2 => _buildStatusBadge(e.status),
+                      3 => Text(e.checkIn, style: const TextStyle(fontSize: 13)),
+                      4 => Text(e.checkOut, style: const TextStyle(fontSize: 13)),
+                      5 => Text(e.site, style: const TextStyle(fontSize: 13)),
+                      6 => Text(e.company != null ? CompanyConstants.companyName(e.company!) : '-', style: const TextStyle(fontSize: 13)),
+                      7 => Text(e.phone, style: const TextStyle(fontSize: 13)),
+                      8 => Text(e.job, style: const TextStyle(fontSize: 13)),
+                      9 => Text(e.temperatureZone ?? '상온', style: TextStyle(fontSize: 13, color: (e.temperatureZone == '저온') ? Colors.blue[700] : null)),
+                      10 => Text(e.joinDate ?? '-', style: const TextStyle(fontSize: 13)),
+                      11 => Text(e.note, style: const TextStyle(fontSize: 13)),
                       _ => const SizedBox(),
                     };
                   },
@@ -271,9 +285,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('오류: $e'),
             ),
-          ),
-        ),
-      ],
+        );
+
+        // 동적 테이블 높이: 큰 모니터 → 꽉 채움, 작은 모니터 → 최소 500px + 스크롤
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: topContent),
+            SliverLayoutBuilder(
+              builder: (context, constraints) {
+                final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+                final tableHeight = remaining < 500 ? 500.0 : remaining;
+                return SliverToBoxAdapter(
+                  child: SizedBox(height: tableHeight, child: tableContent),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -342,6 +371,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           borderRadius: BorderRadius.circular(15),
         ),
         child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildManagerFilterButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => setState(() => _showManagerOnly = !_showManagerOnly),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: _showManagerOnly ? Colors.teal[700] : null,
+            border: Border.all(
+              color: _showManagerOnly ? Colors.teal[700]! : const Color(0xFFBDBDBD),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                size: 16,
+                color: _showManagerOnly ? Colors.white : Colors.teal[700],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '센터장',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _showManagerOnly ? Colors.white : Colors.teal[700],
+                ),
+              ),
+              if (_showManagerOnly) ...[
+                const SizedBox(width: 4),
+                const Icon(Icons.close, size: 14, color: Colors.white),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

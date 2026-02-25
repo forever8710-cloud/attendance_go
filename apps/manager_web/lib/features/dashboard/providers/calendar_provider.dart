@@ -116,3 +116,13 @@ final calendarEventsProvider = FutureProvider<List<CalendarEvent>>((ref) {
   final end = DateTime(month.year, month.month + 2, 0);
   return ref.watch(calendarRepositoryProvider).getEvents(start, end);
 });
+
+/// 오늘 날짜의 이벤트만 반환 (헤더 알림 배너용)
+final todayEventsProvider = FutureProvider<List<CalendarEvent>>((ref) async {
+  final today = DateTime.now();
+  final events = await ref.watch(calendarRepositoryProvider).getEvents(
+    DateTime(today.year, today.month, today.day),
+    DateTime(today.year, today.month, today.day),
+  );
+  return events;
+});

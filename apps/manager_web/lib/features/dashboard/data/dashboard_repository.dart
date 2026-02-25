@@ -112,12 +112,12 @@ class DashboardRepository {
     final todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
     final tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
 
-    // 전체 활성 근로자 목록 (센터장은 본인 센터만)
+    // 전체 활성 근로자+센터장 목록 (센터장 필터용)
     var workersQuery = _supabase
         .from('workers')
-        .select('id, name, phone, site_id, part_id, worker_profiles(position, job)')
+        .select('id, name, phone, site_id, part_id, role, temperature_zone, worker_profiles(position, job, company, employee_id, title, join_date)')
         .eq('is_active', true)
-        .eq('role', 'worker');
+        .inFilter('role', ['worker', 'center_manager']);
 
     if (siteId.isNotEmpty) {
       workersQuery = workersQuery.eq('site_id', siteId);
@@ -214,6 +214,12 @@ class DashboardRepository {
         workHours: workHours,
         status: status,
         note: note,
+        company: profile?['company'] as String?,
+        employeeId: profile?['employee_id'] as String?,
+        role: profile?['title'] as String?,
+        workerRole: w['role'] as String?,
+        temperatureZone: w['temperature_zone'] as String?,
+        joinDate: profile?['join_date'] as String?,
       ));
     }
 
@@ -308,10 +314,11 @@ class DashboardRepository {
     return stats;
   }
 
-  /// 사이트 목록 조회
+  /// 사이트 목록 조회 (안성센터 제외)
   Future<List<Map<String, String>>> getSites() async {
     final sites = await _supabase.from('sites').select('id, name');
     return (sites as List)
+        .where((s) => s['name'] != '안성센터')
         .map((s) => {'id': s['id'] as String, 'name': s['name'] as String})
         .toList();
   }
@@ -369,6 +376,12 @@ class WorkerAttendanceRow {
     required this.workHours,
     required this.status,
     required this.note,
+    this.company,
+    this.employeeId,
+    this.role,
+    this.workerRole,
+    this.temperatureZone,
+    this.joinDate,
   });
   final String? id;
   final String name;
@@ -381,4 +394,10 @@ class WorkerAttendanceRow {
   final String workHours;
   final String status;
   final String note;
+  final String? company;
+  final String? employeeId;
+  final String? role;
+  final String? workerRole; // DB role: 'worker', 'center_manager', etc.
+  final String? temperatureZone;
+  final String? joinDate;
 }

@@ -14,7 +14,6 @@ class CompanyConstants {
   // ── 센터(사업장) ──
   static const centers = [
     SiteCenter(code: 'IC', name: '서이천'),
-    SiteCenter(code: 'AS', name: '안성'),
     SiteCenter(code: 'UW', name: '의왕'),
     SiteCenter(code: 'BP', name: '부평'),
   ];

@@ -207,13 +207,15 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // ── 상단: 인사기록카드 ──
           ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.45,
+            constraints: const BoxConstraints(
+              maxHeight: 450,
             ),
             child: SingleChildScrollView(
               child: Align(
@@ -590,9 +592,15 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
               ],
             ),
           ),
-
-          // ── 하단: 근로자 리스트 (헤더 고정) ──
-          Expanded(
+          ],
+          )),
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+              final tableHeight = remaining < 500 ? 500.0 : remaining;
+              return SliverToBoxAdapter(child:
+          SizedBox(
+            height: tableHeight,
             child: workers.when(
               data: (list) {
                 var baseList = list;
@@ -617,12 +625,12 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                 final columns = [
                   const TableColumnDef(label: 'No.', width: 45),
                   const TableColumnDef(label: '성명', width: 75),
+                  const TableColumnDef(label: '사업장', width: 75),
                   const TableColumnDef(label: '소속회사', width: 85),
                   const TableColumnDef(label: '사번', width: 85),
                   const TableColumnDef(label: '전화번호', width: 115),
                   const TableColumnDef(label: '직무', width: 95),
                   const TableColumnDef(label: '직책', width: 55),
-                  const TableColumnDef(label: '사업장', width: 75),
                   const TableColumnDef(label: '상/저온', width: 60),
                   const TableColumnDef(label: '재직상태', width: 80),
                   const TableColumnDef(label: '입사일', width: 95),
@@ -647,12 +655,12 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                 )
                               : Text(w.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
                         ),
-                      2 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
-                      3 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
-                      4 => Text(w.phone, style: const TextStyle(fontSize: 13)),
-                      5 => Text(w.job ?? w.part, style: const TextStyle(fontSize: 13)),
-                      6 => Text(w.role ?? '-', style: const TextStyle(fontSize: 13)),
-                      7 => Text(w.site, style: const TextStyle(fontSize: 13)),
+                      2 => Text(w.site.replaceAll('센터', ''), style: const TextStyle(fontSize: 13)),
+                      3 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
+                      4 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
+                      5 => Text(w.phone, style: const TextStyle(fontSize: 13)),
+                      6 => Text(w.job ?? w.part, style: const TextStyle(fontSize: 13)),
+                      7 => Text(w.role ?? '-', style: const TextStyle(fontSize: 13)),
                       8 => Text(w.temperatureZone ?? '상온', style: TextStyle(fontSize: 13, color: (w.temperatureZone == '저온') ? Colors.blue[700] : null)),
                       9 => _buildStatusChip(w.employmentStatus ?? (w.isActive ? '재직' : '퇴사')),
                       10 => Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-', style: const TextStyle(fontSize: 13)),
@@ -664,6 +672,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('오류: $e'),
             ),
+          ),
+              );
+            },
           ),
         ],
       ),
@@ -773,6 +784,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   }
 
   Widget _buildWorkerFilterDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+    String _strip(String v) => v.replaceAll('센터', '');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
@@ -782,7 +794,20 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          items: items.map((v) => DropdownMenuItem(value: v, child: Text('$label: $v', style: const TextStyle(fontSize: 14)))).toList(),
+          // 닫힌 상태: "라벨: 값" 표시 (센터 제거)
+          selectedItemBuilder: (context) => items
+              .map((v) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('$label: ${_strip(v)}', style: const TextStyle(fontSize: 14)),
+                  ))
+              .toList(),
+          // 열린 드롭다운: 값만 표시 (라벨·센터 없음)
+          items: items
+              .map((v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_strip(v), style: const TextStyle(fontSize: 14)),
+                  ))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
@@ -794,7 +819,6 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     const mockAddresses = [
       '경기도 이천시 호법면 매곡리 123',
       '경기도 이천시 부발읍 무촌리 456',
-      '경기도 안성시 공도읍 만정리 789',
       '경기도 의왕시 내손동 234-5',
       '경기도 의왕시 오전동 567-8',
       '인천시 부평구 부평동 890-1',

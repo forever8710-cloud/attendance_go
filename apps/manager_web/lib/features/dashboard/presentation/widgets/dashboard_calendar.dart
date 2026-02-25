@@ -6,7 +6,17 @@ import 'korean_holidays.dart';
 
 /// ECOUNT ERP 스타일 테이블 그리드 캘린더
 class DashboardCalendar extends ConsumerStatefulWidget {
-  const DashboardCalendar({super.key});
+  const DashboardCalendar({
+    super.key,
+    this.isCollapsed = false,
+    this.onToggle,
+  });
+
+  /// true이면 헤더만 표시 (접힌 상태)
+  final bool isCollapsed;
+
+  /// null이면 토글 버튼 숨김 (별도 페이지에서 사용 시)
+  final VoidCallback? onToggle;
 
   @override
   ConsumerState<DashboardCalendar> createState() => _DashboardCalendarState();
@@ -222,11 +232,40 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 헤더: << < 2026/02 > >> 오늘 일정관리 ──
+        // ── 헤더: ▶ 일정관리 (좌측) / 날짜네비 (우측) ──
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Row(
             children: [
+              // 토글 아이콘 (onToggle이 있을 때만 표시)
+              if (widget.onToggle != null)
+                InkWell(
+                  onTap: widget.onToggle,
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: Icon(
+                      widget.isCollapsed ? Icons.chevron_right : Icons.expand_more,
+                      size: 20,
+                      color: const Color(0xFF2B2D42),
+                    ),
+                  ),
+                ),
+              // 좌측: 일정관리 타이틀 (출퇴근 현황과 동일 스타일)
+              InkWell(
+                onTap: widget.onToggle,
+                borderRadius: BorderRadius.circular(4),
+                child: const Text(
+                  '▶ 일정관리',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2B2D42),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              // 우측: 날짜 네비게이션
               // << 이전 년도
               _NavButton(
                 icon: Icons.keyboard_double_arrow_left,
@@ -301,15 +340,6 @@ class _DashboardCalendarState extends ConsumerState<DashboardCalendar> {
                       color: cs.primary,
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                '일정관리',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],

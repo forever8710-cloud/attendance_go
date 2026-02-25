@@ -41,3 +41,17 @@ final weeklyTrendProvider = FutureProvider<List<DailyAttendanceStat>>((ref) {
 final sitesProvider = FutureProvider<List<Map<String, String>>>((ref) {
   return ref.watch(dashboardRepositoryProvider).getSites();
 });
+
+/// 현재 로그인 사용자의 센터 표시명
+/// system_admin / owner → "전체센터", center_manager → "서이천센터" 등
+final userSiteNameProvider = FutureProvider<String>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (canAccessAllSites(authState.role)) return '전체센터';
+  final siteId = authState.worker?.siteId ?? '';
+  if (siteId.isEmpty) return '';
+  final sites = await ref.watch(sitesProvider.future);
+  for (final s in sites) {
+    if (s['id'] == siteId) return '${s['name']}센터';
+  }
+  return '';
+});

@@ -13,12 +13,14 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/password_reset_dialog.dart';
 import 'features/dashboard/presentation/dashboard_screen.dart';
 import 'features/dashboard/providers/dashboard_provider.dart';
+import 'features/calendar/presentation/calendar_screen.dart';
 import 'features/workers/presentation/workers_screen.dart';
 import 'features/attendance_records/presentation/attendance_records_screen.dart';
 import 'features/payroll/presentation/payroll_screen.dart';
 import 'features/accounts/presentation/accounts_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
+import 'features/dashboard/providers/calendar_provider.dart' show todayEventsProvider, CalendarEvent;
 import 'core/widgets/side_nav_drawer.dart';
 import 'core/widgets/privacy_policy_dialog.dart';
 import 'features/worker_detail/presentation/worker_detail_screen.dart';
@@ -250,38 +252,44 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
           Expanded(
             child: Column(
               children: [
-                // Top header (사이드 네비 로고와 동일 높이)
+                // Top header
                 Container(
-                  height: 112,
-                  padding: const EdgeInsets.only(left: 28, right: 20),
+                  height: 56,
+                  padding: const EdgeInsets.only(left: 20, right: 12),
                   decoration: BoxDecoration(
                     color: cs.surface,
                     border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
                   ),
                   child: Row(
                     children: [
+                      // 센터명 라벨
+                      _buildCenterLabel(),
+                      const SizedBox(width: 12),
                       Text(
                         DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(DateTime.now()),
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cs.onSurface),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       // 가입 요청 알림 — 클릭 시 근로자 등록 탭으로 이동
                       _buildRegistrationAlert(context),
+                      const SizedBox(width: 6),
+                      // 오늘 일정 알림
+                      _buildTodayEventsAlert(context),
                       const Spacer(),
                       // TTS 음성 알림 토글
                       _buildTtsToggle(),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       // 역할 배지
                       _buildRoleBadge(role),
+                      const SizedBox(width: 10),
+                      Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6))),
                       const SizedBox(width: 12),
-                      Text('(주) 티케이홀딩스', style: TextStyle(fontSize: 16, color: cs.onSurface.withValues(alpha: 0.6))),
-                      const SizedBox(width: 16),
-                      Text(authState.worker?.name ?? '', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface)),
-                      const SizedBox(width: 10),
-                      CircleAvatar(radius: 18, backgroundColor: cs.primaryContainer, child: Icon(Icons.person, size: 22, color: cs.onPrimaryContainer)),
-                      const SizedBox(width: 10),
+                      Text(authState.worker?.name ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                      const SizedBox(width: 8),
+                      CircleAvatar(radius: 15, backgroundColor: cs.primaryContainer, child: Icon(Icons.person, size: 18, color: cs.onPrimaryContainer)),
+                      const SizedBox(width: 4),
                       IconButton(
-                        icon: Icon(Icons.logout, size: 24, color: cs.onSurface.withValues(alpha: 0.7)),
+                        icon: Icon(Icons.logout, size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
                         tooltip: '로그아웃',
                         onPressed: () => ref.read(authProvider.notifier).signOut(),
                       ),
@@ -376,6 +384,21 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     );
   }
 
+  Widget _buildTodayEventsAlert(BuildContext context) {
+    final todayAsync = ref.watch(todayEventsProvider);
+    final events = todayAsync.valueOrNull ?? [];
+    if (events.isEmpty) return const SizedBox.shrink();
+
+    return _TodayEventsBadge(
+      events: events,
+      onGoCalendar: () => setState(() {
+        _selectedIndex = 3;
+        _detailWorkerId = null;
+        _detailWorkerName = null;
+      }),
+    );
+  }
+
   Widget _buildTtsToggle() {
     final ttsEnabled = ref.watch(ttsEnabledProvider);
     final cs = Theme.of(context).colorScheme;
@@ -422,6 +445,31 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     );
   }
 
+  Widget _buildCenterLabel() {
+    final siteNameAsync = ref.watch(userSiteNameProvider);
+    final siteName = siteNameAsync.valueOrNull ?? '';
+    if (siteName.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B2D42),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.business, size: 13, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            siteName,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRoleBadge(AppRole role) {
     final (color, bgColor) = switch (role) {
       AppRole.systemAdmin => (Colors.white, Colors.red[700]!),
@@ -431,14 +479,14 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         roleDisplayName(role),
-        style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -465,10 +513,258 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
       0 => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
       1 => AttendanceRecordsScreen(role: role, onWorkerTap: _openWorkerDetail),
       2 => WorkersScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
-      3 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
-      4 => const SettingsScreen(),
-      5 => const AccountsScreen(),
+      3 => const CalendarScreen(),
+      4 => PayrollScreen(role: role, onWorkerTap: _openWorkerDetail),
+      5 => const SettingsScreen(),
+      6 => const AccountsScreen(),
       _ => DashboardScreen(role: role, userSiteId: userSiteId, onWorkerTap: _openWorkerDetail),
     };
+  }
+}
+
+// ── 오늘 일정 알림 배지 (반짝이는 애니메이션) ──
+class _TodayEventsBadge extends StatefulWidget {
+  const _TodayEventsBadge({
+    required this.events,
+    required this.onGoCalendar,
+  });
+  final List<CalendarEvent> events;
+  final VoidCallback onGoCalendar;
+
+  @override
+  State<_TodayEventsBadge> createState() => _TodayEventsBadgeState();
+}
+
+class _TodayEventsBadgeState extends State<_TodayEventsBadge>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _showPopup(BuildContext context) {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final offset = renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
+    final size = renderBox?.size ?? Size.zero;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (_) => _TodayEventsPopup(
+        events: widget.events,
+        anchorOffset: offset,
+        anchorSize: size,
+        onGoCalendar: widget.onGoCalendar,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.events.length;
+
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => _showPopup(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.withValues(alpha: 0.08 + 0.07 * _glowAnimation.value),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.deepPurple.withValues(alpha: 0.3 + 0.4 * _glowAnimation.value),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.deepPurple.withValues(alpha: 0.15 * _glowAnimation.value),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.event_note_rounded,
+                    size: 16,
+                    color: Colors.deepPurple.withValues(alpha: 0.6 + 0.4 * _glowAnimation.value),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '오늘 일정 $count건',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.deepPurple.withValues(alpha: 0.7 + 0.3 * _glowAnimation.value),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── 오늘 일정 팝업 ──
+class _TodayEventsPopup extends StatelessWidget {
+  const _TodayEventsPopup({
+    required this.events,
+    required this.anchorOffset,
+    required this.anchorSize,
+    required this.onGoCalendar,
+  });
+  final List<CalendarEvent> events;
+  final Offset anchorOffset;
+  final Size anchorSize;
+  final VoidCallback onGoCalendar;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    const popupWidth = 320.0;
+
+    // 팝업 위치: 버튼 아래, 화면 오른쪽을 벗어나지 않도록 조정
+    double left = anchorOffset.dx;
+    if (left + popupWidth > screenWidth - 16) {
+      left = screenWidth - popupWidth - 16;
+    }
+    final top = anchorOffset.dy + anchorSize.height + 6;
+
+    return Stack(
+      children: [
+        // 배경 클릭 시 닫기
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            behavior: HitTestBehavior.opaque,
+            child: const SizedBox.expand(),
+          ),
+        ),
+        // 팝업 카드
+        Positioned(
+          left: left,
+          top: top,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: popupWidth,
+              constraints: const BoxConstraints(maxHeight: 400),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 헤더
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.withValues(alpha: 0.85),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 15, color: Colors.white),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            '오늘의 일정',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            onGoCalendar();
+                          },
+                          child: const Text(
+                            '일정관리 →',
+                            style: TextStyle(fontSize: 12, color: Colors.white70, decoration: TextDecoration.underline, decorationColor: Colors.white70),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 이벤트 목록
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: events.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final e = events[i];
+                        return Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: e.displayColor,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                e.category.isNotEmpty ? e.category : '일정',
+                                style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                e.title,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: cs.onSurface),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (e.location != null && e.location!.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.location_on_outlined, size: 13, color: cs.onSurface.withValues(alpha: 0.4)),
+                              Text(
+                                e.location!,
+                                style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

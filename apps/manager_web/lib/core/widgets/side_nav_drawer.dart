@@ -15,14 +15,15 @@ class _MenuDestination {
   final bool isSubMenu;
 }
 
-// 메뉴 순서: 홈, 근태현황, 근로자등록, 급여관리, 설정, 계정관리
+// 메뉴 순서: 홈, 근태현황, 근로자등록, 일정관리, 급여관리, 설정, 계정관리
 const _allDestinations = [
   _MenuDestination(index: 0, icon: Icons.access_time, label: '출퇴근 현황'),
   _MenuDestination(index: 1, icon: Icons.list_alt, label: '근태 현황'),
   _MenuDestination(index: 2, icon: Icons.person_add, label: '근로자 등록'),
-  _MenuDestination(index: 3, icon: Icons.payments, label: '급여 관리 (준비중)'),
-  _MenuDestination(index: 4, icon: Icons.settings, label: '설정'),
-  _MenuDestination(index: 5, icon: Icons.admin_panel_settings, label: '관리자 계정관리'),
+  _MenuDestination(index: 3, icon: Icons.calendar_month, label: '일정관리'),
+  _MenuDestination(index: 4, icon: Icons.payments, label: '급여 관리 (준비중)'),
+  _MenuDestination(index: 5, icon: Icons.settings, label: '설정'),
+  _MenuDestination(index: 6, icon: Icons.admin_panel_settings, label: '관리자 계정관리'),
 ];
 
 class SideNavDrawer extends StatelessWidget {
@@ -54,18 +55,18 @@ class SideNavDrawer extends StatelessWidget {
       color: cs.surface,
       child: Column(
         children: [
-          // 헤더: Workflow 로고 (112px 높이)
+          // 헤더: Workflow 로고 (56px 높이)
           Container(
-            height: 112,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
             ),
             child: Row(
               children: [
-                const THBrandIcon(size: 44),
-                const SizedBox(width: 10),
-                Text('Workflow', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                const THBrandIcon(size: 30),
+                const SizedBox(width: 8),
+                Text('Workflow', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface)),
               ],
             ),
           ),
