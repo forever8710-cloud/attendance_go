@@ -25,7 +25,9 @@ class WorkerDetailScreen extends ConsumerWidget {
     final attendanceAsync = ref.watch(workerMonthlyAttendanceProvider(workerId));
     final summaryAsync = ref.watch(workerMonthlySummaryProvider(workerId));
 
-    return Column(
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── 상단: 뒤로가기 + 타이틀 ──
@@ -47,9 +49,8 @@ class WorkerDetailScreen extends ConsumerWidget {
           ),
         ),
 
-        // ── 스크롤 영역: 인사기록카드 + 근태 테이블 ──
-        Expanded(
-          child: Padding(
+        // ── 인사기록카드 + 근태 테이블 ──
+        Padding(
             padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +156,7 @@ class WorkerDetailScreen extends ConsumerWidget {
                                         ],
                                       ),
                                       const SizedBox(height: 10),
-                                      // 2행: 직위, 직무, 사업장, 재직상태, 입사일
+                                      // 2행: 직위, 직무, 사업장, 계약형태, 재직상태, 입사일
                                       Row(
                                         children: [
                                           Expanded(child: _buildInfoField('직위', worker.position ?? '-')),
@@ -164,7 +165,9 @@ class WorkerDetailScreen extends ConsumerWidget {
                                           const SizedBox(width: 12),
                                           Expanded(child: _buildInfoField('사업장', worker.site)),
                                           const SizedBox(width: 12),
-                                          Expanded(child: _buildInfoField('재직상태', worker.employmentStatus ?? (worker.isActive ? '재직' : '퇴사'))),
+                                          Expanded(child: _buildInfoField('계약형태', worker.employmentStatus ?? '-')),
+                                          const SizedBox(width: 12),
+                                          Expanded(child: _buildInfoField('재직상태', worker.isActive ? '재직' : '퇴사')),
                                           const SizedBox(width: 12),
                                           Expanded(child: _buildInfoField('입사일', worker.joinDate != null ? DateFormat('yyyy-MM-dd').format(worker.joinDate!) : '-')),
                                         ],
@@ -216,10 +219,21 @@ class WorkerDetailScreen extends ConsumerWidget {
                   error: (e, _) => Text('오류: $e'),
                 ),
                 const SizedBox(height: 16),
-
-                // ── 근태 테이블 ──
-                Expanded(
-                  child: attendanceAsync.when(
+              ],
+            ),
+          ),
+      ],
+    )),
+    SliverLayoutBuilder(
+      builder: (context, constraints) {
+        final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+        final tableHeight = remaining < 500 ? 500.0 : remaining;
+        return SliverToBoxAdapter(child:
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
+          child: SizedBox(
+            height: tableHeight,
+            child: attendanceAsync.when(
                     data: (rows) {
                       final columns = [
                         const TableColumnDef(label: '날짜', width: 125),
@@ -271,11 +285,11 @@ class WorkerDetailScreen extends ConsumerWidget {
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(child: Text('오류: $e')),
-                  ),
-                ),
-              ],
             ),
           ),
+        ),
+            );
+          },
         ),
       ],
     );

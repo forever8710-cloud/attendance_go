@@ -10,6 +10,9 @@ class RegistrationRequest {
     required this.company,
     this.address,
     this.detailAddress,
+    this.ssn,
+    this.bank,
+    this.accountNumber,
     required this.status,
     this.rejectReason,
     this.reviewedBy,
@@ -24,6 +27,9 @@ class RegistrationRequest {
   final String company;
   final String? address;
   final String? detailAddress;
+  final String? ssn;
+  final String? bank;
+  final String? accountNumber;
   final String status;
   final String? rejectReason;
   final String? reviewedBy;
@@ -39,6 +45,9 @@ class RegistrationRequest {
       company: json['company'] as String,
       address: json['address'] as String?,
       detailAddress: json['detail_address'] as String?,
+      ssn: json['ssn'] as String?,
+      bank: json['bank'] as String?,
+      accountNumber: json['account_number'] as String?,
       status: json['status'] as String,
       rejectReason: json['reject_reason'] as String?,
       reviewedBy: json['reviewed_by'] as String?,

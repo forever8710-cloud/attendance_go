@@ -61,10 +61,9 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
     final attendances = ref.watch(attendanceRecordsProvider);
     final hasEditPermission = canEditAttendance(widget.role);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── 상단 고정 영역 ──
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child:
         Padding(
           padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
           child: Column(
@@ -160,9 +159,14 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
             ],
           ),
         ),
-
-        // ── 하단: 테이블 (헤더 고정) ──
-        Expanded(
+        ),
+        SliverLayoutBuilder(
+          builder: (context, constraints) {
+            final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+            final tableHeight = remaining < 500 ? 500.0 : remaining;
+            return SliverToBoxAdapter(child:
+        SizedBox(
+          height: tableHeight,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
             child: attendances.when(
@@ -251,6 +255,9 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
               error: (e, _) => Text('오류: $e'),
             ),
           ),
+        ),
+            );
+          },
         ),
       ],
     );

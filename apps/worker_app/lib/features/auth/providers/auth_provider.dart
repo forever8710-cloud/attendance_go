@@ -93,7 +93,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         if (hasPending) {
           state = state.copyWith(status: AuthStatus.pendingApproval);
         } else {
-          state = state.copyWith(status: AuthStatus.needsPhoneVerification);
+          // 신규 사용자: 동의 → 등록폼 → 대기
+          state = state.copyWith(status: AuthStatus.needsConsent);
         }
       } else {
         state = state.copyWith(status: AuthStatus.unauthenticated);
@@ -179,6 +180,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String company,
     String? address,
     String? detailAddress,
+    String? ssn,
+    String? bank,
+    String? accountNumber,
   }) async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
@@ -188,11 +192,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         company: company,
         address: address,
         detailAddress: detailAddress,
+        ssn: ssn,
+        bank: bank,
+        accountNumber: accountNumber,
       );
       state = state.copyWith(status: AuthStatus.pendingApproval);
     } catch (e) {
       state = state.copyWith(
-        status: AuthStatus.needsPhoneVerification,
+        status: AuthStatus.needsProfileCompletion,
         errorMessage: e.toString().replaceAll('Exception: ', ''),
       );
     }
@@ -213,8 +220,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         if (hasPending) {
           state = state.copyWith(status: AuthStatus.pendingApproval);
         } else {
-          // 거절됨 → 다시 전화번호 확인 화면으로
-          state = state.copyWith(status: AuthStatus.needsPhoneVerification);
+          // 거절됨 → 다시 동의 → 등록폼으로
+          state = state.copyWith(status: AuthStatus.needsConsent);
         }
       }
     } catch (_) {
@@ -254,9 +261,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// 개인정보 동의 완료 → 권한 설정으로 이동
+  /// 개인정보 동의 완료
   void acceptConsent({required bool locationConsent}) {
-    state = state.copyWith(status: AuthStatus.needsPermission);
+    if (state.worker != null) {
+      // 기존 근로자 (SMS OTP 매칭) → 권한 설정으로 이동
+      state = state.copyWith(status: AuthStatus.needsPermission);
+    } else {
+      // 신규 사용자 (OAuth, worker 없음) → 등록폼으로 이동
+      state = state.copyWith(status: AuthStatus.needsProfileCompletion);
+    }
   }
 
   /// 앱 권한 설정 완료 → 프로필 입력으로 이동
@@ -279,6 +292,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: '데모 로그인 실패: ${e.toString().replaceAll('Exception: ', '')}',
+      );
+    }
+  }
+
+  /// 이메일/비밀번호 테스트 로그인 (개발·테스트 전용)
+  Future<void> testLogin(String email, String password) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _repository.signInWithEmail(email, password);
+      await restoreSession();
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: '로그인 실패: ${e.toString().replaceAll('AuthException: ', '').replaceAll('Exception: ', '')}',
       );
     }
   }

@@ -34,10 +34,9 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
   Widget build(BuildContext context) {
     final yearMonth = ref.watch(selectedYearMonthProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── 상단 고정 영역 ──
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child:
         Padding(
           padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
           child: Column(
@@ -115,9 +114,14 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
             ],
           ),
         ),
-
-        // ── 하단: 테이블 (헤더 고정) ──
-        Expanded(
+        ),
+        SliverLayoutBuilder(
+          builder: (context, constraints) {
+            final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+            final tableHeight = remaining < 500 ? 500.0 : remaining;
+            return SliverToBoxAdapter(child:
+        SizedBox(
+          height: tableHeight,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
             child: _payrollData == null && !_loading
@@ -135,6 +139,9 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : _buildPayrollTable(),
           ),
+        ),
+            );
+          },
         ),
       ],
     );
@@ -154,7 +161,8 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
   Future<void> _generatePayroll(String yearMonth) async {
     setState(() => _loading = true);
     try {
-      final siteId = ref.read(authProvider).worker?.siteId ?? '';
+      final auth = ref.read(authProvider);
+      final siteId = canAccessAllSites(auth.role) ? '' : (auth.worker?.siteId ?? '');
       final repo = ref.read(payrollRepositoryProvider);
       final results = await Future.wait([
         repo.calculatePayroll(siteId, yearMonth),

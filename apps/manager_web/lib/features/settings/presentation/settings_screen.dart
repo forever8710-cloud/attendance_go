@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException, Supabase;
+import '../../../core/utils/permissions.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../providers/announcement_provider.dart';
 import '../providers/settings_provider.dart';
@@ -19,7 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -60,6 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                         Tab(icon: Icon(Icons.display_settings, size: 20), text: '화면 설정'),
                         Tab(icon: Icon(Icons.notifications, size: 20), text: '알림 설정'),
                         Tab(icon: Icon(Icons.campaign, size: 20), text: '공지사항'),
+                        Tab(icon: Icon(Icons.lock, size: 20), text: '계정'),
                       ],
                     ),
                     SizedBox(
@@ -70,6 +74,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                           _buildDisplayTab(),
                           _buildNotificationTab(),
                           _buildAnnouncementTab(),
+                          _buildAccountTab(),
                         ],
                       ),
                     ),
@@ -440,6 +445,121 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
     }
   }
 
+  // ─── 탭 4: 계정 설정 ───
+  Widget _buildAccountTab() {
+    final authState = ref.watch(authProvider);
+    final userEmail = Supabase.instance.client.auth.currentUser?.email ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('계정 정보', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          _buildSettingTile(
+            icon: Icons.person,
+            color: const Color(0xFF8D99AE),
+            title: authState.worker?.name ?? '-',
+            subtitle: userEmail,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2B2D42),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _roleLabel(authState.role),
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const Divider(height: 32),
+
+          const Text('비밀번호 변경', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('현재 비밀번호를 입력한 후 새 비밀번호를 설정할 수 있습니다.', style: TextStyle(fontSize: 13, color: Colors.grey)),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: 200,
+            child: FilledButton.icon(
+              onPressed: () => _showPasswordChangeDialog(userEmail),
+              icon: const Icon(Icons.lock_reset, size: 18),
+              label: const Text('비밀번호 변경'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _roleLabel(AppRole role) {
+    return switch (role) {
+      AppRole.systemAdmin => '시스템 관리자',
+      AppRole.owner => '대표이사',
+      AppRole.centerManager => '센터장',
+      AppRole.worker => '근로자',
+    };
+  }
+
+  Future<void> _showPasswordChangeDialog(String email) async {
+    final currentPwController = TextEditingController();
+    final newPwController = TextEditingController();
+    final confirmPwController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            String? error;
+            bool isSaving = false;
+
+            return _PasswordChangeDialogContent(
+              currentPwController: currentPwController,
+              newPwController: newPwController,
+              confirmPwController: confirmPwController,
+              onSubmit: () async {
+                final currentPw = currentPwController.text;
+                final newPw = newPwController.text;
+                final confirmPw = confirmPwController.text;
+
+                if (currentPw.isEmpty || newPw.isEmpty || confirmPw.isEmpty) {
+                  return '모든 필드를 입력하세요.';
+                }
+                if (newPw.length < 6) {
+                  return '새 비밀번호는 6자 이상이어야 합니다.';
+                }
+                if (newPw != confirmPw) {
+                  return '새 비밀번호가 일치하지 않습니다.';
+                }
+                if (currentPw == newPw) {
+                  return '현재 비밀번호와 다른 비밀번호를 입력하세요.';
+                }
+
+                try {
+                  await ref.read(authProvider.notifier).verifyAndChangePassword(currentPw, newPw);
+                  return null; // success
+                } on AuthException catch (e) {
+                  if (e.message.contains('Invalid login credentials')) {
+                    return '현재 비밀번호가 올바르지 않습니다.';
+                  }
+                  return '변경 실패: ${e.message}';
+                } catch (e) {
+                  return '변경 실패: $e';
+                }
+              },
+            );
+          },
+        );
+      },
+    );
+
+    currentPwController.dispose();
+    newPwController.dispose();
+    confirmPwController.dispose();
+  }
+
   Future<void> _handleAnnouncementAction(
     String action,
     Map<String, dynamic> announcement,
@@ -488,5 +608,148 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
         );
       }
     }
+  }
+}
+
+/// 비밀번호 변경 다이얼로그 (자체 상태 관리)
+class _PasswordChangeDialogContent extends StatefulWidget {
+  const _PasswordChangeDialogContent({
+    required this.currentPwController,
+    required this.newPwController,
+    required this.confirmPwController,
+    required this.onSubmit,
+  });
+
+  final TextEditingController currentPwController;
+  final TextEditingController newPwController;
+  final TextEditingController confirmPwController;
+  final Future<String?> Function() onSubmit; // null = success, String = error
+
+  @override
+  State<_PasswordChangeDialogContent> createState() => _PasswordChangeDialogContentState();
+}
+
+class _PasswordChangeDialogContentState extends State<_PasswordChangeDialogContent> {
+  bool _isSaving = false;
+  String? _error;
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
+  Future<void> _handleSubmit() async {
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+
+    final result = await widget.onSubmit();
+
+    if (!mounted) return;
+
+    if (result == null) {
+      // 성공
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('비밀번호가 성공적으로 변경되었습니다.')),
+      );
+    } else {
+      setState(() {
+        _isSaving = false;
+        _error = result;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.lock_reset, size: 22),
+          SizedBox(width: 8),
+          Text('비밀번호 변경', style: TextStyle(fontSize: 18)),
+        ],
+      ),
+      content: SizedBox(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: widget.currentPwController,
+              obscureText: _obscureCurrent,
+              decoration: InputDecoration(
+                labelText: '현재 비밀번호',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureCurrent ? Icons.visibility_off : Icons.visibility, size: 20),
+                  onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: widget.newPwController,
+              obscureText: _obscureNew,
+              decoration: InputDecoration(
+                labelText: '새 비밀번호',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock_outline),
+                helperText: '6자 이상',
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureNew ? Icons.visibility_off : Icons.visibility, size: 20),
+                  onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: widget.confirmPwController,
+              obscureText: _obscureConfirm,
+              decoration: InputDecoration(
+                labelText: '새 비밀번호 확인',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility, size: 20),
+                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
+              ),
+              onSubmitted: (_) => _handleSubmit(),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: _isSaving ? null : _handleSubmit,
+          child: _isSaving
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Text('변경'),
+        ),
+      ],
+    );
   }
 }

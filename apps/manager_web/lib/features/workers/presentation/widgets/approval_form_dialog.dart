@@ -94,6 +94,15 @@ class _ApprovalFormDialogState extends ConsumerState<ApprovalFormDialog> {
                     if (widget.request.address != null)
                       _infoRow('주소',
                           '${widget.request.address ?? ''} ${widget.request.detailAddress ?? ''}'),
+                    if (widget.request.ssn != null &&
+                        widget.request.ssn!.isNotEmpty)
+                      _infoRow('주민번호', _maskSsn(widget.request.ssn!)),
+                    if (widget.request.bank != null &&
+                        widget.request.bank!.isNotEmpty)
+                      _infoRow('은행', widget.request.bank!),
+                    if (widget.request.accountNumber != null &&
+                        widget.request.accountNumber!.isNotEmpty)
+                      _infoRow('계좌번호', widget.request.accountNumber!),
 
                     const SizedBox(height: 24),
                     const Divider(),
@@ -313,6 +322,18 @@ class _ApprovalFormDialogState extends ConsumerState<ApprovalFormDialog> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _maskSsn(String ssn) {
+    // 123456-7****** 형식으로 마스킹
+    if (ssn.contains('-') && ssn.length >= 8) {
+      final parts = ssn.split('-');
+      return '${parts[0]}-${parts[1].substring(0, 1)}******';
+    }
+    if (ssn.length >= 7) {
+      return '${ssn.substring(0, 6)}-${ssn.substring(6, 7)}******';
+    }
+    return ssn;
   }
 
   Widget _infoRow(String label, String value) {

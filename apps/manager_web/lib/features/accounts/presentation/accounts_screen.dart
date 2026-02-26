@@ -373,21 +373,20 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final accounts = ref.watch(accountsProvider);
     final cs = Theme.of(context).colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── 상단 영역: 계정 정보 카드 + 검색 (스크롤 가능) ──
-        Flexible(
-          flex: 0,
-          child: SingleChildScrollView(
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child:
+        Padding(
             padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: Column(
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
               // ── 상단: 계정 정보 카드 ──
-          Card(
+          Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
               side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
@@ -659,6 +658,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               ),
             ),
           ),
+            ),
+          ),
 
               // ── 중간: 구분선 ──
               Padding(
@@ -690,11 +691,14 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               ],
               ),
             ),
-          ),
         ),
-
-        // ── 하단: 계정 리스트 (StickyHeaderTable) ──
-        Expanded(
+        SliverLayoutBuilder(
+          builder: (context, constraints) {
+            final remaining = constraints.viewportMainAxisExtent - constraints.precedingScrollExtent;
+            final tableHeight = remaining < 500 ? 500.0 : remaining;
+            return SliverToBoxAdapter(child:
+        SizedBox(
+          height: tableHeight,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 12),
             child: accounts.when(
@@ -742,6 +746,9 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               error: (e, _) => Text('오류: $e'),
             ),
           ),
+        ),
+            );
+          },
         ),
       ],
     );

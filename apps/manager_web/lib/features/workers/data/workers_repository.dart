@@ -330,6 +330,21 @@ class WorkersRepository {
     await _supabase.from('workers').update({'is_active': false}).eq('id', id);
   }
 
+  /// 근로자 완전 삭제 (system_admin 전용)
+  /// worker_profiles → workers → registration_requests 순서로 삭제
+  Future<void> deleteWorkerPermanently(String id) async {
+    // 1. worker_profiles 삭제
+    await _supabase.from('worker_profiles').delete().eq('worker_id', id);
+    // 2. attendances 삭제
+    await _supabase.from('attendances').delete().eq('worker_id', id);
+    // 3. payrolls 삭제
+    await _supabase.from('payrolls').delete().eq('worker_id', id);
+    // 4. registration_requests 삭제
+    await _supabase.from('registration_requests').delete().eq('auth_user_id', id);
+    // 5. workers 삭제
+    await _supabase.from('workers').delete().eq('id', id);
+  }
+
   /// 특정 회사+센터 조합의 다음 순번을 반환
   Future<int> getNextSequenceNumber(String companyCode, String centerName) async {
     final centerCode = CompanyConstants.centerCode(centerName);

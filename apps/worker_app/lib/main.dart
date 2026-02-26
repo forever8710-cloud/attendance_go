@@ -12,6 +12,7 @@ import 'features/auth/presentation/consent_screen.dart';
 import 'features/auth/presentation/permission_screen.dart';
 import 'features/auth/presentation/profile_completion_screen.dart';
 import 'features/auth/presentation/pending_approval_screen.dart';
+import 'features/auth/presentation/registration_form_screen.dart';
 
 void main() async {
   try {
@@ -107,6 +108,10 @@ class WorkerApp extends ConsumerWidget {
       case AuthStatus.needsPermission:
         return const PermissionScreen();
       case AuthStatus.needsProfileCompletion:
+        // 신규 사용자 (worker 없음) → 등록폼, 기존 근로자 → 프로필 입력
+        if (authState.worker == null) {
+          return const RegistrationFormScreen();
+        }
         return const ProfileCompletionScreen();
       default:
         return const LoginScreen();

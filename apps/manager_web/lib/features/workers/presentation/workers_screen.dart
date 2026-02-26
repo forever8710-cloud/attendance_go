@@ -29,9 +29,11 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
   String _siteFilter = '전체';
   String _jobFilter = '전체';
   String _statusFilter = '전체';
+  String _contractFilter = '전체';
   String _tempZoneFilter = '전체';
   WorkerRow? _selectedWorker;
   bool _isNewWorker = false;
+  final Set<String> _checkedWorkerIds = {};
 
   // Form controllers
   final _employeeIdController = TextEditingController();
@@ -148,7 +150,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
       phone: _phoneController.text,
       part: _job ?? _selectedWorker?.part ?? '',
       site: _site ?? _selectedWorker?.site ?? '',
-      isActive: _employmentStatus != '퇴사',
+      isActive: _selectedWorker?.isActive ?? true,
       ssn: _ssnController.text.isEmpty ? null : _ssnController.text,
       gender: _gender,
       address: _addressController.text.isEmpty ? null : _addressController.text,
@@ -413,10 +415,10 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                               ),
                               const SizedBox(height: 12),
 
-                              // 4행: 재직상태, 입사일, 퇴사일
+                              // 4행: 계약형태, 입사일, 퇴사일
                               Row(
                                 children: [
-                                  Expanded(child: _buildDropdown('재직상태', ['정규직', '계약직', '일용직', '파견', '육아휴직'], _employmentStatus, (v) => setState(() => _employmentStatus = v))),
+                                  Expanded(child: _buildDropdown('계약형태', ['정규직', '계약직', '일용직', '파견'], _employmentStatus, (v) => setState(() => _employmentStatus = v))),
                                   const SizedBox(width: 12),
                                   Expanded(child: _buildDatePicker('입사일', _joinDate, (d) => setState(() => _joinDate = d))),
                                   const SizedBox(width: 12),
@@ -484,6 +486,18 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           if (_selectedWorker != null) ...[
+                            if (widget.role == AppRole.systemAdmin)
+                              OutlinedButton.icon(
+                                onPressed: () => _showPermanentDeleteDialog(context, _selectedWorker!),
+                                icon: const Icon(Icons.delete_forever, size: 16),
+                                label: const Text('완전 삭제', style: TextStyle(fontSize: 13)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red[900],
+                                  side: BorderSide(color: Colors.red[900]!),
+                                ),
+                              ),
+                            if (widget.role == AppRole.systemAdmin)
+                              const SizedBox(width: 8),
                             OutlinedButton.icon(
                               onPressed: () => _showDeleteDialog(context, _selectedWorker!),
                               icon: const Icon(Icons.person_off, size: 16),
@@ -558,7 +572,9 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                             (v) => setState(() => _jobFilter = v!)),
                         _buildWorkerFilterDropdown('상/저온', _tempZoneFilter, ['전체', '상온', '저온'],
                             (v) => setState(() => _tempZoneFilter = v!)),
-                        _buildWorkerFilterDropdown('재직상태', _statusFilter, ['전체', '정규직', '계약직', '일용직', '파견', '육아휴직'],
+                        _buildWorkerFilterDropdown('계약형태', _contractFilter, ['전체', '정규직', '계약직', '일용직', '파견'],
+                            (v) => setState(() => _contractFilter = v!)),
+                        _buildWorkerFilterDropdown('재직상태', _statusFilter, ['전체', '재직', '퇴사'],
                             (v) => setState(() => _statusFilter = v!)),
                         SizedBox(
                           width: 200,
@@ -580,6 +596,7 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                             _siteFilter = '전체';
                             _jobFilter = '전체';
                             _tempZoneFilter = '전체';
+                            _contractFilter = '전체';
                             _statusFilter = '전체';
                             _searchQuery = '';
                           }),
@@ -614,29 +631,92 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                   if (_siteFilter != '전체' && w.site != _siteFilter) return false;
                   if (_jobFilter != '전체' && (w.job ?? w.part) != _jobFilter) return false;
                   if (_tempZoneFilter != '전체' && (w.temperatureZone ?? '상온') != _tempZoneFilter) return false;
+                  if (_contractFilter != '전체') {
+                    if ((w.employmentStatus ?? '') != _contractFilter) return false;
+                  }
                   if (_statusFilter != '전체') {
-                    final status = w.employmentStatus ?? (w.isActive ? '재직' : '퇴사');
+                    final status = w.isActive ? '재직' : '퇴사';
                     if (status != _statusFilter) return false;
                   }
                   if (_searchQuery.isNotEmpty && !w.name.contains(_searchQuery) && !w.phone.contains(_searchQuery)) return false;
                   return true;
                 }).toList();
 
+                final allChecked = filtered.isNotEmpty && filtered.every((w) => _checkedWorkerIds.contains(w.id));
+                final someChecked = filtered.any((w) => _checkedWorkerIds.contains(w.id));
+
                 final columns = [
-                  const TableColumnDef(label: 'No.', width: 45),
+                  TableColumnDef(
+                    label: '',
+                    width: 32,
+                    labelWidget: SizedBox(
+                      width: 20, height: 20,
+                      child: Checkbox(
+                        value: allChecked ? true : (someChecked ? null : false),
+                        tristate: true,
+                        onChanged: (v) {
+                          setState(() {
+                            if (allChecked) {
+                              _checkedWorkerIds.removeAll(filtered.map((w) => w.id));
+                            } else {
+                              _checkedWorkerIds.addAll(filtered.map((w) => w.id));
+                            }
+                          });
+                        },
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const TableColumnDef(label: 'No.', width: 40),
                   const TableColumnDef(label: '성명', width: 75),
                   const TableColumnDef(label: '사업장', width: 75),
                   const TableColumnDef(label: '소속회사', width: 85),
                   const TableColumnDef(label: '사번', width: 85),
                   const TableColumnDef(label: '전화번호', width: 115),
-                  const TableColumnDef(label: '직무', width: 95),
+                  const TableColumnDef(label: '직무', width: 90),
                   const TableColumnDef(label: '직책', width: 55),
+                  const TableColumnDef(label: '직위', width: 55),
                   const TableColumnDef(label: '상/저온', width: 60),
-                  const TableColumnDef(label: '재직상태', width: 80),
+                  const TableColumnDef(label: '계약형태', width: 75),
+                  const TableColumnDef(label: '재직상태', width: 70),
                   const TableColumnDef(label: '입사일', width: 95),
                 ];
 
-                return StickyHeaderTable.wrapWithCard(
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_checkedWorkerIds.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Text('${_checkedWorkerIds.length}명 선택됨',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF8D99AE))),
+                            const SizedBox(width: 12),
+                            FilledButton.icon(
+                              onPressed: () => _showBulkEditDialog(context, filtered),
+                              icon: const Icon(Icons.edit, size: 14),
+                              label: const Text('일괄 수정', style: TextStyle(fontSize: 12)),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: () => setState(() => _checkedWorkerIds.clear()),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              child: const Text('선택 해제', style: TextStyle(fontSize: 12)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Expanded(
+                      child: StickyHeaderTable.wrapWithCard(
                   columns: columns,
                   rowCount: filtered.length,
                   isRowSelected: (i) => _selectedWorker?.id == filtered[i].id,
@@ -645,8 +725,25 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                     final w = filtered[rowIndex];
                     final isSelected = _selectedWorker?.id == w.id;
                     return switch (colIndex) {
-                      0 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
-                      1 => Tooltip(
+                      0 => SizedBox(
+                        width: 20, height: 20,
+                        child: Checkbox(
+                          value: _checkedWorkerIds.contains(w.id),
+                          onChanged: (v) {
+                            setState(() {
+                              if (v == true) {
+                                _checkedWorkerIds.add(w.id);
+                              } else {
+                                _checkedWorkerIds.remove(w.id);
+                              }
+                            });
+                          },
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      1 => Text('${rowIndex + 1}', style: const TextStyle(fontSize: 13)),
+                      2 => Tooltip(
                           message: w.name,
                           child: widget.onWorkerTap != null
                               ? GestureDetector(
@@ -655,18 +752,23 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
                                 )
                               : Text(w.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF8D99AE) : null)),
                         ),
-                      2 => Text(w.site.replaceAll('센터', ''), style: const TextStyle(fontSize: 13)),
-                      3 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
-                      4 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
-                      5 => Text(w.phone, style: const TextStyle(fontSize: 13)),
-                      6 => Text(w.job ?? w.part, style: const TextStyle(fontSize: 13)),
-                      7 => Text(w.role ?? '-', style: const TextStyle(fontSize: 13)),
-                      8 => Text(w.temperatureZone ?? '상온', style: TextStyle(fontSize: 13, color: (w.temperatureZone == '저온') ? Colors.blue[700] : null)),
-                      9 => _buildStatusChip(w.employmentStatus ?? (w.isActive ? '재직' : '퇴사')),
-                      10 => Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-', style: const TextStyle(fontSize: 13)),
+                      3 => Text(w.site.replaceAll('센터', ''), style: const TextStyle(fontSize: 13)),
+                      4 => Text(w.company != null ? CompanyConstants.companyName(w.company!) : '-', style: const TextStyle(fontSize: 13)),
+                      5 => Text(w.employeeId ?? '-', style: const TextStyle(fontSize: 13)),
+                      6 => Text(_formatPhone(w.phone), style: const TextStyle(fontSize: 13)),
+                      7 => Text(w.job ?? w.part, style: const TextStyle(fontSize: 13)),
+                      8 => Text(w.role ?? '-', style: const TextStyle(fontSize: 13)),
+                      9 => Text(w.position ?? '-', style: const TextStyle(fontSize: 13)),
+                      10 => Text(w.temperatureZone ?? '상온', style: TextStyle(fontSize: 13, color: (w.temperatureZone == '저온') ? Colors.blue[700] : null)),
+                      11 => _buildContractChip(w.employmentStatus),
+                      12 => _buildStatusChip(w.isActive ? '재직' : '퇴사'),
+                      13 => Text(w.joinDate != null ? DateFormat('yyyy-MM-dd').format(w.joinDate!) : '-', style: const TextStyle(fontSize: 13)),
                       _ => const SizedBox(),
                     };
                   },
+                ),
+                    ),
+                  ],
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -728,6 +830,26 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     );
   }
 
+  /// 일괄수정용 드롭다운 — "선택없음" 옵션 포함
+  Widget _buildBulkDropdown(String label, List<String> items, String? value, ValueChanged<String?> onChanged) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 12),
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        isDense: true,
+      ),
+      items: [
+        const DropdownMenuItem<String>(value: null, child: Text('선택없음', style: TextStyle(fontSize: 13, color: Colors.grey))),
+        ...items.map((e) => DropdownMenuItem(value: e, child: Text(e))),
+      ],
+      onChanged: onChanged,
+    );
+  }
+
   Widget _buildDatePicker(String label, DateTime? value, ValueChanged<DateTime?> onChanged) {
     return InkWell(
       onTap: () async {
@@ -759,16 +881,33 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    final color = switch (status) {
+  Widget _buildContractChip(String? contractType) {
+    if (contractType == null || contractType.isEmpty) {
+      return const Text('-', style: TextStyle(fontSize: 13, color: Colors.grey));
+    }
+    final color = switch (contractType) {
       '정규직' => Colors.green,
       '계약직' => Colors.blue,
       '일용직' => Colors.orange,
       '파견' => Colors.purple,
-      '육아휴직' => Colors.teal,
-      '퇴사' || '재직' => status == '재직' ? Colors.green : Colors.grey,
       _ => Colors.grey,
     };
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Text(contractType, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    final color = status == '재직' ? Colors.green : Colors.grey;
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -781,6 +920,167 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
         child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
       ),
     );
+  }
+
+  String _formatPhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 11) {
+      return '${digits.substring(0, 3)}-${digits.substring(3, 7)}-${digits.substring(7)}';
+    } else if (digits.length == 10) {
+      return '${digits.substring(0, 3)}-${digits.substring(3, 6)}-${digits.substring(6)}';
+    }
+    return phone;
+  }
+
+  void _showBulkEditDialog(BuildContext context, List<WorkerRow> workers) {
+    final targets = workers.where((w) => _checkedWorkerIds.contains(w.id)).toList();
+    if (targets.isEmpty) return;
+
+    String? bulkCompany;
+    String? bulkSite;
+    String? bulkJob;
+    String? bulkRole;
+    String? bulkPosition;
+    String? bulkTempZone;
+    String? bulkContract;
+    String? bulkStatus; // 재직/퇴사
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text('일괄 수정 (${targets.length}명)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('선택된 ${targets.length}명의 정보를 일괄 변경합니다.\n변경하지 않을 항목은 비워두세요.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                      const SizedBox(height: 16),
+                      _buildBulkDropdown('소속회사', CompanyConstants.companyNames, bulkCompany,
+                          (v) => setDialogState(() => bulkCompany = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('사업장', ref.read(siteNamesProvider), bulkSite,
+                          (v) => setDialogState(() => bulkSite = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('직무', ref.read(partNamesProvider), bulkJob,
+                          (v) => setDialogState(() => bulkJob = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('직책', ['반장', '조장', '파트장'], bulkRole,
+                          (v) => setDialogState(() => bulkRole = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('직위', ['사원', '대리', '과장', '부장', '대표'], bulkPosition,
+                          (v) => setDialogState(() => bulkPosition = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('상/저온', ['상온', '저온'], bulkTempZone,
+                          (v) => setDialogState(() => bulkTempZone = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('계약형태', ['정규직', '계약직', '일용직', '파견'], bulkContract,
+                          (v) => setDialogState(() => bulkContract = v)),
+                      const SizedBox(height: 12),
+                      _buildBulkDropdown('재직상태', ['재직', '퇴사'], bulkStatus,
+                          (v) => setDialogState(() => bulkStatus = v)),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+                FilledButton(
+                  onPressed: () async {
+                    // 퇴사 일괄처리 시 확인
+                    if (bulkStatus == '퇴사') {
+                      final confirm = await showDialog<bool>(
+                        context: ctx,
+                        builder: (c) => AlertDialog(
+                          title: const Text('퇴사 일괄 처리', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          content: Text('${targets.length}명을 퇴사 처리하시겠습니까?\n퇴사 처리된 근로자는 비활성 상태가 됩니다.',
+                              style: const TextStyle(fontSize: 13)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('취소')),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(c, true),
+                              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                              child: const Text('퇴사 처리'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm != true) return;
+                    }
+                    Navigator.pop(ctx);
+                    await _executeBulkEdit(
+                      targets,
+                      company: bulkCompany,
+                      site: bulkSite,
+                      job: bulkJob,
+                      role: bulkRole,
+                      position: bulkPosition,
+                      tempZone: bulkTempZone,
+                      contract: bulkContract,
+                      status: bulkStatus,
+                    );
+                  },
+                  child: const Text('일괄 적용'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _executeBulkEdit(
+    List<WorkerRow> targets, {
+    String? company,
+    String? site,
+    String? job,
+    String? role,
+    String? position,
+    String? tempZone,
+    String? contract,
+    String? status,
+  }) async {
+    if (company == null && site == null && job == null && role == null &&
+        position == null && tempZone == null && contract == null && status == null) return;
+
+    // 소속회사: 표시이름 → 코드 변환
+    String? companyCode;
+    if (company != null) {
+      companyCode = CompanyConstants.companyCodeByName(company);
+    }
+
+    final repo = ref.read(workersRepositoryProvider);
+    int successCount = 0;
+    for (final w in targets) {
+      try {
+        final updated = w.copyWith(
+          company: companyCode ?? w.company,
+          site: site ?? w.site,
+          job: job ?? w.job,
+          role: role ?? w.role,
+          position: position ?? w.position,
+          temperatureZone: tempZone ?? w.temperatureZone,
+          employmentStatus: contract ?? w.employmentStatus,
+          isActive: status != null ? (status == '재직') : w.isActive,
+        );
+        await repo.saveWorkerProfile(updated);
+        successCount++;
+      } catch (_) {}
+    }
+    ref.invalidate(workersProvider);
+    setState(() => _checkedWorkerIds.clear());
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$successCount명의 정보가 일괄 수정되었습니다.'), backgroundColor: Colors.green),
+      );
+    }
   }
 
   Widget _buildWorkerFilterDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
@@ -1085,6 +1385,70 @@ class _WorkersScreenState extends ConsumerState<WorkersScreen> {
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('거부'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermanentDeleteDialog(BuildContext context, WorkerRow worker) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red[900], size: 24),
+            const SizedBox(width: 8),
+            const Text('완전 삭제'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${worker.name}님의 모든 데이터를 완전히 삭제합니다.'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                '• 근로자 정보\n• 인사기록 (프로필)\n• 출퇴근 기록\n• 급여 기록\n• 가입 요청 이력\n\n이 작업은 되돌릴 수 없습니다.',
+                style: TextStyle(fontSize: 13, color: Colors.red, height: 1.5),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await ref.read(workersRepositoryProvider).deleteWorkerPermanently(worker.id);
+                ref.invalidate(workersProvider);
+                _clearForm();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${worker.name}님의 데이터가 완전히 삭제되었습니다.'),
+                      backgroundColor: Colors.red[900],
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('삭제 실패: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red[900]),
+            child: const Text('완전 삭제'),
           ),
         ],
       ),

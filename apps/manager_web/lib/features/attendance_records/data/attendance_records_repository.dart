@@ -24,13 +24,19 @@ class AttendanceRecordsRepository {
     final start = DateTime(startDate.year, startDate.month, startDate.day).toUtc().toIso8601String();
     final end = DateTime(endDate.year, endDate.month, endDate.day + 1).toUtc().toIso8601String();
 
-    final attendances = await _supabase
+    var query = _supabase
         .from('attendances')
         .select('*, workers!inner(name, phone, site_id, part_id, worker_profiles(position, job))')
         .gte('check_in_time', start)
         .lt('check_in_time', end)
-        .neq('status', 'deleted')
-        .order('check_in_time', ascending: false);
+        .neq('status', 'deleted');
+
+    // 센터장은 본인 센터 근로자만 조회
+    if (siteId != null && siteId.isNotEmpty) {
+      query = query.eq('workers.site_id', siteId);
+    }
+
+    final attendances = await query.order('check_in_time', ascending: false);
 
     final rows = <AttendanceRecordRow>[];
 

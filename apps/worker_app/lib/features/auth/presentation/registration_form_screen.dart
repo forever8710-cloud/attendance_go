@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_client/supabase_client.dart';
+import '../../../core/services/address_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
-/// 근로자 자가 가입 요청 폼
+/// 근로자 자가 가입 요청 폼 (동의 후 전체 정보 입력)
 class RegistrationFormScreen extends ConsumerStatefulWidget {
   const RegistrationFormScreen({super.key, this.phone});
 
@@ -22,13 +25,59 @@ class _RegistrationFormScreenState
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _detailAddressController = TextEditingController();
+  final _ssnFrontController = TextEditingController();
+  final _ssnBackController = TextEditingController();
+  final _accountNumberController = TextEditingController();
   String _selectedCompany = 'BT';
+  String? _selectedBank;
+
+  static const _banks = [
+    '국민은행', '신한은행', '하나은행', '우리은행', '농협은행',
+    'IBK기업은행', 'SC제일은행', '케이뱅크', '카카오뱅크', '토스뱅크',
+    '대구은행', '부산은행', '경남은행', '광주은행', '전북은행',
+    '제주은행', '수협은행', '산업은행', '새마을금고', '신협',
+  ];
 
   @override
   void initState() {
     super.initState();
     if (widget.phone != null) {
       _phoneController.text = widget.phone!;
+    }
+    // OAuth 사용자 정보로 이름/이메일 자동 채우기
+    _prefillFromAuth();
+  }
+
+  void _prefillFromAuth() {
+    final user = SupabaseService.instance.auth.currentUser;
+    if (user == null) return;
+    final meta = user.userMetadata;
+    if (meta == null) return;
+
+    // 카카오: full_name, name, 구글: full_name, name
+    final name = meta['full_name'] as String? ??
+        meta['name'] as String? ??
+        meta['user_name'] as String? ??
+        '';
+    if (name.isNotEmpty && _nameController.text.isEmpty) {
+      _nameController.text = name;
+    }
+
+    // 카카오 비즈앱: phone, 구글: phone
+    final phone = user.phone ?? '';
+    if (phone.isNotEmpty && _phoneController.text.isEmpty) {
+      // +82 형식을 010 형식으로 변환
+      if (phone.startsWith('+82')) {
+        _phoneController.text = '0${phone.substring(3)}';
+      } else {
+        _phoneController.text = phone;
+      }
+    }
+
+    // 이메일에서 이름 추출 (fallback)
+    final email = meta['email'] as String? ?? user.email ?? '';
+    if (_nameController.text.isEmpty && email.isNotEmpty) {
+      // 이메일 앞부분을 힌트로 사용하지 않음 (정확하지 않으므로)
     }
   }
 
@@ -38,11 +87,22 @@ class _RegistrationFormScreenState
     _phoneController.dispose();
     _addressController.dispose();
     _detailAddressController.dispose();
+    _ssnFrontController.dispose();
+    _ssnBackController.dispose();
+    _accountNumberController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // 주민번호 조합 (앞자리+뒷자리)
+    final ssnFront = _ssnFrontController.text.trim();
+    final ssnBack = _ssnBackController.text.trim();
+    String? ssn;
+    if (ssnFront.isNotEmpty && ssnBack.isNotEmpty) {
+      ssn = '$ssnFront-$ssnBack';
+    }
 
     await ref.read(authProvider.notifier).submitRegistration(
           name: _nameController.text.trim(),
@@ -54,6 +114,11 @@ class _RegistrationFormScreenState
           detailAddress: _detailAddressController.text.trim().isEmpty
               ? null
               : _detailAddressController.text.trim(),
+          ssn: ssn,
+          bank: _selectedBank,
+          accountNumber: _accountNumberController.text.trim().isEmpty
+              ? null
+              : _accountNumberController.text.trim(),
         );
   }
 
@@ -169,14 +234,22 @@ class _RegistrationFormScreenState
                       ),
                       const SizedBox(height: 20),
 
-                      // 주소
+                      // 주소 (도로명주소 API 자동검색)
                       _buildLabel('주소', required: false),
                       const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _addressController,
-                        decoration: _inputDecoration(
-                          hint: '도로명 또는 지번 주소',
-                          icon: Icons.location_on_rounded,
+                      GestureDetector(
+                        onTap: () => _showAddressSearch(context),
+                        child: AbsorbPointer(
+                          child: TextFormField(
+                            controller: _addressController,
+                            decoration: _inputDecoration(
+                              hint: '터치하여 주소 검색',
+                              icon: Icons.location_on_rounded,
+                            ).copyWith(
+                              suffixIcon: Icon(Icons.search_rounded,
+                                  color: AppColors.primary, size: 20),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -185,6 +258,74 @@ class _RegistrationFormScreenState
                         decoration: _inputDecoration(
                           hint: '상세주소 (동/호수)',
                           icon: Icons.apartment_rounded,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 주민등록번호
+                      _buildLabel('주민등록번호', required: false),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _ssnFrontController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(6),
+                              ],
+                              decoration: _inputDecoration(
+                                hint: '앞 6자리',
+                                icon: Icons.credit_card_rounded,
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('-', style: TextStyle(fontSize: 20, color: Colors.grey)),
+                          ),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _ssnBackController,
+                              keyboardType: TextInputType.number,
+                              obscureText: true,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(7),
+                              ],
+                              decoration: _inputDecoration(
+                                hint: '뒤 7자리',
+                                icon: Icons.lock_rounded,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 은행
+                      _buildLabel('급여 계좌', required: false),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _selectedBank,
+                        decoration: _inputDecoration(
+                          icon: Icons.account_balance_rounded,
+                        ),
+                        hint: const Text('은행 선택'),
+                        items: _banks
+                            .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedBank = v),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _accountNumberController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: _inputDecoration(
+                          hint: '계좌번호 (숫자만)',
+                          icon: Icons.numbers_rounded,
                         ),
                       ),
 
@@ -259,6 +400,182 @@ class _RegistrationFormScreenState
         if (required)
           const Text(' *', style: TextStyle(color: Colors.red, fontSize: 14)),
       ],
+    );
+  }
+
+  void _showAddressSearch(BuildContext context) {
+    final confmKey = dotenv.env['JUSO_CONFIRM_KEY'] ?? '';
+    if (confmKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('주소 검색 API가 설정되지 않았습니다. 직접 입력해주세요.')),
+      );
+      // API 키 없으면 수동 입력으로 전환
+      setState(() {});
+      return;
+    }
+    final service = AddressService(confmKey);
+
+    List<AddressResult> results = [];
+    bool isSearching = false;
+    String lastQuery = '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> doSearch(String query) async {
+              if (query.trim().length < 2) {
+                setSheetState(() {
+                  results = [];
+                  lastQuery = query;
+                });
+                return;
+              }
+              setSheetState(() {
+                isSearching = true;
+                lastQuery = query;
+              });
+              try {
+                final found = await service.search(query);
+                if (lastQuery == query) {
+                  setSheetState(() {
+                    results = found;
+                    isSearching = false;
+                  });
+                }
+              } catch (e) {
+                if (lastQuery == query) {
+                  setSheetState(() {
+                    results = [];
+                    isSearching = false;
+                  });
+                }
+              }
+            }
+
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('주소 검색',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(
+                      '동이름, 도로명, 건물명으로 검색하세요',
+                      style:
+                          TextStyle(fontSize: 12, color: AppColors.textHint),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      autofocus: true,
+                      onChanged: doSearch,
+                      decoration: InputDecoration(
+                        hintText: '예: 남사면, 역삼동, 이천시',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: const Icon(Icons.search),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (isSearching)
+                      const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                    else if (results.isEmpty && lastQuery.trim().length >= 2)
+                      Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.search_off_rounded,
+                                  size: 48, color: AppColors.textHint),
+                              const SizedBox(height: 8),
+                              Text(
+                                '검색 결과가 없습니다',
+                                style: TextStyle(
+                                    color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: results.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, i) {
+                            final addr = results[i];
+                            return ListTile(
+                              leading: const Icon(Icons.location_on,
+                                  color: AppColors.primary),
+                              title: Text(
+                                addr.roadAddr,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '[${addr.zipNo}] ${addr.jibunAddr}',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textHint),
+                                  ),
+                                  if (addr.bdNm.isNotEmpty)
+                                    Text(
+                                      addr.bdNm,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.primary),
+                                    ),
+                                ],
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  _addressController.text = addr.roadAddr;
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

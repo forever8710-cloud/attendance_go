@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -120,9 +121,13 @@ class _ManagerAppState extends ConsumerState<ManagerApp> {
         useMaterial3: true,
       ),
       themeMode: settings.themeMode,
-      home: authState.status == AuthStatus.authenticated
-          ? const ManagerShell()
-          : const ManagerLoginScreen(),
+      home: switch (authState.status) {
+        AuthStatus.authenticated => const ManagerShell(),
+        AuthStatus.initial || AuthStatus.loading => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        _ => const ManagerLoginScreen(),
+      },
     );
   }
 }
@@ -139,17 +144,35 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
   String? _detailWorkerId;
   String? _detailWorkerName;
   RealtimeChannel? _realtimeChannel;
+  RealtimeChannel? _registrationChannel;
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _setupRealtime();
+    _setupAutoRefresh();
   }
 
   @override
   void dispose() {
+    _autoRefreshTimer?.cancel();
     _realtimeChannel?.unsubscribe();
+    _registrationChannel?.unsubscribe();
     super.dispose();
+  }
+
+  /// 1분 주기 대시보드 + 등록요청 자동 새로고침
+  void _setupAutoRefresh() {
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) {
+        if (mounted) {
+          ref.read(dashboardRefreshProvider.notifier).state++;
+          ref.invalidate(pendingCountProvider);
+        }
+      },
+    );
   }
 
   void _setupRealtime() {
@@ -166,6 +189,33 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
           schema: 'public',
           table: 'attendances',
           callback: _onAttendanceUpdate,
+        )
+        .subscribe();
+
+    // 가입 요청 실시간 감지
+    _registrationChannel = SupabaseService.instance
+        .channel('registration-requests')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'registration_requests',
+          callback: (_) {
+            if (mounted) {
+              ref.invalidate(pendingCountProvider);
+              ref.invalidate(pendingRequestsProvider);
+            }
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'registration_requests',
+          callback: (_) {
+            if (mounted) {
+              ref.invalidate(pendingCountProvider);
+              ref.invalidate(pendingRequestsProvider);
+            }
+          },
         )
         .subscribe();
   }

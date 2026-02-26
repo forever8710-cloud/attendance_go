@@ -10,6 +10,7 @@ class TableColumnDef {
   final bool numeric;
   final VoidCallback? onSort;
   final bool? sortAscending; // null=정렬안함, true=오름차순, false=내림차순
+  final Widget? labelWidget; // label 대신 커스텀 위젯 (예: Checkbox)
 
   const TableColumnDef({
     required this.label,
@@ -17,6 +18,7 @@ class TableColumnDef {
     this.numeric = false,
     this.onSort,
     this.sortAscending,
+    this.labelWidget,
   });
 
   /// 컬럼 리스트의 전체 너비 (셀 패딩 + 좌우 패딩 + Card 보더 포함)
@@ -118,7 +120,7 @@ class StickyHeaderTable extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           child: Row(
             children: columns.map((col) {
-              Widget label = Text(
+              Widget label = col.labelWidget ?? Text(
                 col.label,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,

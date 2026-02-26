@@ -41,12 +41,18 @@ class PayrollRepository {
     final start = DateTime(year, month, 1).toUtc().toIso8601String();
     final end = DateTime(year, month + 1, 1).toUtc().toIso8601String();
 
-    // 활성 근로자 목록
-    final workers = await _supabase
+    // 활성 근로자 목록 (센터장은 본인 센터만)
+    var workersQuery = _supabase
         .from('workers')
         .select('id, name, part_id')
         .eq('is_active', true)
         .eq('role', 'worker');
+
+    if (siteId.isNotEmpty) {
+      workersQuery = workersQuery.eq('site_id', siteId);
+    }
+
+    final workers = await workersQuery;
 
     // 해당 월 출퇴근 기록
     final attendances = await _supabase

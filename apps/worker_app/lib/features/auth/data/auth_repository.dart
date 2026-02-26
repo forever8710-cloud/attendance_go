@@ -124,29 +124,44 @@ class WorkerAuthRepository {
   // ─── OAuth 후 전화번호로 근로자 매칭 ───
 
   Future<Worker> matchWorkerByPhone(String phone) async {
-    // 숫자만 추출 (010-1234-5678 → 01012345678)
-    final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    // SECURITY DEFINER 함수로 RLS 우회하여 전화번호 검색
+    final rows = await _supabase.client.rpc(
+      'match_worker_by_phone',
+      params: {'phone_input': phone},
+    );
 
-    // DB에 대시 포함/미포함 형식이 혼재 → 두 형식 모두 검색
-    String withDashes = digitsOnly;
-    if (digitsOnly.length == 11) {
-      withDashes =
-          '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}';
-    }
-
-    final rows = await _supabase
-        .from('workers')
-        .select()
-        .or('phone.eq.$digitsOnly,phone.eq.$withDashes')
-        .limit(1);
-
-    if (rows.isEmpty) {
+    if (rows == null || (rows as List).isEmpty) {
       throw Exception('등록되지 않은 전화번호입니다. 관리자에게 문의하세요.');
     }
 
-    final worker = Worker.fromJson(rows.first);
-    await saveWorkerLocal(worker);
-    return worker;
+    final matched = Worker.fromJson((rows as List).first as Map<String, dynamic>);
+
+    // OAuth 사용자를 기존 worker에 연결 (worker.id → auth.uid()로 변경)
+    // 이후 RLS가 정상 작동하도록 함
+    final user = _supabase.auth.currentUser;
+    if (user != null && matched.id != user.id) {
+      try {
+        await _supabase.client.rpc(
+          'link_worker_to_auth',
+          params: {'p_old_worker_id': matched.id},
+        );
+        // 연결 성공 → 새 ID(auth.uid())로 worker 재조회
+        final updated = await _supabase.client.rpc(
+          'match_worker_by_phone',
+          params: {'phone_input': phone},
+        );
+        if (updated != null && (updated as List).isNotEmpty) {
+          final worker = Worker.fromJson(updated.first as Map<String, dynamic>);
+          await saveWorkerLocal(worker);
+          return worker;
+        }
+      } catch (e) {
+        debugPrint('link_worker_to_auth failed: $e');
+      }
+    }
+
+    await saveWorkerLocal(matched);
+    return matched;
   }
 
   // ─── Auth 상태 변경 리스너 ───
@@ -229,6 +244,9 @@ class WorkerAuthRepository {
     required String company,
     String? address,
     String? detailAddress,
+    String? ssn,
+    String? bank,
+    String? accountNumber,
   }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('로그인 세션이 없습니다.');
@@ -252,6 +270,9 @@ class WorkerAuthRepository {
       'company': company,
       'address': address,
       'detail_address': detailAddress,
+      'ssn': ssn,
+      'bank': bank,
+      'account_number': accountNumber,
     });
   }
 
@@ -259,15 +280,12 @@ class WorkerAuthRepository {
 
   Future<bool> isProfileComplete(String workerId) async {
     try {
-      final rows = await _supabase
-          .from('worker_profiles')
-          .select('id, ssn, address')
-          .eq('worker_id', workerId)
-          .limit(1);
-
-      if (rows.isEmpty) return false;
-      final profile = rows.first;
-      return profile['ssn'] != null && profile['address'] != null;
+      // SECURITY DEFINER 함수로 RLS 우회
+      final result = await _supabase.client.rpc(
+        'check_worker_profile_complete',
+        params: {'p_worker_id': workerId},
+      );
+      return result == true;
     } catch (_) {
       return false;
     }
@@ -281,13 +299,26 @@ class WorkerAuthRepository {
     required String bank,
     required String accountNumber,
   }) async {
-    await _supabase.from('worker_profiles').upsert({
-      'worker_id': workerId,
-      'ssn': ssn,
-      'address': address,
-      'bank': bank,
-      'account_number': accountNumber,
-    }, onConflict: 'worker_id');
+    // SECURITY DEFINER 함수로 RLS 우회
+    await _supabase.client.rpc(
+      'upsert_worker_profile',
+      params: {
+        'p_worker_id': workerId,
+        'p_ssn': ssn,
+        'p_address': address,
+        'p_bank': bank,
+        'p_account_number': accountNumber,
+      },
+    );
+  }
+
+  // ─── 이메일/비밀번호 로그인 (테스트/관리자용) ───
+
+  Future<void> signInWithEmail(String email, String password) async {
+    await _supabase.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
   }
 
   // ─── 데모 로그인 (테스트용, 디버그 빌드 전용) ───
@@ -301,10 +332,7 @@ class WorkerAuthRepository {
     if (email == null || password == null) {
       throw Exception('.env에 DEMO_EMAIL/DEMO_PASSWORD가 설정되지 않았습니다.');
     }
-    await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    await signInWithEmail(email, password);
   }
 
   // ─── 로그아웃 ───

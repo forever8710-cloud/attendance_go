@@ -11,6 +11,11 @@ class CompanyConstants {
   static String companyName(String code) =>
       companies.firstWhere((c) => c.code == code, orElse: () => companies.first).name;
 
+  static List<String> get companyNames => companies.map((c) => c.name).toList();
+
+  static String companyCodeByName(String name) =>
+      companies.firstWhere((c) => c.name == name, orElse: () => companies.first).code;
+
   // ── 센터(사업장) ──
   static const centers = [
     SiteCenter(code: 'IC', name: '서이천'),

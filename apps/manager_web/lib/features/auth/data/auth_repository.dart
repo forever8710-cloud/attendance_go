@@ -45,4 +45,23 @@ class ManagerAuthRepository {
       supabase_flutter.UserAttributes(password: newPassword),
     );
   }
+
+  /// 현재 비밀번호 검증 후 새 비밀번호로 변경
+  Future<void> verifyAndChangePassword(String currentPassword, String newPassword) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception('로그인 상태가 아닙니다');
+    }
+
+    // 현재 비밀번호 검증: 재로그인 시도
+    await _supabase.auth.signInWithPassword(
+      email: user.email!,
+      password: currentPassword,
+    );
+
+    // 검증 성공 → 새 비밀번호로 변경
+    await _supabase.auth.updateUser(
+      supabase_flutter.UserAttributes(password: newPassword),
+    );
+  }
 }
