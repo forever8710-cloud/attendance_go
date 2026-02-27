@@ -385,7 +385,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           Align(
             alignment: Alignment.topLeft,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 700),
+              constraints: const BoxConstraints(maxWidth: 1100),
               child: Card(
             elevation: 0,
             shape: RoundedRectangleBorder(

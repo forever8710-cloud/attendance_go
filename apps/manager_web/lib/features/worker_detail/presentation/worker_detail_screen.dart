@@ -5,6 +5,7 @@ import '../../../core/utils/company_constants.dart';
 import '../../../core/widgets/sticky_data_table.dart';
 import '../../workers/providers/workers_provider.dart';
 import '../providers/worker_detail_provider.dart';
+import '../utils/worker_attendance_excel_export.dart';
 
 class WorkerDetailScreen extends ConsumerWidget {
   const WorkerDetailScreen({
@@ -198,6 +199,26 @@ class WorkerDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 16),
                     _buildMonthSelector(context, ref, yearMonth),
+                    const SizedBox(width: 12),
+                    attendanceAsync.whenOrNull(
+                      data: (rows) => ElevatedButton.icon(
+                        onPressed: rows.isEmpty
+                            ? null
+                            : () {
+                                WorkerAttendanceExcelExport.exportToExcel(rows, workerName, yearMonth);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('엑셀 파일 다운로드 완료'), duration: Duration(seconds: 2)),
+                                );
+                              },
+                        icon: const Icon(Icons.download, size: 16),
+                        label: const Text('엑셀 내보내기', style: TextStyle(fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        ),
+                      ),
+                    ) ?? const SizedBox(),
                   ],
                 ),
                 const SizedBox(height: 12),
