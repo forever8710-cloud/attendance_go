@@ -38,9 +38,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('설정', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-
           Align(
             alignment: Alignment.centerLeft,
             child: ConstrainedBox(

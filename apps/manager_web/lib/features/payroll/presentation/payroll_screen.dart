@@ -42,9 +42,6 @@ class _PayrollScreenState extends ConsumerState<PayrollScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('급여 관리', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
-
               // Year-month selector + generate button
               Row(
                 children: [

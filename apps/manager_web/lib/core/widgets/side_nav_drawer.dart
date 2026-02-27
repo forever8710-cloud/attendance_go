@@ -70,6 +70,7 @@ class SideNavDrawer extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 12),
           // 메뉴 리스트
           Expanded(
             child: ListView.builder(

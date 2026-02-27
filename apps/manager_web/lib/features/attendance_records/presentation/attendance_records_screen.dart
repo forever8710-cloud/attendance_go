@@ -69,9 +69,6 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('근태 현황', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
-
               // Filters
               Card(
                 elevation: 0,
@@ -354,7 +351,11 @@ class _AttendanceRecordsScreenState extends ConsumerState<AttendanceRecordsScree
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          items: items.map((v) => DropdownMenuItem(value: v, child: Text('$label: $v', style: const TextStyle(fontSize: 14)))).toList(),
+          selectedItemBuilder: (context) => items.map((v) => Align(
+            alignment: Alignment.centerLeft,
+            child: Text('$label: $v', style: const TextStyle(fontSize: 14)),
+          )).toList(),
+          items: items.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 14)))).toList(),
           onChanged: onChanged,
         ),
       ),
