@@ -126,3 +126,12 @@ final todayEventsProvider = FutureProvider<List<CalendarEvent>>((ref) async {
   );
   return events;
 });
+
+/// 오늘~30일 이내 다가오는 이벤트 목록 (헤더 마퀴 배너용, 가까운 순)
+final upcomingEventsProvider = FutureProvider<List<CalendarEvent>>((ref) async {
+  final today = DateTime.now();
+  final startDate = DateTime(today.year, today.month, today.day);
+  final endDate = startDate.add(const Duration(days: 30));
+  final events = await ref.watch(calendarRepositoryProvider).getEvents(startDate, endDate);
+  return events; // 이미 event_date 오름차순 정렬됨
+});

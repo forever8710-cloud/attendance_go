@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +22,8 @@ import 'features/payroll/presentation/payroll_screen.dart';
 import 'features/accounts/presentation/accounts_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
-import 'features/dashboard/providers/calendar_provider.dart' show todayEventsProvider, CalendarEvent;
+import 'features/dashboard/providers/calendar_provider.dart' show todayEventsProvider, upcomingEventsProvider, CalendarEvent;
+import 'features/dashboard/providers/weather_provider.dart';
 import 'core/widgets/side_nav_drawer.dart';
 import 'core/widgets/privacy_policy_dialog.dart';
 import 'features/worker_detail/presentation/worker_detail_screen.dart';
@@ -320,6 +322,12 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
                       ),
                       const SizedBox(width: 12),
+                      // 다가오는 일정 마퀴 배너
+                      _buildMarqueeBanner(),
+                      const SizedBox(width: 8),
+                      // 오늘의 날씨
+                      _buildWeatherBadge(),
+                      const SizedBox(width: 6),
                       // 가입 요청 알림 — 클릭 시 근로자 등록 탭으로 이동
                       _buildRegistrationAlert(context),
                       const SizedBox(width: 6),
@@ -446,6 +454,56 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
         _detailWorkerId = null;
         _detailWorkerName = null;
       }),
+    );
+  }
+
+  Widget _buildMarqueeBanner() {
+    final eventsAsync = ref.watch(upcomingEventsProvider);
+    final events = eventsAsync.valueOrNull ?? [];
+    if (events.isEmpty) return const SizedBox.shrink();
+
+    return _MarqueeBanner(
+      events: events,
+      onTap: () => setState(() {
+        _selectedIndex = 3;
+        _detailWorkerId = null;
+        _detailWorkerName = null;
+      }),
+    );
+  }
+
+  Widget _buildWeatherBadge() {
+    final weatherAsync = ref.watch(weatherProvider);
+    final weather = weatherAsync.valueOrNull;
+    if (weather == null) return const SizedBox.shrink();
+
+    final cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: '${weather.description} ${weather.temperature.toStringAsFixed(1)}°C',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: cs.onSurface.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(weather.emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 4),
+            Text(
+              '${weather.temperature.toStringAsFixed(0)}°',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -815,6 +873,190 @@ class _TodayEventsPopup extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── 다가오는 일정 마퀴 배너 (여러 이벤트 순환) ──
+class _MarqueeBanner extends StatefulWidget {
+  const _MarqueeBanner({required this.events, required this.onTap});
+  final List<CalendarEvent> events;
+  final VoidCallback onTap;
+
+  @override
+  State<_MarqueeBanner> createState() => _MarqueeBannerState();
+}
+
+class _MarqueeBannerState extends State<_MarqueeBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  double _totalTextWidth = 0;
+  static const double _containerWidth = 280;
+  static const double _gap = 80; // 이벤트 사이 간격
+
+  String _buildLabel(CalendarEvent e) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final eventDay = DateTime(e.eventDate.year, e.eventDate.month, e.eventDate.day);
+    final diff = eventDay.difference(today).inDays;
+
+    String dateLabel;
+    if (diff == 0) {
+      dateLabel = '오늘';
+    } else if (diff == 1) {
+      dateLabel = '내일';
+    } else {
+      dateLabel = '${e.eventDate.month}/${e.eventDate.day}';
+    }
+    return '📅 $dateLabel ${e.title}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndAnimate());
+  }
+
+  @override
+  void didUpdateWidget(covariant _MarqueeBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.events.length != widget.events.length) {
+      _measureAndAnimate();
+    }
+  }
+
+  void _measureAndAnimate() {
+    // 모든 이벤트 텍스트를 이어 붙인 총 길이 계산
+    double total = 0;
+    for (final e in widget.events) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: _buildLabel(e),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        maxLines: 1,
+        textDirection: ui.TextDirection.ltr,
+      )..layout();
+      total += tp.width + _gap;
+    }
+    _totalTextWidth = total;
+
+    if (_totalTextWidth > _containerWidth) {
+      _controller
+        ..duration = Duration(milliseconds: (_totalTextWidth * 30).toInt())
+        ..repeat();
+    } else {
+      _controller
+        ..duration = const Duration(seconds: 0)
+        ..stop();
+    }
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final needsScroll = _totalTextWidth > _containerWidth;
+
+    return Tooltip(
+      message: '클릭하여 일정관리 이동',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: widget.onTap,
+          child: Container(
+            width: _containerWidth,
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2B2D42).withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF8D99AE).withValues(alpha: 0.4)),
+            ),
+            child: ClipRect(
+              child: needsScroll
+                  ? AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, _) {
+                        final offset = _controller.value * _totalTextWidth;
+                        return Stack(
+                          children: [
+                            Positioned(
+                              left: -offset,
+                              top: 0,
+                              bottom: 0,
+                              child: _buildEventStrip(cs),
+                            ),
+                            Positioned(
+                              left: -offset + _totalTextWidth,
+                              top: 0,
+                              bottom: 0,
+                              child: _buildEventStrip(cs),
+                            ),
+                          ],
+                        );
+                      },
+                    )
+                  : Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: widget.events.map((e) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Text(
+                              _buildLabel(e),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventStrip(ColorScheme cs) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: widget.events.map((e) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final eventDay = DateTime(e.eventDate.year, e.eventDate.month, e.eventDate.day);
+        final isToday = eventDay == today;
+
+        return Padding(
+          padding: EdgeInsets.only(right: _gap),
+          child: Center(
+            child: Text(
+              _buildLabel(e),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isToday
+                    ? Colors.deepPurple
+                    : cs.onSurface.withValues(alpha: 0.8),
+              ),
+              maxLines: 1,
+              softWrap: false,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
